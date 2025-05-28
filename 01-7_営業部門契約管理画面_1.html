@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業部門 - 契約管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* カスタムスタイル */
+    .contract-status-badge {
+      transition: all 0.3s ease;
+    }
+    .contract-status-badge:hover {
+      transform: translateY(-2px);
+    }
+    
+    .signature-step {
+      position: relative;
+    }
+    .signature-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -15px;
+      width: 30px;
+      height: 2px;
+      background-color: #e5e7eb;
+      transform: translateY(-50%);
+    }
+    .signature-step.completed:not(:last-child)::after {
+      background-color: #10b981;
+    }
+    
+    /* テンプレートカードホバー効果 */
+    .template-card {
+      transition: all 0.2s ease;
+    }
+    .template-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* 期限アラート点滅アニメーション */
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    .alert-pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    /* アクションボタンエフェクト */
+    .action-button {
+      transition: all 0.2s ease;
+    }
+    .action-button:hover {
+      transform: translateY(-2px);
+    }
+    
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+      .mobile-only { display: block; }
+      .desktop-only { display: none; }
+    }
+    @media (min-width: 769px) {
+      .mobile-only { display: none; }
+      .desktop-only { display: block; }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-blue-800 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center mb-4 md:mb-0">
+        <h1 class="text-xl font-bold">営業活動支援システム</h1>
+        <span class="ml-4 bg-blue-700 px-3 py-1 rounded-full text-sm">営業部門</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="relative">
+          <i class="fas fa-bell text-xl"></i>
+          <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+        </button>
+        <span>山田 健太郎</span>
+        <div class="w-10 h-10 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">YK</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <div class="container mx-auto p-4">
+    <!-- パンくずリスト -->
+    <div class="flex items-center text-sm text-gray-600 mb-4">
+      <a href="#" class="hover:text-blue-600">ホーム</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600">営業HUB</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-medium">契約管理</span>
+    </div>
+    
+    <!-- タイトルと操作ボタン -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">契約管理</h2>
+        <p class="text-gray-600 text-sm mt-1">契約書の作成、電子署名、管理、更新までを一元管理します</p>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
+        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center action-button">
+          <i class="fas fa-plus mr-2"></i> 新規契約作成
+        </button>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center action-button">
+          <i class="fas fa-search mr-2"></i> 契約検索
+        </button>
+      </div>
+    </div>
+    
+    <!-- 更新アラートセクション -->
+    <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-6 rounded-r-md">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+        <div class="flex items-start">
+          <div class="text-amber-500 text-2xl mr-3 alert-pulse">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-amber-800">契約更新アラート</h3>
+            <p class="text-amber-700">5件の契約が30日以内に期限切れになります。早急な対応が必要です。</p>
+          </div>
+        </div>
+        <button class="mt-3 md:mt-0 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded flex items-center action-button">
+          <i class="fas fa-arrow-right mr-2"></i> すべて表示
+        </button>
+      </div>
+    </div>
+    
+    <!-- 2カラムレイアウト(PC) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      <!-- 左カラム：現在の契約情報 -->
+      <div class="space-y-6">
+        <!-- 契約基本情報カード -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-lg font-bold text-gray-800">ABC工場省エネ設備導入契約</h3>
+            <!-- 契約ステータスバッジ -->
+            <span class="contract-status-badge px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 flex items-center">
+              <i class="fas fa-pen mr-1"></i> 作成中
+            </span>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p class="text-sm text-gray-500">関連案件</p>
+              <p class="font-medium">S-2025-0123（ABC工場省エネ設備導入）</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">顧客</p>
+              <p class="font-medium">株式会社ABC工業</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">作成日</p>
+              <p class="font-medium">2025年5月18日</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">担当者</p>
+              <p class="font-medium">山田健太郎</p>
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap gap-2">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm flex items-center action-button">
+              <i class="fas fa-edit mr-1"></i> 編集
+            </button>
+            <button class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-1.5 rounded text-sm flex items-center action-button">
+              <i class="fas fa-eye mr-1"></i> プレビュー
+            </button>
+            <button class="bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1.5 rounded text-sm flex items-center action-button">
+              <i class="fas fa-paper-plane mr-1"></i> 承認申請
+            </button>
+          </div>
+        </div>
+        
+        <!-- 契約条件設定 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-file-contract text-blue-600 mr-2"></i> 契約条件設定
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 契約期間 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">契約期間 <span class="text-red-600">*</span></label>
+              <div class="grid grid-cols-2 gap-2">
+                <div class="relative">
+                  <input type="date" value="2025-07-01" class="border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-blue-500">
+                  <div class="absolute inset-y-0 right-0 px-3 flex items-center pointer-events-none text-gray-500">
+                    <i class="fas fa-calendar-alt"></i>
+                  </div>
+                </div>
+                <div class="relative">
+                  <input type="date" value="2028-06-30" class="border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-blue-500">
+                  <div class="absolute inset-y-0 right-0 px-3 flex items-center pointer-events-none text-gray-500">
+                    <i class="fas fa-calendar-alt"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">契約期間：3年間</div>
+            </div>
+            
+            <!-- 支払条件 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">支払条件 <span class="text-red-600">*</span></label>
+              <select class="border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-blue-500">
+                <option>検収月末締め翌月末払い</option>
+                <option selected>契約時40%/完工時60%</option>
+                <option>月額均等払い（36回）</option>
+                <option>年額一括前払い</option>
+                <option>完工一括払い</option>
+                <option>カスタム条件（備考欄記載）</option>
+              </select>
+            </div>
+            
+            <!-- 更新条件 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">更新条件 <span class="text-red-600">*</span></label>
+              <div class="flex gap-4">
+                <div class="flex items-center">
+                  <input type="radio" id="auto-renewal" name="renewal" value="auto" checked class="w-4 h-4 text-blue-600">
+                  <label for="auto-renewal" class="ml-2 text-sm text-gray-700">自動更新</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio" id="manual-renewal" name="renewal" value="manual" class="w-4 h-4 text-blue-600">
+                  <label for="manual-renewal" class="ml-2 text-sm text-gray-700">要協議</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio" id="no-renewal" name="renewal" value="none" class="w-4 h-4 text-blue-600">
+                  <label for="no-renewal" class="ml-2 text-sm text-gray-700">更新なし</label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 違約金条項 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">違約金条項</label>
+              <select class="border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-blue-500">
+                <option selected>標準違約金条項（残存契約金額の20%）</option>
+                <option>厳格違約金条項（残存契約金額の30%）</option>
+                <option>緩和違約金条項（残存契約金額の10%）</option>
+                <option>年率逓減違約金条項</option>
+                <option>違約金条項なし</option>
+              </select>
+            </div>
+            
+            <!-- 更新通知日数 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">更新通知基準日数</label>
+              <select class="border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-blue-500">
+                <option value="90">満了90日前</option>
+                <option value="60">満了60日前</option>
+                <option selected value="30">満了30日前</option>
+                <option value="15">満了15日前</option>
+              </select>
+              <div class="text-xs text-gray-500 mt-1">選択した日数に達すると、契約更新アラートが表示されます</div>
+            </div>
+            
+            <!-- 備考欄 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">備考（特記事項）</label>
+              <textarea rows="3" class="border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:ring-2 focus:ring-blue-500" placeholder="特記事項があれば入力してください">本契約はPMBOK準拠のプロジェクト進行を前提としています。
+月次報告書の提出が必須となります。
+付属する保守契約は別途締結予定です。</textarea>
+            </div>
+            
+            <div class="flex justify-end">
+              <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm flex items-center action-button">
+                <i class="fas fa-save mr-2"></i> 条件を保存
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 電子署名状況 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-signature text-blue-600 mr-2"></i> 電子署名状況
+          </h3>
+          
+          <div class="mb-4">
+            <div class="bg-blue-50 p-3 rounded-md text-sm text-blue-800 flex items-center">
+              <i class="fas fa-info-circle mr-2"></i>
+              署名プロセスを開始するには、契約書を承認申請してください。すべての署名が完了した場合のみ、契約書は「締結済」となります。
+            </div>
+          </div>
+          
+          <div class="flex flex-wrap justify-between items-center mb-6">
+            <div class="signature-step flex flex-col items-center mb-4 md:mb-0">
+              <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-1">
+                <i class="fas fa-file-alt"></i>
+              </div>
+              <div class="text-xs text-center">
+                <div class="font-medium">契約書作成</div>
+                <div class="text-gray-500">進行中</div>
+              </div>
+            </div>
+            
+            <div class="signature-step flex flex-col items-center mb-4 md:mb-0">
+              <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-1">
+                <i class="fas fa-check"></i>
+              </div>
+              <div class="text-xs text-center">
+                <div class="font-medium">社内承認</div>
+                <div class="text-gray-500">未承認</div>
+              </div>
+            </div>
+            
+            <div class="signature-step flex flex-col items-center mb-4 md:mb-0">
+              <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-1">
+                <i class="fas fa-pen-fancy"></i>
+              </div>
+              <div class="text-xs text-center">
+                <div class="font-medium">自社署名</div>
+                <div class="text-gray-500">未署名</div>
+              </div>
+            </div>
+            
+            <div class="signature-step flex flex-col items-center">
+              <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-1">
+                <i class="fas fa-handshake"></i>
+              </div>
+              <div class="text-xs text-center">
+                <div class="font-medium">顧客署名</div>
+                <div class="text-gray-500">未署名</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-4">
+            <h4 class="font-medium text-gray-700 mb-2">署名者一覧</h4>
+            
+            <div class="space-y-2">
+              <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div>
+                  <div class="font-medium">鈴木部長</div>
+                  <div class="text-xs text-gray-500">自社署名者（営業部長）</div>
+                </div>
+                <span class="text-gray-500 text-sm">未署名</span>
+              </div>
+              
+              <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div>
+                  <div class="font-medium">中村常務</div>
+                  <div class="text-xs text-gray-500">自社署名者（経営層）</div>
+                </div>
+                <span class="text-gray-500 text-sm">未署名</span>
+              </div>
+              
+              <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <div>
+                  <div class="font-medium">ABC工業 斎藤部長</div>
+                  <div class="text-xs text-gray-500">顧客署名者（取引先責任者）</div>
+                </div>
+                <span class="text-gray-500 text-sm">未署名</span>
+              </div>
+            </div>
+            
+            <div class="mt-4 flex justify-end">
+              <button class="bg-gray-400 text-white px-4 py-2 rounded text-sm flex items-center action-button" disabled>
+                <i class="fas fa-paper-plane mr-2"></i> 署名依頼送信
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右カラム：テンプレート、保管書類、更新情報 -->
+      <div class="space-y-6">
+        <!-- 契約書テンプレート -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center">
+              <i class="fas fa-clipboard-list text-blue-600 mr-2"></i> 契約書テンプレート
+            </h3>
+            <div class="flex items-center">
+              <label for="template-type" class="text-sm text-gray-600 mr-2">分類:</label>
+              <select id="template-type" class="border border-gray-300 text-gray-900 text-xs rounded-lg p-1.5 focus:ring-2 focus:ring-blue-500">
+                <option value="all">すべて</option>
+                <option value="equipment" selected>設備導入</option>
+                <option value="maintenance">保守契約</option>
+                <option value="subscription">サブスクリプション</option>
+                <option value="ppa">PPA契約</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <!-- テンプレート1 - 選択中 -->
+            <div class="template-card border-2 border-blue-500 rounded-lg p-3 bg-blue-50">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-medium text-blue-800">省エネ設備導入 標準</h4>
+                  <div class="text-xs text-gray-600 mt-1">最終更新: 2025/03/15</div>
+                </div>
+                <span class="bg-blue-200 text-blue-800 text-xs px-2 py-0.5 rounded-full">選択中</span>
+              </div>
+              <div class="text-xs text-gray-600 mt-2">設備導入における標準的な契約書テンプレートです。免責条項と保証規定を含みます。</div>
+              <div class="mt-2 flex justify-end">
+                <button class="text-blue-600 hover:text-blue-800 text-xs" disabled>
+                  <i class="fas fa-check-circle mr-1"></i> 選択済み
+                </button>
+              </div>
+            </div>
+            
+            <!-- テンプレート2 -->
+            <div class="template-card border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-medium">省エネ設備導入 補助金対応</h4>
+                  <div class="text-xs text-gray-600 mt-1">最終更新: 2025/02/10</div>
+                </div>
+                <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">設備導入</span>
+              </div>
+              <div class="text-xs text-gray-600 mt-2">補助金申請に必要な特別条項を含む設備導入契約書テンプレートです。</div>
+              <div class="mt-2 flex justify-end">
+                <button class="text-blue-600 hover:text-blue-800 text-xs">
+                  <i class="fas fa-exchange-alt mr-1"></i> 切り替える
+                </button>
+              </div>
+            </div>
+            
+            <!-- テンプレート3 -->
+            <div class="template-card border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-medium">長期保守契約 標準</h4>
+                  <div class="text-xs text-gray-600 mt-1">最終更新: 2025/04/20</div>
+                </div>
+                <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">保守契約</span>
+              </div>
+              <div class="text-xs text-gray-600 mt-2">設備の定期点検・保守に関する長期契約テンプレートです。</div>
+              <div class="mt-2 flex justify-end">
+                <button class="text-blue-600 hover:text-blue-800 text-xs">
+                  <i class="fas fa-exchange-alt mr-1"></i> 切り替える
+                </button>
+              </div>
+            </div>
+            
+            <!-- テンプレート4 -->
+            <div class="template-card border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+              <div class="flex justify-between items-start">
+                <div>
+                  <h4 class="font-medium">PPA契約（太陽光）</h4>
+                  <div class="text-xs text-gray-600 mt-1">最終更新: 2025/01/05</div>
+                </div>
+                <span class="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded-full">PPA契約</span>
+              </div>
+              <div class="text-xs text-gray-600 mt-2">太陽光発電設備のPPA（電力販売）契約テンプレートです。</div>
+              <div class="mt-2 flex justify-end">
+                <button class="text-blue-600 hover:text-blue-800 text-xs">
+                  <i class="fas fa-exchange-alt mr-1"></i> 切り替える
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4 flex justify-end">
+            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              すべてのテンプレートを表示 <i class="fas fa-chevron-right ml-1"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- 契約書保管エリア -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-folder-open text-blue-600 mr-2"></i> 契約書保管エリア
+          </h3>
+          
+          <div class="border border-dashed border-gray-300 rounded-lg p-4 mb-4 bg-gray-50">
+            <div class="flex flex-col items-center justify-center">
+              <i class="fas fa-cloud-upload-alt text-gray-400 text-3xl mb-2"></i>
+              <p class="text-sm text-gray-600 mb-2">契約関連ファイルをドラッグ＆ドロップ、または</p>
+              <button class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded text-sm">
+                ファイルを選択
+              </button>
+              <p class="text-xs text-gray-500 mt-2">対応形式: PDF, DOCX, XLSX (最大20MB)</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3 mb-4">
+            <!-- ファイル1 -->
+            <div class="flex items-center border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+              <div class="mr-3 w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
+                <i class="fas fa-file-pdf"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm">ABC工場省エネ契約書_ドラフト_v1.pdf</div>
+                <div class="text-xs text-gray-500">2025/05/18 | 1.2MB | ドラフト版</div>
+              </div>
+              <div class="flex space-x-2">
+                <button class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-download"></i>
+                </button>
+                <button class="text-red-600 hover:text-red-800">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- ファイル2 -->
+            <div class="flex items-center border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+              <div class="mr-3 w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
+                <i class="fas fa-file-word"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm">契約特記事項リスト.docx</div>
+                <div class="text-xs text-gray-500">2025/05/17 | 450KB | 作業中</div>
+              </div>
+              <div class="flex space-x-2">
+                <button class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-download"></i>
+                </button>
+                <button class="text-red-600 hover:text-red-800">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- ファイル3 -->
+            <div class="flex items-center border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+              <div class="mr-3 w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600">
+                <i class="fas fa-file-excel"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm">契約金額明細.xlsx</div>
+                <div class="text-xs text-gray-500">2025/05/15 | 780KB | 最終確認済</div>
+              </div>
+              <div class="flex space-x-2">
+                <button class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="text-blue-600 hover:text-blue-800">
+                  <i class="fas fa-download"></i>
+                </button>
+                <button class="text-red-600 hover:text-red-800">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-between">
+            <span class="text-sm text-gray-500">表示: 3件 / 合計: 3件</span>
+            <button class="text-blue-600 hover:text-blue-800 text-sm">
+              <i class="fas fa-sync-alt mr-1"></i> 更新
+            </button>
+          </div>
+        </div>
+        
+        <!-- 契約更新履歴 -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-history text-blue-600 mr-2"></i> 契約更新管理
+          </h3>
+          
+          <div class="mb-4">
+            <h4 class="font-medium text-gray-700 mb-2">更新予定</h4>
+            
+            <div class="space-y-3">
+              <!-- 更新予定1（他の契約例） -->
+              <div class="border border-l-4 border-red-500 rounded-lg p-3 bg-red-50 alert-pulse">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <div class="font-medium">DEF産業保守契約</div>
+                    <div class="text-sm text-gray-700">契約番号: C-2024-0032</div>
+                  </div>
+                  <span class="bg-red-200 text-red-800 text-xs px-2 py-0.5 rounded-full">残り5日</span>
+                </div>
+                <div class="mt-2 text-sm text-gray-600">満了日: 2025年5月23日 | 自動更新: あり</div>
+                <div class="mt-2 flex justify-end">
+                  <button class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs action-button">
+                    更新手続き
+                  </button>
+                </div>
+              </div>
+              
+              <!-- 更新予定2（他の契約例） -->
+              <div class="border border-l-4 border-amber-500 rounded-lg p-3 bg-amber-50">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <div class="font-medium">GHI商事リース契約</div>
+                    <div class="text-sm text-gray-700">契約番号: C-2022-0089</div>
+                  </div>
+                  <span class="bg-amber-200 text-amber-800 text-xs px-2 py-0.5 rounded-full">残り20日</span>
+                </div>
+                <div class="mt-2 text-sm text-gray-600">満了日: 2025年6月7日 | 自動更新: あり</div>
+                <div class="mt-2 flex justify-end">
+                  <button class="bg-amber-600 hover:bg-amber-700 text-white px-3 py-1 rounded text-xs action-button">
+                    更新手続き
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-4">
+            <h4 class="font-medium text-gray-700 mb-2">更新設定</h4>
+            
+            <div class="space-y-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">更新アラート通知先</label>
+                <select class="border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2 focus:ring-2 focus:ring-blue-500">
+                  <option>担当者のみ</option>
+                  <option>担当者+上長</option>
+                  <option selected>担当者+上長+関連部署</option>
+                  <option>全社通知</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">通知タイミング（複数選択可）</label>
+                <div class="flex flex-wrap gap-3">
+                  <div class="flex items-center">
+                    <input type="checkbox" id="alert-90" value="90" class="w-4 h-4 text-blue-600">
+                    <label for="alert-90" class="ml-2 text-sm text-gray-700">90日前</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" id="alert-60" value="60" class="w-4 h-4 text-blue-600">
+                    <label for="alert-60" class="ml-2 text-sm text-gray-700">60日前</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" id="alert-30" value="30" class="w-4 h-4 text-blue-600" checked>
+                    <label for="alert-30" class="ml-2 text-sm text-gray-700">30日前</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" id="alert-15" value="15" class="w-4 h-4 text-blue-600" checked>
+                    <label for="alert-15" class="ml-2 text-sm text-gray-700">15日前</label>
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox" id="alert-7" value="7" class="w-4 h-4 text-blue-600" checked>
+                    <label for="alert-7" class="ml-2 text-sm text-gray-700">7日前</label>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="flex justify-end">
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm flex items-center action-button">
+                  <i class="fas fa-save mr-1"></i> 設定を保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 操作ボタン（下部） -->
+    <div class="flex flex-wrap justify-end gap-3 mt-6">
+      <button class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2.5 rounded flex items-center action-button">
+        <i class="fas fa-save mr-2"></i> 下書き保存
+      </button>
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded flex items-center action-button">
+        <i class="fas fa-paper-plane mr-2"></i> 承認申請
+      </button>
+      <button class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded flex items-center action-button" disabled>
+        <i class="fas fa-envelope mr-2"></i> 署名依頼
+      </button>
+    </div>
+  </div>
+  
+  <!-- モバイル用フローティングアクションボタン -->
+  <div class="fixed bottom-4 right-4 md:hidden z-10">
+    <button class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl">
+      <i class="fas fa-save"></i>
+    </button>
+  </div>
+  
+  <!-- フッター -->
+  <footer class="bg-gray-800 text-white p-4 text-center text-sm mt-8">
+    <div>営業活動支援システム Ver.1.0</div>
+    <div class="mt-2">© 2025 エネルギーサービス企業</div>
+  </footer>
+</body>
+</html>

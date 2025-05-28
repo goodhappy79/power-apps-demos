@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>総請求履歴確認・遡及修正画面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <!-- ヘッダー：アプリタイトルとユーザー情報 -->
+  <header class="bg-blue-800 text-white p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">総請求履歴確認・遡及修正</h1>
+    <div class="flex items-center gap-4">
+      <span>電力販売部門</span>
+      <div class="w-8 h-8 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">ES</div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツエリア -->
+  <div class="flex flex-col lg:flex-row p-4 gap-4">
+    <!-- 左側：フィルター・一覧セクション -->
+    <div class="w-full lg:w-3/5">
+      <!-- 検索・フィルター領域 -->
+      <section class="bg-white p-4 rounded-xl shadow mb-4">
+        <h2 class="text-lg font-semibold mb-3">検索条件</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">顧客名</label>
+            <select class="w-full border rounded p-2">
+              <option>株式会社ABCエナジー</option>
+              <option>DEF株式会社</option>
+              <option>GHI工業</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">契約番号</label>
+            <select class="w-full border rounded p-2">
+              <option>C-2025-0012</option>
+              <option>C-2025-0013</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">供給地点</label>
+            <input type="text" class="w-full border rounded p-2" value="福岡第1センター" readonly />
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">対象年月</label>
+            <div class="flex gap-2">
+              <select class="w-full border rounded p-2">
+                <option>2025年</option>
+                <option>2024年</option>
+              </select>
+              <select class="w-full border rounded p-2">
+                <option>全て</option>
+                <option>1月</option>
+                <option>2月</option>
+                <option selected>5月</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex flex-col justify-end">
+            <label class="block text-sm font-medium mb-1">フィルター</label>
+            <div class="flex gap-3">
+              <label class="flex items-center">
+                <input type="checkbox" class="mr-1">
+                再計算対象
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" class="mr-1">
+                特別項目あり
+              </label>
+            </div>
+          </div>
+          <div class="col-span-2 flex items-end">
+            <button class="bg-blue-600 text-white px-4 py-2 rounded">検索</button>
+            <button class="bg-gray-200 text-gray-700 px-4 py-2 rounded ml-2">リセット</button>
+            <button class="bg-green-600 text-white px-4 py-2 rounded ml-auto flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              CSVエクスポート
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 請求履歴一覧テーブル -->
+      <section class="bg-white p-4 rounded-xl shadow mb-4">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-lg font-semibold">請求履歴一覧</h2>
+          <div class="text-sm text-gray-500">表示：12件 / 全36件</div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full bg-white">
+            <thead class="bg-gray-100 text-gray-600 text-sm">
+              <tr>
+                <th class="py-2 px-3 text-left">年月</th>
+                <th class="py-2 px-3 text-right">使用量(kWh)</th>
+                <th class="py-2 px-3 text-right">基本料金</th>
+                <th class="py-2 px-3 text-right">従量料金</th>
+                <th class="py-2 px-3 text-right">燃料費調整</th>
+                <th class="py-2 px-3 text-right">その他費用</th>
+                <th class="py-2 px-3 text-right">合計金額</th>
+                <th class="py-2 px-3 text-center">ステータス</th>
+                <th class="py-2 px-3 text-center">操作</th>
+              </tr>
+            </thead>
+            <tbody class="text-sm divide-y">
+              <!-- 選択された行（編集中） -->
+              <tr class="hover:bg-blue-50 cursor-pointer bg-blue-50 border-l-4 border-blue-500">
+                <td class="py-2 px-3">2025年5月</td>
+                <td class="py-2 px-3 text-right">1,280</td>
+                <td class="py-2 px-3 text-right">1,800円</td>
+                <td class="py-2 px-3 text-right">28,800円</td>
+                <td class="py-2 px-3 text-right">3,200円</td>
+                <td class="py-2 px-3 text-right">0円</td>
+                <td class="py-2 px-3 text-right font-bold">33,800円</td>
+                <td class="py-2 px-3 text-center">
+                  <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">確定済</span>
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <button class="text-blue-600 hover:underline">編集中</button>
+                </td>
+              </tr>
+              <!-- 普通の行 -->
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="py-2 px-3">2025年4月</td>
+                <td class="py-2 px-3 text-right">1,350</td>
+                <td class="py-2 px-3 text-right">1,800円</td>
+                <td class="py-2 px-3 text-right">30,375円</td>
+                <td class="py-2 px-3 text-right">3,375円</td>
+                <td class="py-2 px-3 text-right">0円</td>
+                <td class="py-2 px-3 text-right font-bold">35,550円</td>
+                <td class="py-2 px-3 text-center">
+                  <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">確定済</span>
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <button class="text-blue-600 hover:underline">詳細</button>
+                </td>
+              </tr>
+              <!-- 再計算必要な行 -->
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="py-2 px-3">2025年3月</td>
+                <td class="py-2 px-3 text-right">1,420</td>
+                <td class="py-2 px-3 text-right">1,800円</td>
+                <td class="py-2 px-3 text-right">31,950円</td>
+                <td class="py-2 px-3 text-right">3,550円</td>
+                <td class="py-2 px-3 text-right">15,000円</td>
+                <td class="py-2 px-3 text-right font-bold">52,300円</td>
+                <td class="py-2 px-3 text-center">
+                  <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">再計算必要</span>
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <button class="text-blue-600 hover:underline">詳細</button>
+                </td>
+              </tr>
+              <!-- 確認中の行 -->
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="py-2 px-3">2025年2月</td>
+                <td class="py-2 px-3 text-right">1,520</td>
+                <td class="py-2 px-3 text-right">1,800円</td>
+                <td class="py-2 px-3 text-right">34,200円</td>
+                <td class="py-2 px-3 text-right">3,800円</td>
+                <td class="py-2 px-3 text-right">0円</td>
+                <td class="py-2 px-3 text-right font-bold">39,800円</td>
+                <td class="py-2 px-3 text-center">
+                  <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">確認中</span>
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <button class="text-blue-600 hover:underline">詳細</button>
+                </td>
+              </tr>
+              <!-- 他の行（背景なし） -->
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="py-2 px-3">2025年1月</td>
+                <td class="py-2 px-3 text-right">1,650</td>
+                <td class="py-2 px-3 text-right">1,800円</td>
+                <td class="py-2 px-3 text-right">37,125円</td>
+                <td class="py-2 px-3 text-right">4,125円</td>
+                <td class="py-2 px-3 text-right">0円</td>
+                <td class="py-2 px-3 text-right font-bold">43,050円</td>
+                <td class="py-2 px-3 text-center">
+                  <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">確定済</span>
+                </td>
+                <td class="py-2 px-3 text-center">
+                  <button class="text-blue-600 hover:underline">詳細</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flex justify-between items-center mt-4">
+          <div>
+            <span class="text-sm text-gray-600">1-5 / 36件</span>
+          </div>
+          <div class="flex gap-2">
+            <button class="px-3 py-1 border rounded bg-gray-100">前へ</button>
+            <button class="px-3 py-1 border rounded bg-gray-100">次へ</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 使用量トレンドグラフ -->
+      <section class="bg-white p-4 rounded-xl shadow">
+        <h2 class="text-lg font-semibold mb-3">使用量・請求額推移</h2>
+        <div class="h-64">
+          <canvas id="usageChart"></canvas>
+        </div>
+        <script>
+          // グラフデータサンプル
+          const ctx = document.getElementById('usageChart').getContext('2d');
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: ['2025年1月', '2025年2月', '2025年3月', '2025年4月', '2025年5月'],
+              datasets: [
+                {
+                  label: '使用量 (kWh)',
+                  data: [1650, 1520, 1420, 1350, 1280],
+                  borderColor: '#3B82F6',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  yAxisID: 'y',
+                },
+                {
+                  label: '請求額 (円)',
+                  data: [43050, 39800, 52300, 35550, 33800],
+                  borderColor: '#10B981',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  yAxisID: 'y1',
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  type: 'linear',
+                  position: 'left',
+                  title: {
+                    display: true,
+                    text: '使用量 (kWh)'
+                  }
+                },
+                y1: {
+                  beginAtZero: true,
+                  type: 'linear',
+                  position: 'right',
+                  grid: {
+                    drawOnChartArea: false,
+                  },
+                  title: {
+                    display: true,
+                    text: '請求額 (円)'
+                  }
+                }
+              }
+            }
+          });
+        </script>
+      </section>
+    </div>
+
+    <!-- 右側：詳細編集パネル -->
+    <div class="w-full lg:w-2/5">
+      <!-- 詳細編集セクション -->
+      <section class="bg-blue-50 p-4 rounded-xl shadow mb-4 border-l-4 border-blue-500">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="text-lg font-semibold">請求詳細編集</h2>
+          <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">確定済</span>
+        </div>
+        <div class="mb-4">
+          <p class="text-sm text-gray-600 mb-2">対象期間：2025年5月（2025/5/1 - 2025/5/31）</p>
+          <p class="text-sm text-gray-600">顧客名：株式会社ABCエナジー / 福岡第1センター</p>
+        </div>
+
+        <!-- 使用量と単価情報 -->
+        <div class="bg-white p-3 rounded-lg mb-4">
+          <h3 class="font-medium mb-2">使用量と単価情報</h3>
+          <div class="grid grid-cols-2 gap-4 mb-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">検針日</label>
+              <input type="date" class="w-full border rounded p-2" value="2025-05-31">
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">使用日数</label>
+              <input type="number" class="w-full border rounded p-2" value="31">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="block text-sm text-gray-600 mb-1">使用量 (kWh)</label>
+            <input type="number" class="w-full border rounded p-2" value="1280">
+            <p class="text-xs text-gray-500 mt-1">前回比: -5.2% / 平均: 1,444kWh</p>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">基本料金単価</label>
+              <input type="number" class="w-full border rounded p-2 bg-gray-100" value="1800" readonly>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">従量料金単価</label>
+              <input type="number" class="w-full border rounded p-2 bg-gray-100" value="22.50" readonly>
+            </div>
+          </div>
+        </div>
+
+        <!-- 料金計算 -->
+        <div class="bg-white p-3 rounded-lg mb-4">
+          <h3 class="font-medium mb-2">料金計算</h3>
+          <div class="grid grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">基本料金</label>
+              <input type="number" class="w-full border rounded p-2" value="1800">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm text-gray-600 mb-1">計算式</label>
+              <input type="text" class="w-full border rounded p-2 bg-gray-100" value="固定額: 1,800円" readonly>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-4 mt-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">従量料金</label>
+              <input type="number" class="w-full border rounded p-2" value="28800">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm text-gray-600 mb-1">計算式</label>
+              <input type="text" class="w-full border rounded p-2 bg-gray-100" value="1,280kWh × 22.50円 = 28,800円" readonly>
+            </div>
+          </div>
+          <div class="grid grid-cols-3 gap-4 mt-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">燃料費調整</label>
+              <input type="number" class="w-full border rounded p-2" value="3200">
+            </div>
+            <div class="col-span-2">
+              <label class="block text-sm text-gray-600 mb-1">計算式</label>
+              <input type="text" class="w-full border rounded p-2 bg-gray-100" value="1,280kWh × 2.50円 = 3,200円" readonly>
+            </div>
+          </div>
+        </div>
+
+        <!-- 特別項目（追加料金等） -->
+        <div class="bg-white p-3 rounded-lg mb-4">
+          <div class="flex justify-between items-center mb-2">
+            <h3 class="font-medium">特別項目（追加料金等）</h3>
+            <button class="text-blue-600 text-sm hover:underline">+ 追加</button>
+          </div>
+          <div class="bg-yellow-50 p-2 rounded-lg mb-3">
+            <div class="grid grid-cols-3 gap-2 mb-2">
+              <div class="col-span-2">
+                <label class="block text-xs text-gray-600 mb-1">項目名</label>
+                <input type="text" class="w-full border rounded p-1 text-sm" placeholder="設備工事費等">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-600 mb-1">金額</label>
+                <input type="number" class="w-full border rounded p-1 text-sm" placeholder="0">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-600 mb-1">備考</label>
+              <input type="text" class="w-full border rounded p-1 text-sm" placeholder="特別項目の内容や理由等">
+            </div>
+          </div>
+          <div class="text-sm text-gray-500 italic">
+            特別項目はありません。必要に応じて追加してください。
+          </div>
+        </div>
+
+        <!-- 合計金額・メモ -->
+        <div class="bg-white p-3 rounded-lg mb-4">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-medium">合計金額</h3>
+            <button class="bg-blue-600 text-white px-3 py-1 text-sm rounded">再計算</button>
+          </div>
+          <div class="grid grid-cols-2 gap-4 mb-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">税抜合計</label>
+              <input type="number" class="w-full border rounded p-2 font-bold bg-gray-100" value="33800" readonly>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">消費税（10%）</label>
+              <input type="number" class="w-full border rounded p-2 bg-gray-100" value="3380" readonly>
+            </div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-sm text-gray-600 mb-1">税込合計</label>
+            <input type="number" class="w-full border rounded p-2 font-bold text-lg bg-gray-100 text-blue-700" value="37180" readonly>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">備考・修正理由</label>
+            <textarea class="w-full border rounded p-2" rows="2" placeholder="請求内容の備考や修正理由を入力"></textarea>
+          </div>
+        </div>
+
+        <!-- 差額シミュレーション -->
+        <div class="bg-white p-3 rounded-lg mb-4 border border-blue-200">
+          <h3 class="font-medium mb-2 text-blue-700">差額シミュレーション</h3>
+          <div class="grid grid-cols-2 gap-4 mb-3">
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">修正前</label>
+              <input type="number" class="w-full border rounded p-2 bg-gray-100" value="33800" readonly>
+            </div>
+            <div>
+              <label class="block text-sm text-gray-600 mb-1">修正後</label>
+              <input type="number" class="w-full border rounded p-2 bg-gray-100" value="33800" readonly>
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-gray-600 mb-1">差額</label>
+            <input type="number" class="w-full border rounded p-2 bg-gray-100 font-bold" value="0" readonly>
+          </div>
+        </div>
+
+        <!-- 変更履歴 -->
+        <div class="bg-white p-3 rounded-lg mb-4">
+          <h3 class="font-medium mb-2">変更履歴</h3>
+          <div class="max-h-40 overflow-y-auto text-sm">
+            <div class="mb-2 pb-2 border-b">
+              <div class="flex justify-between">
+                <span class="font-medium">2025/05/15 10:23</span>
+                <span class="text-gray-600">山田太郎</span>
+              </div>
+              <p class="text-gray-700">初回請求データ作成・確定</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="flex justify-between">
+          <button class="bg-red-600 text-white px-4 py-2 rounded">キャンセル</button>
+          <div>
+            <button class="bg-blue-600 text-white px-4 py-2 rounded">一時保存</button>
+            <button class="bg-green-600 text-white px-4 py-2 rounded ml-2">確定</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

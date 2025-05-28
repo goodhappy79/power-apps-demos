@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業案件進捗管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* カスタムアニメーション */
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.7; }
+      100% { opacity: 1; }
+    }
+    
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    
+    /* フェーズ進捗スタイル */
+    .phase-bar-container {
+      position: relative;
+      height: 4px;
+      background-color: #e5e7eb;
+    }
+    
+    .phase-bar-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background-color: #2563eb;
+    }
+    
+    .phase-indicator.completed {
+      background-color: #2563eb;
+      color: white;
+      border-color: #2563eb;
+    }
+    
+    .phase-indicator.active {
+      border-color: #2563eb;
+      color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    
+    /* タイムライン要素スタイル */
+    .timeline-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+    }
+    
+    .timeline-dot.completed {
+      background-color: #2563eb;
+    }
+    
+    .timeline-dot.in-progress {
+      background-color: white;
+      border: 2px solid #2563eb;
+    }
+    
+    .timeline-dot.planned {
+      background-color: #e5e7eb;
+      border: 1px solid #9ca3af;
+    }
+    
+    .timeline-dot.delayed {
+      background-color: #ef4444;
+    }
+    
+    .timeline-line {
+      width: 2px;
+      background-color: #e5e7eb;
+    }
+    
+    /* アクションアイテムスタイル */
+    .action-item {
+      transition: all 0.2s ease;
+    }
+    
+    .action-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+    }
+    
+    /* チームメンバーアバタースタイル */
+    .avatar-badge {
+      position: absolute;
+      bottom: -3px;
+      right: -3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: #10b981;
+      border: 2px solid white;
+    }
+    
+    /* ドキュメントアイコンスタイル */
+    .doc-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .doc-icon.pdf {
+      background-color: #fee2e2;
+      color: #dc2626;
+    }
+    
+    .doc-icon.excel {
+      background-color: #dcfce7;
+      color: #16a34a;
+    }
+    
+    .doc-icon.word {
+      background-color: #dbeafe;
+      color: #2563eb;
+    }
+    
+    .doc-icon.ppt {
+      background-color: #ffedd5;
+      color: #ea580c;
+    }
+    
+    /* モバイル用追加スタイル */
+    @media (max-width: 768px) {
+      .phase-label {
+        font-size: 0.7rem;
+      }
+      
+      .phase-date {
+        font-size: 0.65rem;
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+  <!-- ヘッダー部分 -->
+  <header class="bg-blue-800 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center">
+        <h1 class="text-xl font-bold">営業活動支援システム</h1>
+        <span class="ml-4 bg-blue-700 px-3 py-1 rounded-full text-sm">営業部門</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="p-2 relative">
+          <i class="fas fa-bell text-xl"></i>
+          <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+        </button>
+        <span class="hidden md:inline">山田 健太郎</span>
+        <div class="w-10 h-10 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">YK</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- パンくずナビ -->
+  <div class="bg-white border-b px-4 py-2">
+    <div class="container mx-auto">
+      <div class="flex items-center text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800">ホーム</a>
+        <i class="fas fa-chevron-right text-gray-400 mx-2 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800">案件一覧</a>
+        <i class="fas fa-chevron-right text-gray-400 mx-2 text-xs"></i>
+        <span class="text-gray-600 font-medium">S-2025-0123 進捗管理</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- メインコンテンツ -->
+  <main class="container mx-auto px-4 py-6">
+    <!-- 優先アクションセクション -->
+    <div class="bg-white rounded-lg shadow mb-6">
+      <div class="flex justify-between items-center p-4 border-b">
+        <div class="flex items-center">
+          <span class="text-red-500 text-xl mr-2"><i class="fas fa-bolt"></i></span>
+          <h2 class="text-lg font-semibold">優先アクション</h2>
+          <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
+        </div>
+        <button class="bg-blue-50 text-blue-600 hover:bg-blue-100 px-3 py-1.5 rounded-md text-sm font-medium flex items-center">
+          <i class="fas fa-plus mr-1.5"></i> 追加
+        </button>
+      </div>
+      <div class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <!-- 優先アクション1 -->
+        <div class="border-l-4 border-red-500 bg-red-50 rounded-r-md p-3 action-item">
+          <div class="font-medium flex justify-between">
+            <div>ABC工場見積書V1.2承認フォローアップ</div>
+            <span class="text-red-600 text-sm font-semibold">残り2日</span>
+          </div>
+          <div class="text-sm text-gray-600 mt-1 mb-2">修正見積書の承認状況を確認し、必要に応じて追加説明を実施</div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-gray-500">期限: 2025/05/20</span>
+            <button class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded">対応する</button>
+          </div>
+        </div>
+        
+        <!-- 優先アクション2 -->
+        <div class="border-l-4 border-amber-500 bg-amber-50 rounded-r-md p-3 action-item">
+          <div class="font-medium flex justify-between">
+            <div>技術部との仕様確認ミーティング</div>
+            <span class="text-amber-600 text-sm font-semibold">残り1時間</span>
+          </div>
+          <div class="text-sm text-gray-600 mt-1 mb-2">空調設備の省エネ効果計算と設置スケジュールの詳細確認</div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-gray-500">2025/05/18 13:30</span>
+            <button class="bg-amber-500 hover:bg-amber-600 text-white text-xs px-3 py-1 rounded">参加する</button>
+          </div>
+        </div>
+        
+        <!-- 優先アクション3 -->
+        <div class="border-l-4 border-green-500 bg-green-50 rounded-r-md p-3 action-item">
+          <div class="font-medium flex justify-between">
+            <div>補助金申請サポート資料準備</div>
+            <span class="text-green-600 text-sm font-semibold">残り7日</span>
+          </div>
+          <div class="text-sm text-gray-600 mt-1 mb-2">顧客が活用できる省エネ補助金の申請に必要な技術資料をまとめる</div>
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-gray-500">期限: 2025/05/25</span>
+            <button class="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded">対応する</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 案件情報カード -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- 案件基本情報 -->
+      <div class="lg:col-span-2 bg-white rounded-lg shadow p-5">
+        <div class="flex flex-col md:flex-row justify-between mb-4">
+          <div>
+            <h2 class="text-xl font-bold text-blue-800">ABC工場省エネ設備導入</h2>
+            <p class="text-gray-600">案件ID: S-2025-0123 | 株式会社ABC工業</p>
+          </div>
+          <div class="mt-2 md:mt-0 bg-blue-50 text-blue-800 px-3 py-1 rounded-full text-sm font-medium self-start">
+            見積提案フェーズ
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+          <div>
+            <div class="text-sm text-gray-500">提案金額</div>
+            <div class="font-semibold">8,000万円</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">受注確度</div>
+            <div class="flex items-center">
+              <span class="font-semibold text-green-600">65%</span>
+              <span class="text-sm text-green-600 ml-2">(+25%)</span>
+            </div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">見込み受注時期</div>
+            <div class="font-semibold">2025年7月15日</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">主要コンタクト</div>
+            <div class="font-semibold">鈴木部長（設備管理部）</div>
+          </div>
+          <div class="md:col-span-2">
+            <div class="text-sm text-gray-500 mb-1">現状</div>
+            <div class="bg-blue-50 p-3 rounded-md text-sm">
+              顧客に修正見積書Ver.1.2を提出し、価格調整中。技術部と連携して詳細仕様の確認を進めています。顧客からの次回フィードバックは5/20の予定です。
+              <div class="flex flex-wrap gap-2 mt-2">
+                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full">提案評価中</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full">競合あり</span>
+                <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full">省エネ効果計算済</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 重要日程 -->
+      <div class="bg-white rounded-lg shadow p-5">
+        <h3 class="text-lg font-semibold mb-4">重要日程</h3>
+        <div class="space-y-4">
+          <div>
+            <div class="text-sm text-gray-500">現在のフェーズ開始日</div>
+            <div class="font-medium">2025年5月10日</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">見積調整期限</div>
+            <div class="font-medium">2025年5月25日</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">成約予定日</div>
+            <div class="font-medium">2025年6月30日</div>
+          </div>
+          <div>
+            <div class="text-sm text-gray-500">サービス開始予定</div>
+            <div class="font-medium">2025年10月15日</div>
+          </div>
+          <div class="bg-blue-50 p-3 rounded-md flex items-center justify-center text-blue-800 font-medium">
+            <i class="far fa-clock mr-2"></i> 次回アクション期限まで <span class="font-bold ml-1">残り2日</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- フェーズ進捗バー (8段階) -->
+    <div class="bg-white rounded-lg shadow p-5 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold">営業フェーズ進捗</h3>
+        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+          <i class="fas fa-history mr-1"></i> 履歴表示
+        </button>
+      </div>
+      
+      <!-- プログレスバー -->
+      <div class="mb-8 relative">
+        <div class="phase-bar-container rounded-full">
+          <div class="phase-bar-progress rounded-full" style="width: 62.5%;"></div>
+        </div>
+        <div class="flex justify-between mt-2">
+          <div class="flex items-center justify-center w-6 h-6 rounded-full bg-white border-2 border-blue-600 -ml-3 relative">
+            <div class="absolute -bottom-8 whitespace-nowrap text-xs text-center w-16 -left-5">
+              <div class="phase-label">開始</div>
+            </div>
+          </div>
+          <div class="flex items-center justify-center w-6 h-6 rounded-full bg-white border-2 border-blue-600 relative">
+            <div class="absolute -bottom-8 whitespace-nowrap text-xs text-center w-16 -left-5">
+              <div class="phase-label">完了</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-4 md:grid-cols-8 gap-2">
+        <!-- フェーズ1: 案件発掘 -->
+        <div class="text-center">
+          <div class="phase-indicator completed w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm border-2">
+            <i class="fas fa-check"></i>
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-medium">案件発掘</div>
+            <div class="phase-date text-xs text-gray-500">4/10完了</div>
+          </div>
+        </div>
+        
+        <!-- フェーズ2: 調査・分析 -->
+        <div class="text-center">
+          <div class="phase-indicator completed w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm border-2">
+            <i class="fas fa-check"></i>
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-medium">調査・分析</div>
+            <div class="phase-date text-xs text-gray-500">4/18完了</div>
+          </div>
+        </div>
+        
+        <!-- フェーズ3: 概算提案 -->
+        <div class="text-center">
+          <div class="phase-indicator completed w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm border-2">
+            <i class="fas fa-check"></i>
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-medium">概算提案</div>
+            <div class="phase-date text-xs text-gray-500">4/25完了</div>
+          </div>
+        </div>
+        
+        <!-- フェーズ4: 見積作成 -->
+        <div class="text-center">
+          <div class="phase-indicator completed w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm border-2">
+            <i class="fas fa-check"></i>
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-medium">見積作成</div>
+            <div class="phase-date text-xs text-gray-500">5/8完了</div>
+          </div>
+        </div>
+        
+        <!-- フェーズ5: 提案活動 (現在のフェーズ) -->
+        <div class="text-center">
+          <div class="phase-indicator active pulse-animation w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm font-semibold border-2">
+            5
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-semibold text-blue-600">提案活動</div>
+            <div class="phase-date text-xs text-blue-600">進行中</div>
+          </div>
+        </div>
+        
+        <!-- フェーズ6: 交渉段階 -->
+        <div class="text-center">
+          <div class="phase-indicator w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm border-2 border-gray-300 text-gray-400">
+            6
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-medium text-gray-400">交渉段階</div>
+            <div class="phase-date text-xs text-gray-400">予定6/15</div>
+          </div>
+        </div>
+        
+        <!-- フェーズ7: 成約処理 -->
+        <div class="text-center">
+          <div class="phase-indicator w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm border-2 border-gray-300 text-gray-400">
+            7
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-medium text-gray-400">成約処理</div>
+            <div class="phase-date text-xs text-gray-400">予定7/1</div>
+          </div>
+        </div>
+        
+        <!-- フェーズ8: 契約完了 -->
+        <div class="text-center">
+          <div class="phase-indicator w-10 h-10 mx-auto rounded-full flex items-center justify-center text-sm border-2 border-gray-300 text-gray-400">
+            8
+          </div>
+          <div class="mt-2">
+            <div class="phase-label text-xs font-medium text-gray-400">契約完了</div>
+            <div class="phase-date text-xs text-gray-400">予定7/15</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 現在フェーズの詳細 -->
+      <div class="mt-6 bg-blue-50 p-4 rounded-md">
+        <h4 class="font-semibold mb-2">提案活動フェーズ - 現在の状況</h4>
+        <p class="text-sm text-gray-700 mb-3">
+          顧客へ正式提案書と見積書を提出し、先方での検討が進行中です。先週のフォローアップで前向きな反応を得ており、技術詳細の追加説明を準備中。見積書V1.2の修正版を提出予定です。
+        </p>
+        <div class="flex flex-wrap gap-2">
+          <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded">競合あり</span>
+          <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">顧客検討中</span>
+          <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">技術資料追加中</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- メイン2カラムレイアウト -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 左側コンテンツ -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- タイムラインスケジュール -->
+        <div class="bg-white rounded-lg shadow p-5 overflow-hidden">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">案件タイムライン</h3>
+            <div class="flex gap-2">
+              <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-1 rounded-md flex items-center">
+                <i class="fas fa-calendar-alt mr-1.5"></i> スケジュール
+              </button>
+              <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm px-3 py-1 rounded-md flex items-center">
+                <i class="fas fa-edit mr-1.5"></i> 編集
+              </button>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto pb-3">
+            <div class="min-w-[800px]">
+              <!-- スケジュールバー -->
+              <div class="relative h-8 mb-4">
+                <div class="absolute top-4 left-0 right-0 h-0.5 bg-gray-300"></div>
+                <div class="absolute top-4 left-0 w-[40%] h-0.5 bg-blue-500"></div>
+                <div class="absolute top-0 left-[40%] w-0.5 h-8 bg-blue-500"></div>
+                
+                <!-- フェーズマーク -->
+                <div class="absolute top-8 left-0 text-xs text-gray-500 font-medium">営業フェーズ</div>
+                <div class="absolute top-8 left-[55%] text-xs text-gray-500 font-medium">工事・サービスフェーズ</div>
+              </div>
+              
+              <!-- タイムラインマイルストーン -->
+              <div class="flex justify-between">
+                <!-- マイルストーン1 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot completed mx-auto mb-2"></div>
+                  <div class="text-xs font-medium">概算提出</div>
+                  <div class="text-xs text-gray-500">計画: 4/15</div>
+                  <div class="text-xs text-green-600 font-medium">実績: 4/12</div>
+                </div>
+                
+                <!-- マイルストーン2 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot completed mx-auto mb-2"></div>
+                  <div class="text-xs font-medium">提案承認</div>
+                  <div class="text-xs text-gray-500">計画: 4/30</div>
+                  <div class="text-xs text-green-600 font-medium">実績: 4/28</div>
+                </div>
+                
+                <!-- マイルストーン3 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot completed mx-auto mb-2"></div>
+                  <div class="text-xs font-medium">提案提出</div>
+                  <div class="text-xs text-gray-500">計画: 5/10</div>
+                  <div class="text-xs text-green-600 font-medium">実績: 5/10</div>
+                </div>
+                
+                <!-- マイルストーン4 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot in-progress mx-auto mb-2"></div>
+                  <div class="text-xs font-medium text-blue-600">成約</div>
+                  <div class="text-xs text-gray-500">計画: 6/30</div>
+                  <div class="text-xs text-blue-600">予定</div>
+                </div>
+                
+                <!-- マイルストーン5 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot planned mx-auto mb-2"></div>
+                  <div class="text-xs font-medium">契約</div>
+                  <div class="text-xs text-gray-500">計画: 7/15</div>
+                  <div class="text-xs text-gray-400">予定</div>
+                </div>
+                
+                <!-- マイルストーン6 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot planned mx-auto mb-2"></div>
+                  <div class="text-xs font-medium">工事開始</div>
+                  <div class="text-xs text-gray-500">計画: 8/1</div>
+                  <div class="text-xs text-gray-400">予定</div>
+                </div>
+                
+                <!-- マイルストーン7 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot planned mx-auto mb-2"></div>
+                  <div class="text-xs font-medium">工事完了</div>
+                  <div class="text-xs text-gray-500">計画: 9/30</div>
+                  <div class="text-xs text-gray-400">予定</div>
+                </div>
+                
+                <!-- マイルストーン8 -->
+                <div class="text-center w-[12.5%]">
+                  <div class="timeline-dot planned mx-auto mb-2"></div>
+                  <div class="text-xs font-medium">サービス開始</div>
+                  <div class="text-xs text-gray-500">計画: 10/15</div>
+                  <div class="text-xs text-gray-400">予定</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 活動履歴 -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">活動履歴</h3>
+            <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-md text-sm flex items-center">
+              <i class="fas fa-plus mr-1.5"></i> 新規記録
+            </button>
+          </div>
+          
+          <div class="space-y-6">
+            <!-- 日付グループ -->
+            <div>
+              <div class="text-sm font-medium text-gray-500 mb-3 border-l-2 border-blue-500 pl-2">2025年5月13日</div>
+              <div class="space-y-4">
+                <!-- 活動記録1 -->
+                <div class="flex gap-3">
+                  <div class="flex-shrink-0 w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-file-alt"></i>
+                  </div>
+                  <div class="flex-grow bg-gray-50 p-3 rounded-lg">
+                    <div class="text-xs text-gray-500 mb-1">15:30</div>
+                    <div class="text-sm mb-2">
+                      見積書Ver.1.2を作成し、社内承認申請を提出しました。
+                      空調設備の仕様を高効率タイプに変更し、金額を修正しています。
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <span class="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded">見積書作成</span>
+                      <span class="text-xs text-gray-500">佐藤一郎（営業部）</span>
+                    </div>
+                    <div class="mt-2 bg-blue-50 p-2 rounded text-xs text-blue-700">
+                      <i class="fas fa-robot mr-1.5"></i>
+                      自動処理: 承認フローが開始されました（承認待ち）
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 日付グループ -->
+            <div>
+              <div class="text-sm font-medium text-gray-500 mb-3 border-l-2 border-blue-500 pl-2">2025年5月12日</div>
+              <div class="space-y-4">
+                <!-- 活動記録2 -->
+                <div class="flex gap-3">
+                  <div class="flex-shrink-0 w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-phone-alt"></i>
+                  </div>
+                  <div class="flex-grow bg-gray-50 p-3 rounded-lg">
+                    <div class="text-xs text-gray-500 mb-1">11:15</div>
+                    <div class="text-sm mb-2">
+                      ABC工業 鈴木部長と電話会議を実施。空調設備について高効率タイプへの変更を要望されました。
+                      予算は10%増までなら検討可能とのこと。競合他社も提案している模様。
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <span class="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">電話</span>
+                      <span class="text-xs text-gray-500">佐藤一郎（営業部）</span>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      <button class="text-xs flex items-center gap-1 bg-white border border-gray-300 hover:bg-gray-50 rounded-md px-2 py-1 text-gray-700">
+                        <i class="fas fa-file-alt"></i> 通話メモ
+                      </button>
+                      <button class="text-xs flex items-center gap-1 bg-white border border-gray-300 hover:bg-gray-50 rounded-md px-2 py-1 text-gray-700">
+                        <i class="fas fa-share-alt"></i> 技術部へ共有
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 活動記録3 -->
+                <div class="flex gap-3">
+                  <div class="flex-shrink-0 w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
+                    <i class="fas fa-calculator"></i>
+                  </div>
+                  <div class="flex-grow bg-gray-50 p-3 rounded-lg">
+                    <div class="text-xs text-gray-500 mb-1">09:30</div>
+                    <div class="text-sm mb-2">
+                      技術部から空調設備の省エネ効果計算書を受領。年間電気代約15%削減の見込みを確認。
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                      <span class="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">技術サポート</span>
+                      <span class="text-xs text-gray-500">田中修一（技術部）</span>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                      <button class="text-xs flex items-center gap-1 bg-white border border-gray-300 hover:bg-gray-50 rounded-md px-2 py-1 text-gray-700">
+                        <i class="fas fa-file-excel"></i> 計算書
+                      </button>
+                      <button class="text-xs flex items-center gap-1 bg-white border border-gray-300 hover:bg-gray-50 rounded-md px-2 py-1 text-gray-700">
+                        <i class="fas fa-chart-bar"></i> 技術資料
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 履歴をもっと見る -->
+          <div class="mt-4 text-center">
+            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center mx-auto">
+              すべての履歴を表示 <i class="fas fa-chevron-down ml-1"></i>
+            </button>
+          </div>
+          
+          <!-- 新規活動記録フォーム -->
+          <div class="mt-6 pt-6 border-t border-gray-200">
+            <h4 class="text-base font-semibold mb-4">新規活動記録</h4>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">活動内容</label>
+                <textarea class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" placeholder="活動内容を入力してください..."></textarea>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">活動種別</label>
+                  <select class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option>電話</option>
+                    <option>メール</option>
+                    <option>訪問</option>
+                    <option>会議</option>
+                    <option>資料作成</option>
+                    <option>その他</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">次回アクション日</label>
+                  <input type="date" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+              </div>
+              <div class="flex justify-end gap-3">
+                <button class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none">
+                  キャンセル
+                </button>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                  <i class="fas fa-save mr-1.5"></i> 保存
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右側サイドバー -->
+      <div class="space-y-6">
+        <!-- 売上・利益予測 -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <h3 class="text-lg font-semibold mb-4">売上・利益予測</h3>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-blue-50 p-3 rounded-md">
+              <div class="text-xs text-gray-500">見込み売上</div>
+              <div class="text-lg font-semibold flex items-center">
+                8,000万円
+                <span class="text-green-600 text-xs ml-1">↑5%</span>
+              </div>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-md">
+              <div class="text-xs text-gray-500">見込み利益</div>
+              <div class="text-lg font-semibold flex items-center">
+                1,600万円
+                <span class="text-red-600 text-xs ml-1">↓2%</span>
+              </div>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-md">
+              <div class="text-xs text-gray-500">粗利率</div>
+              <div class="text-lg font-semibold">20.0%</div>
+            </div>
+            <div class="bg-blue-50 p-3 rounded-md">
+              <div class="text-xs text-gray-500">受注確度</div>
+              <div class="text-lg font-semibold text-green-600">65%</div>
+            </div>
+          </div>
+          <div class="text-xs text-gray-500 italic">※ 前回見積りからの高効率タイプ変更による利益率の変動あり</div>
+        </div>
+        
+        <!-- 案件チーム -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <h3 class="text-lg font-semibold mb-4">案件チーム</h3>
+          <div class="space-y-3">
+            <!-- チームメンバー1 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md">
+              <div class="relative mr-3">
+                <div class="w-10 h-10 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center font-semibold">
+                  SI
+                </div>
+                <div class="avatar-badge"></div>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm">佐藤一郎</div>
+                <div class="text-xs text-gray-500">営業部 / 案件責任者</div>
+              </div>
+              <div class="flex gap-1">
+                <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                  <i class="fas fa-envelope"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                  <i class="fas fa-phone"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- チームメンバー2 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md">
+              <div class="relative mr-3">
+                <div class="w-10 h-10 bg-green-100 text-green-800 rounded-full flex items-center justify-center font-semibold">
+                  TM
+                </div>
+                <div class="avatar-badge bg-gray-300"></div>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm">田中修一</div>
+                <div class="text-xs text-gray-500">技術部 / 設計担当</div>
+              </div>
+              <div class="flex gap-1">
+                <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                  <i class="fas fa-envelope"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                  <i class="fas fa-phone"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- チームメンバー3 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md">
+              <div class="relative mr-3">
+                <div class="w-10 h-10 bg-purple-100 text-purple-800 rounded-full flex items-center justify-center font-semibold">
+                  YK
+                </div>
+                <div class="avatar-badge bg-gray-300"></div>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm">山本和子</div>
+                <div class="text-xs text-gray-500">経理部 / サポート</div>
+              </div>
+              <div class="flex gap-1">
+                <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                  <i class="fas fa-envelope"></i>
+                </button>
+                <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                  <i class="fas fa-phone"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- メンバー追加ボタン -->
+            <button class="mt-2 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm flex items-center justify-center">
+              <i class="fas fa-user-plus mr-1.5"></i> メンバー追加
+            </button>
+          </div>
+        </div>
+        
+        <!-- 関連ドキュメント -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold">関連ドキュメント</h3>
+            <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+              <i class="fas fa-upload"></i>
+            </button>
+          </div>
+          <div class="space-y-3">
+            <!-- ドキュメント1 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition cursor-pointer">
+              <div class="doc-icon pdf mr-3">
+                <i class="far fa-file-pdf"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm truncate">提案書_ABC工場_v1.0.pdf</div>
+                <div class="text-xs text-gray-500">2025/05/10 | 4.2MB</div>
+              </div>
+              <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+            
+            <!-- ドキュメント2 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition cursor-pointer">
+              <div class="doc-icon pdf mr-3">
+                <i class="far fa-file-pdf"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm truncate">見積書_ABC工場_v1.2.pdf</div>
+                <div class="text-xs text-gray-500">2025/05/13 | 1.8MB</div>
+              </div>
+              <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+            
+            <!-- ドキュメント3 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition cursor-pointer">
+              <div class="doc-icon excel mr-3">
+                <i class="far fa-file-excel"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm truncate">省エネ効果計算書.xlsx</div>
+                <div class="text-xs text-gray-500">2025/05/12 | 2.3MB</div>
+              </div>
+              <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+            
+            <!-- ドキュメント4 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition cursor-pointer">
+              <div class="doc-icon word mr-3">
+                <i class="far fa-file-word"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm truncate">競合分析レポート.docx</div>
+                <div class="text-xs text-gray-500">2025/05/05 | 1.1MB</div>
+              </div>
+              <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+            
+            <!-- ドキュメント5 -->
+            <div class="flex items-center p-2 bg-gray-50 rounded-md hover:bg-gray-100 transition cursor-pointer">
+              <div class="doc-icon ppt mr-3">
+                <i class="far fa-file-powerpoint"></i>
+              </div>
+              <div class="flex-grow">
+                <div class="font-medium text-sm truncate">顧客プレゼン資料.pptx</div>
+                <div class="text-xs text-gray-500">2025/05/10 | 5.4MB</div>
+              </div>
+              <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- すべてのファイルを表示 -->
+          <div class="mt-3 text-center">
+            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+              すべてのファイルを表示 (12)
+            </button>
+          </div>
+        </div>
+        
+        <!-- アクションボタン -->
+        <div class="bg-white rounded-lg shadow p-5">
+          <div class="grid grid-cols-2 gap-3">
+            <button class="py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium flex items-center justify-center">
+              <i class="fas fa-edit mr-1.5"></i> 案件編集
+            </button>
+            <button class="py-2 bg-green-600 hover:bg-green-700 text-white rounded-md text-sm font-medium flex items-center justify-center">
+              <i class="fas fa-share-alt mr-1.5"></i> 共有
+            </button>
+            <button class="py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium flex items-center justify-center">
+              <i class="fas fa-file-export mr-1.5"></i> エクスポート
+            </button>
+            <button class="py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm font-medium flex items-center justify-center">
+              <i class="fas fa-ellipsis-h"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  
+  <!-- モバイル用フッターナビゲーション -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+    <div class="flex justify-around">
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-blue-600">
+        <i class="fas fa-home text-lg"></i>
+        <span class="text-xs mt-1">ホーム</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-search text-lg"></i>
+        <span class="text-xs mt-1">検索</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-list text-lg"></i>
+        <span class="text-xs mt-1">案件</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-chart-bar text-lg"></i>
+        <span class="text-xs mt-1">分析</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-user text-lg"></i>
+        <span class="text-xs mt-1">設定</span>
+      </a>
+    </div>
+  </nav>
+</body>
+</html>

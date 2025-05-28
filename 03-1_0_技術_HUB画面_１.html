@@ -1,0 +1,522 @@
+<!-- トップセクション：検索バーと日付表示 -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+  <div class="relative w-full md:w-1/2">
+    <input type="text" placeholder="プロジェクト/機器を検索..." class="w-full px-4 py-2 pl-10 pr-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <div class="absolute left-3 top-2.5 text-gray-400">
+      <i class="fas fa-search"></i>
+    </div>
+  </div>
+  <div class="flex items-center gap-4">
+    <div class="text-gray-700 font-medium">
+      <i class="far fa-calendar-alt mr-2"></i>
+      <span>2025年5月19日（月）</span>
+    </div>
+    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+      <i class="fas fa-plus"></i>
+      <span>新規プロジェクト登録</span>
+    </button>
+  </div>
+</div>
+
+<!-- 上部カード：優先アクションとリスクアラート -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <!-- 優先アクション -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold flex items-center">
+        <i class="fas fa-bolt text-amber-500 mr-2"></i> 優先アクション
+        <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">4</span>
+      </h2>
+      <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+        <i class="fas fa-plus mr-1"></i> 追加
+      </a>
+    </div>
+    
+    <!-- 優先アクションリスト -->
+    <div class="space-y-3">
+      <!-- アクション1 -->
+      <div class="border-l-4 border-red-500 rounded p-3 flex justify-between items-center bg-red-50">
+        <div>
+          <div class="font-medium">P-2025-0123 設計図最終承認依頼</div>
+          <div class="text-sm text-gray-600">残り2日（締切：2025/05/21）</div>
+        </div>
+        <a href="#" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">対応する</a>
+      </div>
+      
+      <!-- アクション2 -->
+      <div class="border-l-4 border-amber-500 rounded p-3 flex justify-between items-center bg-amber-50">
+        <div>
+          <div class="font-medium">営業部門からの技術質問（3件）</div>
+          <div class="text-sm text-gray-600">最長3日経過（回答期限：2025/05/20）</div>
+        </div>
+        <a href="#" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-sm">確認する</a>
+      </div>
+      
+      <!-- アクション3 -->
+      <div class="border-l-4 border-amber-500 rounded p-3 flex justify-between items-center bg-amber-50">
+        <div>
+          <div class="font-medium">空調設備発注承認待ち</div>
+          <div class="text-sm text-gray-600">金額：1,200万円（承認期限：2025/05/22）</div>
+        </div>
+        <a href="#" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-sm">承認する</a>
+      </div>
+      
+      <!-- アクション4 -->
+      <div class="border-l-4 border-blue-500 rounded p-3 flex justify-between items-center bg-blue-50">
+        <div>
+          <div class="font-medium">工事点検予定：明日2件</div>
+          <div class="text-sm text-gray-600">DEF産業設備、GHI商事設備</div>
+        </div>
+        <a href="#" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">詳細確認</a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- リスク・遅延アラート -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold flex items-center">
+        <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> リスク・遅延アラート
+        <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
+      </h2>
+      <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">すべて表示</a>
+    </div>
+    
+    <!-- リスク・アラートリスト -->
+    <div class="space-y-4">
+      <!-- リスク1 -->
+      <div class="p-4 rounded border border-gray-200">
+        <div class="flex items-start">
+          <div class="flex-shrink-0 bg-red-100 rounded-full p-2 mr-3">
+            <i class="fas fa-exclamation-circle text-red-500"></i>
+          </div>
+          <div class="flex-grow">
+            <div class="font-medium">P-2025-0087 工事進捗遅延</div>
+            <div class="text-sm text-gray-600">計画比-15%（担当：高橋）</div>
+            <div class="text-sm text-red-500 mt-1">リスク：工期遅延の可能性あり</div>
+          </div>
+          <div>
+            <button class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded text-sm">対策</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- リスク2 -->
+      <div class="p-4 rounded border border-gray-200">
+        <div class="flex items-start">
+          <div class="flex-shrink-0 bg-amber-100 rounded-full p-2 mr-3">
+            <i class="fas fa-exclamation-circle text-amber-500"></i>
+          </div>
+          <div class="flex-grow">
+            <div class="font-medium">P-2025-0092 納期リスク</div>
+            <div class="text-sm text-gray-600">余裕日数：2日（担当：佐藤）</div>
+            <div class="text-sm text-amber-500 mt-1">リスク：空調機器納期遅延の可能性</div>
+          </div>
+          <div>
+            <button class="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1 rounded text-sm">確認</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- リスク3 -->
+      <div class="p-4 rounded border border-gray-200">
+        <div class="flex items-start">
+          <div class="flex-shrink-0 bg-amber-100 rounded-full p-2 mr-3">
+            <i class="fas fa-exclamation-circle text-amber-500"></i>
+          </div>
+          <div class="flex-grow">
+            <div class="font-medium">P-2025-0115 技術図面遅延</div>
+            <div class="text-sm text-gray-600">回答期限超過5日（担当：鈴木）</div>
+            <div class="text-sm text-amber-500 mt-1">リスク：営業提案活動への影響</div>
+          </div>
+          <div>
+            <button class="bg-amber-100 hover:bg-amber-200 text-amber-700 px-3 py-1 rounded text-sm">催促</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- KPI/概要セクション -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <!-- KPI 1 - プロジェクト数 -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="text-sm text-gray-500 mb-1">進行中プロジェクト</div>
+    <div class="text-2xl font-bold">15件</div>
+    <div class="text-xs text-green-500 flex items-center mt-1">
+      <i class="fas fa-arrow-up mr-1"></i> 前月比 +3件
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+      <div class="bg-blue-600 h-1.5 rounded-full" style="width: 75%"></div>
+    </div>
+  </div>
+  
+  <!-- KPI 2 - リソース稼働率 -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="text-sm text-gray-500 mb-1">リソース稼働率</div>
+    <div class="text-2xl font-bold">85%</div>
+    <div class="text-xs text-amber-500 flex items-center mt-1">
+      <i class="fas fa-arrow-up mr-1"></i> 注意: 高負荷エリアあり
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+      <div class="bg-amber-500 h-1.5 rounded-full" style="width: 85%"></div>
+    </div>
+  </div>
+  
+  <!-- KPI 3 - 予定通り進行 -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="text-sm text-gray-500 mb-1">予定通り進行</div>
+    <div class="text-2xl font-bold">92%</div>
+    <div class="text-xs text-green-500 flex items-center mt-1">
+      <i class="fas fa-check-circle mr-1"></i> 目標達成中
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+      <div class="bg-green-500 h-1.5 rounded-full" style="width: 92%"></div>
+    </div>
+  </div>
+  
+  <!-- 今日の予定 -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="text-sm text-gray-500 mb-1">今日の予定</div>
+    <div class="space-y-2 mt-2">
+      <div class="flex items-center text-sm">
+        <span class="bg-blue-100 text-blue-800 rounded-full w-5 h-5 flex items-center justify-center mr-2">
+          <i class="fas fa-users text-xs"></i>
+        </span>
+        <span>9:00 設計MTG</span>
+      </div>
+      <div class="flex items-center text-sm">
+        <span class="bg-green-100 text-green-800 rounded-full w-5 h-5 flex items-center justify-center mr-2">
+          <i class="fas fa-building text-xs"></i>
+        </span>
+        <span>13:30 ABC工場打合せ</span>
+      </div>
+      <div class="flex items-center text-sm">
+        <span class="bg-purple-100 text-purple-800 rounded-full w-5 h-5 flex items-center justify-center mr-2">
+          <i class="fas fa-clipboard-check text-xs"></i>
+        </span>
+        <span>15:00 仕様確認</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 主要機能へのナビゲーション -->
+<h2 class="text-xl font-bold mb-4">技術業務メニュー</h2>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+  <!-- リソース管理カード -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+    <div class="bg-blue-800 text-white p-3 flex justify-between items-center">
+      <h3 class="font-semibold">担当者アサイン・負荷管理</h3>
+      <i class="fas fa-users-cog text-xl"></i>
+    </div>
+    <div class="p-4">
+      <p class="text-gray-600 mb-4">技術担当者の稼働状況確認と最適なリソース配分を行います。スキルマトリクスと負荷バランスを管理します。</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded">過負荷: 3名</span>
+        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">空き工数: 150h/月</span>
+      </div>
+      <a href="#" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded">
+        リソース管理を開く
+      </a>
+    </div>
+  </div>
+  
+  <!-- 工程管理カード -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+    <div class="bg-blue-800 text-white p-3 flex justify-between items-center">
+      <h3 class="font-semibold">工程管理</h3>
+      <i class="fas fa-tasks text-xl"></i>
+    </div>
+    <div class="p-4">
+      <p class="text-gray-600 mb-4">プロジェクトの工程を管理し、進捗状況を可視化します。マイルストーン管理とクリティカルパスを確認できます。</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">予定通り: 12件</span>
+        <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">遅延: 3件</span>
+      </div>
+      <a href="#" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded">
+        工程管理を開く
+      </a>
+    </div>
+  </div>
+  
+  <!-- 発注管理カード -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+    <div class="bg-blue-800 text-white p-3 flex justify-between items-center">
+      <h3 class="font-semibold">発注管理</h3>
+      <i class="fas fa-shopping-cart text-xl"></i>
+    </div>
+    <div class="p-4">
+      <p class="text-gray-600 mb-4">調達業務の一元管理を行います。発注状況確認、納期管理、ベンダー情報の管理が可能です。</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">発注予定: 5件</span>
+        <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">納期遅延: 2件</span>
+      </div>
+      <a href="#" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded">
+        発注管理を開く
+      </a>
+    </div>
+  </div>
+  
+  <!-- 図面・技術文書管理カード -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+    <div class="bg-blue-800 text-white p-3 flex justify-between items-center">
+      <h3 class="font-semibold">図面・技術文書管理</h3>
+      <i class="fas fa-file-alt text-xl"></i>
+    </div>
+    <div class="p-4">
+      <p class="text-gray-600 mb-4">技術図書の版管理と承認プロセスを管理します。図面や仕様書のレビュー、承認ワークフローを実行できます。</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">作業中: 8件</span>
+        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">承認済: 24件</span>
+      </div>
+      <a href="#" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded">
+        文書管理を開く
+      </a>
+    </div>
+  </div>
+  
+  <!-- 検査記録カード -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+    <div class="bg-blue-800 text-white p-3 flex justify-between items-center">
+      <h3 class="font-semibold">検査記録</h3>
+      <i class="fas fa-clipboard-check text-xl"></i>
+    </div>
+    <div class="p-4">
+      <p class="text-gray-600 mb-4">検査業務の記録と管理を行います。検査項目チェックリスト、写真エビデンス管理、是正措置の追跡が可能です。</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">完了: 15件</span>
+        <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">是正対応中: 3件</span>
+      </div>
+      <a href="#" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded">
+        検査記録を開く
+      </a>
+    </div>
+  </div>
+  
+  <!-- 納期管理カード -->
+  <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+    <div class="bg-blue-800 text-white p-3 flex justify-between items-center">
+      <h3 class="font-semibold">納期管理</h3>
+      <i class="fas fa-calendar-alt text-xl"></i>
+    </div>
+    <div class="p-4">
+      <p class="text-gray-600 mb-4">発注品の納期追跡と管理を行います。納期カレンダー、納期遅延アラート、ベンダー連絡記録の管理が可能です。</p>
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">今週納期: 8件</span>
+        <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded">遅延リスク: 2件</span>
+      </div>
+      <a href="#" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center py-2 rounded">
+        納期管理を開く
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- 進行中プロジェクトと最近の更新 -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <!-- 進行中プロジェクト -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold">進行中プロジェクト</h2>
+      <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">すべて表示</a>
+    </div>
+    
+    <div class="space-y-3">
+      <!-- プロジェクト1 -->
+      <div class="border-l-4 border-blue-500 rounded p-3 flex justify-between items-center bg-blue-50">
+        <div>
+          <div class="font-medium">P-2025-0123 ABC工場省エネ設備導入</div>
+          <div class="text-sm text-gray-600">フェーズ: 設計 | 進捗: 35% | PM: 田中</div>
+        </div>
+        <a href="#" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">詳細</a>
+      </div>
+      
+      <!-- プロジェクト2 -->
+      <div class="border-l-4 border-green-500 rounded p-3 flex justify-between items-center bg-green-50">
+        <div>
+          <div class="font-medium">P-2025-0118 DEF産業空調更新</div>
+          <div class="text-sm text-gray-600">フェーズ: 工事 | 進捗: 65% | PM: 高橋</div>
+        </div>
+        <a href="#" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">詳細</a>
+      </div>
+      
+      <!-- プロジェクト3 -->
+      <div class="border-l-4 border-purple-500 rounded p-3 flex justify-between items-center bg-purple-50">
+        <div>
+          <div class="font-medium">P-2025-0115 GHI商事見積サポート</div>
+          <div class="text-sm text-gray-600">フェーズ: 見積支援 | 進捗: 50% | 担当: 鈴木</div>
+        </div>
+        <a href="#" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm">詳細</a>
+      </div>
+      
+      <!-- プロジェクト4 -->
+      <div class="border-l-4 border-amber-500 rounded p-3 flex justify-between items-center bg-amber-50">
+        <div>
+          <div class="font-medium">P-2025-0110 JKL工場設備点検</div>
+          <div class="text-sm text-gray-600">フェーズ: 点検 | 進捗: 80% | 担当: 佐藤</div>
+        </div>
+        <a href="#" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-sm">詳細</a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 最近の更新 -->
+  <div class="bg-white rounded-xl shadow-md p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold">最近の更新</h2>
+      <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">履歴を表示</a>
+    </div>
+    
+    <div class="space-y-3">
+      <!-- 更新1 -->
+      <div class="border-b pb-3">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-medium">発注書承認完了（PO-0326 制御盤）</div>
+            <div class="text-sm text-gray-600">承認者: 山本部長、金額: 350万円</div>
+          </div>
+          <div class="text-xs text-gray-500">2025/05/19 10:30</div>
+        </div>
+        <div class="mt-1 text-xs">
+          <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded">発注管理</span>
+          <span class="text-gray-500 ml-2">佐藤健太（調達）</span>
+        </div>
+      </div>
+      
+      <!-- 更新2 -->
+      <div class="border-b pb-3">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-medium">図面Rev.2保存（制御仕様書）</div>
+            <div class="text-sm text-gray-600">変更内容: 制御ポイント追加、承認済</div>
+          </div>
+          <div class="text-xs text-gray-500">2025/05/18 16:45</div>
+        </div>
+        <div class="mt-1 text-xs">
+          <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">文書管理</span>
+          <span class="text-gray-500 ml-2">鈴木一郎（設計）</span>
+        </div>
+      </div>
+      
+      <!-- 更新3 -->
+      <div class="border-b pb-3">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-medium">納期変更通知（PO-0325 空調機）</div>
+            <div class="text-sm text-gray-600">変更前: 5/20 → 変更後: 5/25</div>
+          </div>
+          <div class="text-xs text-gray-500">2025/05/18 14:20</div>
+        </div>
+        <div class="mt-1 text-xs">
+          <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded">納期管理</span>
+          <span class="text-gray-500 ml-2">佐藤健太（調達）</span>
+        </div>
+      </div>
+      
+      <!-- 更新4 -->
+      <div class="border-b pb-3">
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-medium">検査完了報告（DEF産業設備）</div>
+            <div class="text-sm text-gray-600">結果: 条件付合格、是正措置2件登録</div>
+          </div>
+          <div class="text-xs text-gray-500">2025/05/18 11:10</div>
+        </div>
+        <div class="mt-1 text-xs">
+          <span class="bg-green-100 text-green-800 px-2 py-0.5 rounded">検査記録</span>
+          <span class="text-gray-500 ml-2">高橋浩二（施工）</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 部門間連携 -->
+<div class="bg-white rounded-lg shadow-md p-5 mb-6">
+  <h2 class="text-lg font-semibold mb-4">部門間連携</h2>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- 営業部門連携 -->
+    <div class="border border-gray-200 rounded-lg p-4 hover:bg-blue-50 transition cursor-pointer">
+      <div class="flex items-center mb-3">
+        <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mr-3">
+          <i class="fas fa-handshake"></i>
+        </div>
+        <h3 class="font-medium">営業部門連携</h3>
+      </div>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span>技術支援依頼</span>
+          <span class="font-medium text-red-600">5件</span>
+        </div>
+        <div class="flex justify-between">
+          <span>見積サポート</span>
+          <span class="font-medium text-amber-600">3件</span>
+        </div>
+        <div class="flex justify-between">
+          <span>仕様検討</span>
+          <span class="font-medium text-blue-600">2件</span>
+        </div>
+      </div>
+      <button class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded text-sm">
+        営業連携を開く
+      </button>
+    </div>
+    
+    <!-- カスタマー部門連携 -->
+    <div class="border border-gray-200 rounded-lg p-4 hover:bg-green-50 transition cursor-pointer">
+      <div class="flex items-center mb-3">
+        <div class="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center mr-3">
+          <i class="fas fa-headset"></i>
+        </div>
+        <h3 class="font-medium">カスタマー部門連携</h3>
+      </div>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span>保守依頼</span>
+          <span class="font-medium text-green-600">2件</span>
+        </div>
+        <div class="flex justify-between">
+          <span>トラブル対応</span>
+          <span class="font-medium text-amber-600">1件</span>
+        </div>
+        <div class="flex justify-between">
+          <span>点検報告</span>
+          <span class="font-medium text-blue-600">4件</span>
+        </div>
+      </div>
+      <button class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded text-sm">
+        カスタマー連携を開く
+      </button>
+    </div>
+    
+    <!-- 調達部門連携 -->
+    <div class="border border-gray-200 rounded-lg p-4 hover:bg-purple-50 transition cursor-pointer">
+      <div class="flex items-center mb-3">
+        <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mr-3">
+          <i class="fas fa-truck"></i>
+        </div>
+        <h3 class="font-medium">調達部門連携</h3>
+      </div>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between">
+          <span>発注依頼</span>
+          <span class="font-medium text-purple-600">7件</span>
+        </div>
+        <div class="flex justify-between">
+          <span>納期調整</span>
+          <span class="font-medium text-amber-600">3件</span>
+        </div>
+        <div class="flex justify-between">
+          <span>製品問合せ</span>
+          <span class="font-medium text-blue-600">2件</span>
+        </div>
+      </div>
+      <button class="mt-3 w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-sm">
+        調達連携を開く
+      </button>
+    </div>
+  </div>
+</div>

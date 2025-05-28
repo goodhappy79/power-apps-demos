@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業部門 - 提案・見積管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* 追加カスタムスタイル */
+    .approval-step {
+      position: relative;
+    }
+    .approval-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      right: -15px;
+      width: 30px;
+      height: 2px;
+      background-color: #e5e7eb;
+      transform: translateY(-50%);
+    }
+    .approval-step.completed:not(:last-child)::after {
+      background-color: #10b981;
+    }
+    
+    /* アニメーション */
+    .hover-scale {
+      transition: transform 0.2s;
+    }
+    .hover-scale:hover {
+      transform: scale(1.02);
+    }
+    
+    /* フォーム入力強調 */
+    .focus-highlight:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* バージョン管理タブ */
+    .version-tab.active {
+      border-bottom: 2px solid #3b82f6;
+      color: #1e40af;
+    }
+    
+    /* レスポンシブテーブル対応 */
+    @media (max-width: 768px) {
+      .responsive-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+      }
+      .mobile-only {
+        display: block;
+      }
+      .desktop-only {
+        display: none;
+      }
+    }
+    
+    @media (min-width: 769px) {
+      .mobile-only {
+        display: none;
+      }
+      .desktop-only {
+        display: block;
+      }
+    }
+    
+    .approval-timeline-item {
+      position: relative;
+      padding-left: 30px;
+    }
+    .approval-timeline-item::before {
+      content: "";
+      position: absolute;
+      left: 10px;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background-color: #e5e7eb;
+    }
+    .approval-timeline-item::after {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 10px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+    }
+    .approval-timeline-item.completed::after {
+      background-color: #10b981;
+    }
+    .approval-timeline-item.rejected::after {
+      background-color: #ef4444;
+    }
+    .approval-timeline-item.pending::after {
+      background-color: #f59e0b;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-blue-800 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center mb-4 md:mb-0">
+        <h1 class="text-xl font-bold">営業活動支援システム</h1>
+        <span class="ml-4 bg-blue-700 px-3 py-1 rounded-full text-sm">営業部門</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="relative">
+          <i class="fas fa-bell text-xl"></i>
+          <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">5</span>
+        </button>
+        <span>山田 健太郎</span>
+        <div class="w-10 h-10 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">YK</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <div class="container mx-auto p-4">
+    <!-- パンくずリスト -->
+    <div class="flex items-center text-sm text-gray-600 mb-4">
+      <a href="#" class="hover:text-blue-600">ホーム</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600">営業HUB</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600">案件管理</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-medium">提案・見積管理</span>
+    </div>
+    
+    <!-- タイトルと操作ボタン -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">提案・見積管理</h2>
+        <p class="text-gray-600 text-sm mt-1">案件の見積作成から承認までを一元管理します</p>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
+        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-plus mr-2"></i> 新規見積作成
+        </button>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-search mr-2"></i> 見積検索
+        </button>
+      </div>
+    </div>
+    
+    <!-- 現在の見積情報 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 hover-scale">
+      <div class="flex flex-col lg:flex-row justify-between mb-4">
+        <div>
+          <h3 class="text-xl font-bold text-gray-800 mb-1">ABC工場省エネ設備導入プロジェクト</h3>
+          <div class="flex flex-col md:flex-row md:items-center text-sm text-gray-600 gap-2 md:gap-4">
+            <span class="flex items-center"><i class="fas fa-building mr-1"></i> 顧客：株式会社ABC工業</span>
+            <span class="flex items-center"><i class="fas fa-tag mr-1"></i> 案件番号：S-2025-0123</span>
+            <span class="flex items-center"><i class="fas fa-calendar mr-1"></i> 作成日：2025/05/16</span>
+          </div>
+        </div>
+        <div class="mt-4 lg:mt-0 flex flex-col items-start lg:items-end">
+          <div class="flex items-center mb-2">
+            <span class="text-lg font-bold mr-2">見積金額（税込）:</span>
+            <span class="text-2xl font-bold text-blue-700">88,000,000円</span>
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm font-medium mr-2">ステータス:</span>
+            <span class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm flex items-center">
+              <i class="fas fa-clock mr-1"></i> 承認待ち
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 承認フロー表示 -->
+      <div class="border-t border-gray-200 pt-4 mt-4">
+        <h4 class="text-sm font-medium text-gray-700 mb-3">承認フロー</h4>
+        <div class="flex flex-wrap justify-between">
+          <div class="approval-step completed flex flex-col items-center mb-4 md:mb-0">
+            <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center mb-1">
+              <i class="fas fa-check"></i>
+            </div>
+            <div class="text-xs text-center">
+              <div class="font-medium">上長承認</div>
+              <div class="text-gray-500">佐藤部長</div>
+              <div class="text-green-600">2025/05/17 承認済</div>
+            </div>
+          </div>
+          
+          <div class="approval-step pending flex flex-col items-center mb-4 md:mb-0">
+            <div class="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-1">
+              <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="text-xs text-center">
+              <div class="font-medium">営業部長承認</div>
+              <div class="text-gray-500">鈴木部長</div>
+              <div class="text-amber-600">承認待ち</div>
+            </div>
+          </div>
+          
+          <div class="approval-step flex flex-col items-center mb-4 md:mb-0">
+            <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-1">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="text-xs text-center">
+              <div class="font-medium">経営層承認</div>
+              <div class="text-gray-500">中村常務</div>
+              <div class="text-gray-500">未着手</div>
+            </div>
+          </div>
+          
+          <div class="approval-step flex flex-col items-center">
+            <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mb-1">
+              <i class="fas fa-check-double"></i>
+            </div>
+            <div class="text-xs text-center">
+              <div class="font-medium">最終承認完了</div>
+              <div class="text-gray-500">-</div>
+              <div class="text-gray-500">未完了</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- タブナビゲーション -->
+    <div class="mb-6 border-b border-gray-200">
+      <ul class="flex flex-wrap -mb-px text-sm font-medium text-center text-gray-500">
+        <li class="mr-2">
+          <a href="#" class="inline-flex items-center p-4 border-b-2 border-blue-600 text-blue-600 rounded-t-lg active group">
+            <i class="fas fa-file-invoice-dollar mr-2"></i> 見積編集
+          </a>
+        </li>
+        <li class="mr-2">
+          <a href="#" class="inline-flex items-center p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 group">
+            <i class="fas fa-history mr-2"></i> バージョン履歴
+          </a>
+        </li>
+        <li class="mr-2">
+          <a href="#" class="inline-flex items-center p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 group">
+            <i class="fas fa-comments mr-2"></i> コメント・履歴
+          </a>
+        </li>
+        <li class="mr-2">
+          <a href="#" class="inline-flex items-center p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 group">
+            <i class="fas fa-file-pdf mr-2"></i> PDFプレビュー
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    <!-- 見積基本情報 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-info-circle text-blue-600 mr-2"></i> 基本情報
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <!-- 左カラム - 基本情報 -->
+        <div class="space-y-4">
+          <div>
+            <label for="quote-number" class="block text-sm font-medium text-gray-700 mb-1">見積番号</label>
+            <div class="flex">
+              <input type="text" id="quote-number" value="Q-2025-0047" class="focus-highlight bg-gray-100 border border-gray-300 text-gray-700 text-sm rounded-lg block w-full p-2.5" readonly>
+              <button class="bg-gray-200 text-gray-700 ml-2 px-3 rounded-lg hover:bg-gray-300">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <label for="project-name" class="block text-sm font-medium text-gray-700 mb-1">案件名 <span class="text-red-600">*</span></label>
+            <input type="text" id="project-name" value="ABC工場省エネ設備導入プロジェクト" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+          </div>
+          
+          <div>
+            <label for="customer-name" class="block text-sm font-medium text-gray-700 mb-1">顧客名 <span class="text-red-600">*</span></label>
+            <div class="relative">
+              <input type="text" id="customer-name" value="株式会社ABC工業" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 pr-10">
+              <button class="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-blue-600">
+                <i class="fas fa-search"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 中央カラム - 日付情報 -->
+        <div class="space-y-4">
+          <div>
+            <label for="quote-date" class="block text-sm font-medium text-gray-700 mb-1">見積日 <span class="text-red-600">*</span></label>
+            <div class="relative">
+              <input type="date" id="quote-date" value="2025-05-16" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+              <div class="absolute inset-y-0 right-0 px-3 flex items-center pointer-events-none">
+                <i class="fas fa-calendar"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label for="validity-period" class="block text-sm font-medium text-gray-700 mb-1">有効期限 <span class="text-red-600">*</span></label>
+            <div class="relative">
+              <input type="date" id="validity-period" value="2025-06-15" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+              <div class="absolute inset-y-0 right-0 px-3 flex items-center pointer-events-none">
+                <i class="fas fa-calendar"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <label for="delivery-date" class="block text-sm font-medium text-gray-700 mb-1">納期（予定）</label>
+            <div class="relative">
+              <input type="date" id="delivery-date" value="2025-09-30" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+              <div class="absolute inset-y-0 right-0 px-3 flex items-center pointer-events-none">
+                <i class="fas fa-calendar"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右カラム - 担当者・テンプレート -->
+        <div class="space-y-4">
+          <div>
+            <label for="sales-person" class="block text-sm font-medium text-gray-700 mb-1">営業担当者 <span class="text-red-600">*</span></label>
+            <select id="sales-person" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+              <option selected>山田健太郎</option>
+              <option>佐藤一郎</option>
+              <option>鈴木智子</option>
+              <option>田中健太</option>
+            </select>
+          </div>
+          
+          <div>
+            <label for="template" class="block text-sm font-medium text-gray-700 mb-1">テンプレート選択</label>
+            <select id="template" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+              <option selected>省エネ設備導入（標準）</option>
+              <option>空調設備更新</option>
+              <option>電気設備工事</option>
+              <option>PPA契約（太陽光）</option>
+              <option>保守契約（年間）</option>
+              <option>定期点検契約</option>
+              <option>イレギュラー対応</option>
+            </select>
+          </div>
+          
+          <div>
+            <label for="quote-version" class="block text-sm font-medium text-gray-700 mb-1">バージョン</label>
+            <div class="flex">
+              <input type="text" id="quote-version" value="Ver. 1.2" class="focus-highlight bg-gray-100 border border-gray-300 text-gray-700 text-sm rounded-lg block w-full p-2.5" readonly>
+              <button class="bg-blue-100 text-blue-800 ml-2 px-3 rounded-lg hover:bg-blue-200 text-sm">
+                履歴表示
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- テンプレート適用ボタン -->
+      <div class="flex justify-end">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-sync-alt mr-2"></i> テンプレート適用
+        </button>
+      </div>
+    </div>
+    
+    <!-- 見積明細 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-list-ul text-blue-600 mr-2"></i> 見積明細
+      </h3>
+      
+      <!-- カテゴリセクション -->
+      <div class="flex flex-wrap gap-2 mb-4">
+        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center font-medium">
+          設備機器 <button class="ml-2 text-blue-800"><i class="fas fa-pencil-alt"></i></button>
+        </span>
+        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm flex items-center">
+          工事費 <button class="ml-2 text-gray-800"><i class="fas fa-pencil-alt"></i></button>
+        </span>
+        <span class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm flex items-center">
+          保守費 <button class="ml-2 text-gray-800"><i class="fas fa-pencil-alt"></i></button>
+        </span>
+        <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-full text-sm flex items-center">
+          <i class="fas fa-plus mr-1"></i> カテゴリ追加
+        </button>
+      </div>
+      
+      <!-- 明細テーブル -->
+      <div class="responsive-table mb-4">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">No</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">品名</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">数量</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">単位</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">単価</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">原価</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">金額</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">粗利率</th>
+              <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">操作</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <!-- 明細行1 -->
+            <tr>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">1</td>
+              <td class="px-3 py-2 text-sm text-gray-900">
+                <input type="text" value="高効率空調設備 XYZ-2000" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="number" value="5" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <select class="focus-highlight border border-gray-300 rounded w-full px-2 py-1">
+                  <option>台</option>
+                  <option>式</option>
+                  <option>個</option>
+                  <option>セット</option>
+                </select>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="8,500,000" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="6,800,000" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="text-right">42,500,000</div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm">
+                <div class="text-center px-2 py-1 rounded-full bg-green-100 text-green-800">20.0%</div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-right">
+                <button class="text-gray-500 hover:text-blue-600 mr-1"><i class="fas fa-copy"></i></button>
+                <button class="text-gray-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            
+            <!-- 明細行2 -->
+            <tr>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">2</td>
+              <td class="px-3 py-2 text-sm text-gray-900">
+                <input type="text" value="省エネ制御システム ECO-500" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="number" value="1" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <select class="focus-highlight border border-gray-300 rounded w-full px-2 py-1">
+                  <option>式</option>
+                  <option>台</option>
+                  <option>個</option>
+                  <option>セット</option>
+                </select>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="12,000,000" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="9,800,000" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="text-right">12,000,000</div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm">
+                <div class="text-center px-2 py-1 rounded-full bg-green-100 text-green-800">18.3%</div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-right">
+                <button class="text-gray-500 hover:text-blue-600 mr-1"><i class="fas fa-copy"></i></button>
+                <button class="text-gray-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            
+            <!-- 明細行3 -->
+            <tr>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">3</td>
+              <td class="px-3 py-2 text-sm text-gray-900">
+                <input type="text" value="LED照明一式" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="number" value="1" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <select class="focus-highlight border border-gray-300 rounded w-full px-2 py-1">
+                  <option>式</option>
+                  <option>台</option>
+                  <option>個</option>
+                  <option>セット</option>
+                </select>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="15,000,000" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="11,250,000" class="focus-highlight border border-gray-300 rounded w-full px-2 py-1 text-right">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="text-right">15,000,000</div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm">
+                <div class="text-center px-2 py-1 rounded-full bg-green-100 text-green-800">25.0%</div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-right">
+                <button class="text-gray-500 hover:text-blue-600 mr-1"><i class="fas fa-copy"></i></button>
+                <button class="text-gray-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+            
+            <!-- 明細行4 - 低粗利率警告 -->
+            <tr class="bg-red-50">
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">4</td>
+              <td class="px-3 py-2 text-sm text-gray-900">
+                <input type="text" value="工事費" class="focus-highlight border border-red-300 rounded w-full px-2 py-1 bg-red-50">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="number" value="1" class="focus-highlight border border-red-300 rounded w-full px-2 py-1 text-right bg-red-50">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <select class="focus-highlight border border-red-300 rounded w-full px-2 py-1 bg-red-50">
+                  <option>式</option>
+                  <option>台</option>
+                  <option>個</option>
+                  <option>セット</option>
+                </select>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="10,000,000" class="focus-highlight border border-red-300 rounded w-full px-2 py-1 text-right bg-red-50">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                <input type="text" value="9,500,000" class="focus-highlight border border-red-300 rounded w-full px-2 py-1 text-right bg-red-50">
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                <div class="text-right">10,000,000</div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm">
+                <div class="text-center px-2 py-1 rounded-full bg-red-200 text-red-800 flex items-center justify-center">
+                  <i class="fas fa-exclamation-triangle mr-1"></i> 5.0%
+                </div>
+              </td>
+              <td class="px-3 py-2 whitespace-nowrap text-sm text-right">
+                <button class="text-gray-500 hover:text-blue-600 mr-1"><i class="fas fa-copy"></i></button>
+                <button class="text-gray-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- 明細操作ボタン -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-plus mr-2"></i> 明細追加
+        </button>
+        <button class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-list-ol mr-2"></i> 一括追加
+        </button>
+        <button class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-2 rounded flex items-center">
+          <i class="fas fa-recycle mr-2"></i> 明細並び替え
+        </button>
+        <button class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-4 py-2 rounded flex items-center">
+          <i class="fas fa-tools mr-2"></i> 粗利一括調整
+        </button>
+      </div>
+      
+      <!-- 合計・原価・粗利表示 -->
+      <div class="flex flex-col md:flex-row justify-between gap-4">
+        <!-- 粗利率警告 -->
+        <div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg md:w-1/3 flex items-start">
+          <i class="fas fa-exclamation-triangle mr-2 mt-1"></i>
+          <div>
+            <h4 class="font-medium">粗利率の低い項目があります</h4>
+            <p class="text-sm mt-1">最低粗利率（10%）を下回る項目があります。承認時に特別な確認が必要です。</p>
+          </div>
+        </div>
+        
+        <!-- 合計金額表 -->
+        <div class="bg-gray-50 p-4 rounded-lg md:w-2/3">
+          <table class="w-full text-sm">
+            <tr>
+              <td class="py-1 font-medium">合計金額（税抜）</td>
+              <td class="py-1 text-right">79,500,000円</td>
+            </tr>
+            <tr>
+              <td class="py-1 font-medium">消費税（10%）</td>
+              <td class="py-1 text-right">7,950,000円</td>
+            </tr>
+            <tr class="border-t border-gray-300">
+              <td class="py-2 font-bold">合計金額（税込）</td>
+              <td class="py-2 text-right font-bold text-lg">87,450,000円</td>
+            </tr>
+            <tr class="border-t border-gray-300">
+              <td class="py-1 font-medium">原価合計</td>
+              <td class="py-1 text-right">37,350,000円</td>
+            </tr>
+            <tr>
+              <td class="py-1 font-medium">粗利額</td>
+              <td class="py-1 text-right">42,150,000円</td>
+            </tr>
+            <tr>
+              <td class="py-1 font-medium">全体粗利率</td>
+              <td class="py-1 text-right font-medium">
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded">18.7%</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 特殊条件設定 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-cog text-blue-600 mr-2"></i> 特殊条件設定
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 左側 - 契約条件 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3 border-b pb-2">契約条件</h4>
+          
+          <div class="space-y-4">
+            <div>
+              <label for="payment-terms" class="block text-sm font-medium text-gray-700 mb-1">支払条件</label>
+              <select id="payment-terms" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+                <option>検収月末締め翌月末払い</option>
+                <option>検収月末締め翌々月末払い</option>
+                <option>納品月末締め翌月末払い</option>
+                <option>契約時30%/納品時70%</option>
+                <option selected>契約時40%/完工時60%</option>
+                <option>完工一括払い</option>
+              </select>
+            </div>
+            
+            <div>
+              <label for="delivery-terms" class="block text-sm font-medium text-gray-700 mb-1">納期</label>
+              <select id="delivery-terms" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+                <option>受注後1ヶ月以内</option>
+                <option selected>受注後3ヶ月以内</option>
+                <option>別途協議</option>
+                <option>2025年9月末まで</option>
+              </select>
+            </div>
+            
+            <div>
+              <label for="warranty" class="block text-sm font-medium text-gray-700 mb-1">保証</label>
+              <select id="warranty" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+                <option>機器1年・工事1年</option>
+                <option selected>機器2年・工事1年</option>
+                <option>機器メーカー保証・工事1年</option>
+                <option>カスタム（下記に記載）</option>
+              </select>
+            </div>
+            
+            <div>
+              <label for="special-discount" class="block text-sm font-medium text-gray-700 mb-1">特別割引</label>
+              <div class="flex items-center">
+                <input type="text" id="special-discount" placeholder="0" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-24 p-2.5 text-right mr-2">
+                <select class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-24 p-2.5 mr-2">
+                  <option selected>%</option>
+                  <option>円</option>
+                </select>
+                <span class="text-sm text-gray-500">適用後金額: 87,450,000円</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右側 - 特記事項 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3 border-b pb-2">特記事項</h4>
+          
+          <div class="space-y-4">
+            <div>
+              <label for="special-notes" class="block text-sm font-medium text-gray-700 mb-1">特記事項（見積書に表示）</label>
+              <textarea id="special-notes" rows="4" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5" placeholder="特記事項を記載">本見積には既存設備の撤去費用は含まれておりません。
+電源工事は別途お見積りとなります。
+施工範囲は添付図面の通りとなります。</textarea>
+            </div>
+            
+            <div>
+              <label for="internal-notes" class="block text-sm font-medium text-gray-700 mb-1">社内メモ（社内のみ表示）</label>
+              <textarea id="internal-notes" rows="3" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5" placeholder="社内メモを記載">工事費の粗利率が低いため、部長承認が必要。
+顧客の予算制約により、今回は低めの利益率で受注を優先。
+今後の保守契約で利益確保を目指す。</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- バージョン管理（通常は非表示） -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6" style="display: none;">
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-history text-blue-600 mr-2"></i> バージョン管理
+      </h3>
+      
+      <!-- バージョンタブ -->
+      <div class="flex border-b border-gray-200 mb-4">
+        <button class="version-tab active px-4 py-2 text-sm font-medium">Ver. 1.2 (現行)</button>
+        <button class="version-tab px-4 py-2 text-sm">Ver. 1.1</button>
+        <button class="version-tab px-4 py-2 text-sm">Ver. 1.0</button>
+      </div>
+      
+      <!-- バージョン詳細 -->
+      <div class="flex flex-col md:flex-row gap-6">
+        <!-- 左側 - バージョン情報 -->
+        <div class="md:w-1/3">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <h4 class="font-medium text-gray-700 mb-2">Ver. 1.2</h4>
+            <div class="text-sm space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-500">更新日時:</span>
+                <span>2025/05/16 14:30</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">作成者:</span>
+                <span>山田健太郎</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">合計金額(税込):</span>
+                <span class="font-medium">87,450,000円</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-500">全体粗利率:</span>
+                <span>18.7%</span>
+              </div>
+              <div class="pt-2 border-t border-gray-200 mt-2">
+                <span class="text-gray-500">変更内容:</span>
+                <p class="mt-1">LED照明一式を追加。一部単価の見直しを実施。特記事項を追加。</p>
+              </div>
+            </div>
+            
+            <div class="mt-4 space-y-2">
+              <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded flex items-center justify-center">
+                <i class="fas fa-check mr-1"></i> このバージョンを使用
+              </button>
+              <button class="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 px-3 py-2 rounded flex items-center justify-center">
+                <i class="fas fa-copy mr-1"></i> 複製して新規作成
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右側 - 差分表示 -->
+        <div class="md:w-2/3">
+          <h4 class="font-medium text-gray-700 mb-3">変更差分（Ver. 1.1 → Ver. 1.2）</h4>
+          
+          <div class="border border-gray-200 rounded-lg overflow-hidden mb-4">
+            <div class="bg-gray-50 px-4 py-2 font-medium text-sm">明細変更</div>
+            <div class="p-4">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-3 py-2 text-left">項目</th>
+                    <th class="px-3 py-2 text-left">変更前</th>
+                    <th class="px-3 py-2 text-left">変更後</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b">
+                    <td class="px-3 py-2">高効率空調設備 XYZ-2000<br><span class="text-xs text-gray-500">単価</span></td>
+                    <td class="px-3 py-2 bg-red-50 line-through">8,000,000円</td>
+                    <td class="px-3 py-2 bg-green-50">8,500,000円</td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="px-3 py-2">LED照明一式<br><span class="text-xs text-gray-500">品目</span></td>
+                    <td class="px-3 py-2 bg-red-50"><i class="fas fa-minus text-red-500"></i> なし</td>
+                    <td class="px-3 py-2 bg-green-50"><i class="fas fa-plus text-green-500"></i> 追加</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <div class="bg-gray-50 px-4 py-2 font-medium text-sm">その他の変更</div>
+            <div class="p-4">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-3 py-2 text-left">項目</th>
+                    <th class="px-3 py-2 text-left">変更前</th>
+                    <th class="px-3 py-2 text-left">変更後</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b">
+                    <td class="px-3 py-2">特記事項</td>
+                    <td class="px-3 py-2 bg-red-50">本見積には既存設備の撤去費用は含まれておりません。</td>
+                    <td class="px-3 py-2 bg-green-50">本見積には既存設備の撤去費用は含まれておりません。<br>電源工事は別途お見積りとなります。<br>施工範囲は添付図面の通りとなります。</td>
+                  </tr>
+                  <tr>
+                    <td class="px-3 py-2">合計金額（税込）</td>
+                    <td class="px-3 py-2 bg-red-50">70,400,000円</td>
+                    <td class="px-3 py-2 bg-green-50">87,450,000円</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 承認情報 -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-check-double text-blue-600 mr-2"></i> 承認情報
+      </h3>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 左カラム - 現在の承認状況 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3 border-b pb-2">現在の承認状況</h4>
+          
+          <div class="space-y-4">
+            <div class="flex items-center justify-between bg-green-50 p-3 rounded-lg">
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center mr-3">
+                  <i class="fas fa-check"></i>
+                </div>
+                <div>
+                  <div class="font-medium">上長承認</div>
+                  <div class="text-xs text-gray-500">佐藤部長</div>
+                </div>
+              </div>
+              <div class="text-xs text-green-600">2025/05/17 承認済</div>
+            </div>
+            
+            <div class="flex items-center justify-between bg-amber-50 p-3 rounded-lg">
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mr-3">
+                  <i class="fas fa-hourglass-half"></i>
+                </div>
+                <div>
+                  <div class="font-medium">営業部長承認</div>
+                  <div class="text-xs text-gray-500">鈴木部長</div>
+                </div>
+              </div>
+              <div class="text-xs text-amber-600">承認待ち</div>
+            </div>
+            
+            <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center mr-3">
+                  <i class="fas fa-user-tie"></i>
+                </div>
+                <div>
+                  <div class="font-medium">経営層承認</div>
+                  <div class="text-xs text-gray-500">中村常務</div>
+                </div>
+              </div>
+              <div class="text-xs text-gray-500">未着手</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 中央カラム - 承認送信情報 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3 border-b pb-2">承認依頼情報</h4>
+          
+          <div class="space-y-4">
+            <div>
+              <label for="approval-route" class="block text-sm font-medium text-gray-700 mb-1">承認ルート</label>
+              <select id="approval-route" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5">
+                <option>標準ルート（上長→部長）</option>
+                <option selected>金額3,000万円以上ルート（上長→部長→役員）</option>
+                <option>役員直接承認ルート（役員のみ）</option>
+                <option>カスタムルート...</option>
+              </select>
+            </div>
+            
+            <div>
+              <label for="approval-message" class="block text-sm font-medium text-gray-700 mb-1">承認依頼メッセージ</label>
+              <textarea id="approval-message" rows="3" class="focus-highlight border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5" placeholder="承認者へのメッセージ">ABC工場省エネ設備導入プロジェクトの見積書になります。顧客と協議し、仕様調整済みです。工事費の粗利率が低めですが、LED照明を追加し、全体の粗利率は目標内に収まっています。ご確認をお願いします。</textarea>
+            </div>
+            
+            <div>
+              <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">優先度</label>
+              <div class="flex gap-4">
+                <div class="flex items-center">
+                  <input type="radio" id="normal" name="priority" value="normal" class="w-4 h-4 text-blue-600">
+                  <label for="normal" class="ml-2 text-sm text-gray-700">通常</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio" id="high" name="priority" value="high" class="w-4 h-4 text-blue-600" checked>
+                  <label for="high" class="ml-2 text-sm text-gray-700">高（急ぎ）</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio" id="urgent" name="priority" value="urgent" class="w-4 h-4 text-blue-600">
+                  <label for="urgent" class="ml-2 text-sm text-gray-700">緊急</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右カラム - 承認履歴 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3 border-b pb-2">承認履歴</h4>
+          
+          <div class="space-y-4">
+            <div class="approval-timeline-item completed pb-4">
+              <div class="font-medium">上長承認</div>
+              <div class="text-sm text-gray-700">佐藤部長 - 2025/05/17 10:25</div>
+              <div class="text-xs text-gray-600 mt-1">コメント: 工事費の粗利率は低いですが、全体の粗利率は問題ないレベルです。部長承認に進めてください。</div>
+            </div>
+            
+            <div class="approval-timeline-item rejected pb-4">
+              <div class="font-medium">一度差し戻し</div>
+              <div class="text-sm text-gray-700">佐藤部長 - 2025/05/15 16:40</div>
+              <div class="text-xs text-red-600 mt-1">コメント: 工事費の粗利率が目標を大きく下回っています。全体の粗利率が低いため、見直しをお願いします。</div>
+            </div>
+            
+            <div class="approval-timeline-item completed pb-4">
+              <div class="font-medium">初回申請</div>
+              <div class="text-sm text-gray-700">山田健太郎 - 2025/05/15 14:30</div>
+              <div class="text-xs text-gray-600 mt-1">コメント: ABC工場省エネ設備導入の見積書です。ご確認をお願いします。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 操作ボタン -->
+    <div class="flex flex-wrap justify-between gap-4 mb-6">
+      <div class="flex flex-wrap gap-2">
+        <button class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-3 rounded flex items-center">
+          <i class="fas fa-save mr-2"></i> 下書き保存
+        </button>
+        <button class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-6 py-3 rounded flex items-center">
+          <i class="fas fa-clone mr-2"></i> 複製作成
+        </button>
+        <button class="bg-green-100 hover:bg-green-200 text-green-800 px-6 py-3 rounded flex items-center">
+          <i class="fas fa-file-pdf mr-2"></i> PDF出力
+        </button>
+      </div>
+      
+      <div class="flex flex-wrap gap-2">
+        <button class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded flex items-center" disabled>
+          <i class="fas fa-times mr-2"></i> 取下げ
+        </button>
+        <button class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-3 rounded flex items-center">
+          <i class="fas fa-paper-plane mr-2"></i> 承認申請
+        </button>
+        <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded flex items-center">
+          <i class="fas fa-envelope mr-2"></i> 顧客送付
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- モバイル用フローティングアクションボタン -->
+  <div class="fixed bottom-4 right-4 md:hidden">
+    <button class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl">
+      <i class="fas fa-save"></i>
+    </button>
+  </div>
+  
+  <!-- フッター -->
+  <footer class="bg-gray-800 text-white p-4 text-center text-sm">
+    <div>営業活動支援システム Ver.1.0</div>
+    <div class="mt-2">© 2025 エネルギーサービス企業</div>
+  </footer>
+</body>
+</html>

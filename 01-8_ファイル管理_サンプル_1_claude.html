@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ファイル管理画面</title>
+    <style>
+        /* 全体スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        
+        /* ヘッダースタイル */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #0052cc;
+            color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .app-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #cce5ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0052cc;
+            font-weight: 600;
+        }
+        
+        /* パンくずナビ */
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .breadcrumb-item {
+            color: #666;
+        }
+        
+        .breadcrumb-separator {
+            margin: 0 8px;
+            color: #999;
+        }
+        
+        .breadcrumb-current {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        /* 情報ヘッダー */
+        .info-header {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .project-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .project-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .project-phase {
+            padding: 6px 12px;
+            background-color: #e6f3ff;
+            color: #0052cc;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        
+        /* ツールバー */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            background-color: #fff;
+            border-radius: 6px;
+            padding: 8px 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            width: 300px;
+        }
+        
+        .search-icon {
+            color: #666;
+            margin-right: 8px;
+        }
+        
+        .search-input {
+            border: none;
+            outline: none;
+            background: none;
+            width: 100%;
+            font-size: 14px;
+        }
+        
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .toolbar-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .toolbar-button.primary {
+            background-color: #0052cc;
+            color: white;
+            border: none;
+        }
+        
+        .toolbar-button:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .toolbar-button.primary:hover {
+            background-color: #003d99;
+        }
+        
+        /* タブナビゲーション */
+        .tab-navigation {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tab-item {
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .tab-item.active {
+            color: #0052cc;
+            border-bottom-color: #0052cc;
+        }
+        
+        .tab-item:hover:not(.active) {
+            color: #333;
+            background-color: #f8f9fa;
+        }
+        
+        /* メインコンテンツ */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+        }
+        
+        /* フォルダナビゲーション */
+        .folder-navigation {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .folder-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .folder-tree {
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+        }
+        
+        .tree-item {
+            margin-bottom: 5px;
+        }
+        
+        .tree-item.active > .tree-label {
+            color: #0052cc;
+            font-weight: 500;
+        }
+        
+        .tree-label {
+            display: flex;
+            align-items: center;
+            padding: 8px 0;
+            cursor: pointer;
+        }
+        
+        .tree-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            color: #666;
+        }
+        
+        .tree-icon {
+            margin-right: 8px;
+            color: #666;
+        }
+        
+        .tree-icon.folder {
+            color: #ffc107;
+        }
+        
+        .tree-children {
+            padding-left: 24px;
+            margin-top: 5px;
+        }
+        
+        /* ファイルリスト */
+        .file-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .file-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .file-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .file-path {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .file-view-options {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .view-option {
+            background: none;
+            border: none;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .view-option.active {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        
+        .file-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+        }
+        
+        .file-item {
+            border-radius: 6px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        
+        .file-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e6f3ff;
+            color: #0052cc;
+            border-radius: 6px;
+        }
+        
+        .file-icon.folder {
+            background-color: #fff3cd;
+            color: #ffc107;
+        }
+        
+        .file-icon.pdf {
+            background-color: #f8d7da;
+            color: #dc3545;
+        }
+        
+        .file-icon.doc {
+            background-color: #cfe2ff;
+            color: #0d6efd;
+        }
+        
+        .file-icon.xls {
+            background-color: #d1e7dd;
+            color: #198754;
+        }
+        
+        .file-name {
+            font-size: 13px;
+            text-align: center;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+        
+        .file-meta {
+            font-size: 11px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .file-action {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .file-item:hover .file-action {
+            opacity: 1;
+        }
+        
+        .file-action-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 12px;
+        }
+        
+        .file-action-btn:hover {
+            color: #0052cc;
+        }
+        
+        /* ファイルアップロード */
+        .upload-zone {
+            border: 2px dashed #ced4da;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .upload-icon {
+            font-size: 24px;
+            color: #0052cc;
+            margin-bottom: 10px;
+        }
+        
+        .upload-text {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .upload-note {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        /* 送受信タブ */
+        .send-receive-tabs {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .sr-tab {
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        
+        .sr-tab.active {
+            background-color: #e6f3ff;
+            color: #0052cc;
+        }
+        
+        /* ファイルメタデータ（詳細ビュー用） */
+        .file-meta-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+        
+        .file-meta-table th {
+            text-align: left;
+            padding: 8px;
+            border-bottom: 1px solid #e9ecef;
+            color: #666;
+            width: 30%;
+        }
+        
+        .file-meta-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        /* コンテキストメニュー */
+        .context-menu {
+            position: absolute;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            padding: 5px 0;
+            z-index: 100;
+            min-width: 200px;
+        }
+        
+        .menu-item {
+            padding: 8px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .menu-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .menu-icon {
+            margin-right: 10px;
+            color: #666;
+            width: 16px;
+            text-align: center;
+        }
+        
+        .menu-divider {
+            height: 1px;
+            background-color: #e9ecef;
+            margin: 5px 0;
+        }
+        
+        /* レスポンシブ調整 */
+        @media (max-width: 992px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .folder-navigation {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- アプリケーションヘッダー -->
+    <header class="app-header">
+        <div class="app-title">営業活動支援システム</div>
+        <div class="user-info">
+            <div class="user-avatar">YK</div>
+            <div>山田 健太郎</div>
+        </div>
+    </header>
+
+    <!-- パンくずナビ -->
+    <div class="breadcrumb">
+        <a href="#" class="breadcrumb-item">ホーム</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="#" class="breadcrumb-item">案件管理</a>
+        <span class="breadcrumb-separator">/</span>
+        <a href="#" class="breadcrumb-item">S-2025-0123</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">ファイル管理</span>
+    </div>
+
+    <!-- 案件情報ヘッダー -->
+    <div class="info-header">
+        <div>
+            <div class="project-title">S-2025-0123 ABC工場省エネ設備導入プロジェクト</div>
+            <div class="project-subtitle">取引先：株式会社ABC工業 | 担当者：佐藤一郎</div>
+        </div>
+        <div class="project-phase">見積提案フェーズ</div>
+    </div>
+
+    <!-- ツールバー -->
+    <div class="toolbar">
+        <div class="search-box">
+            <div class="search-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </div>
+            <input type="text" class="search-input" placeholder="ファイル名で検索">
+        </div>
+        
+        <div class="toolbar-actions">
+            <button class="toolbar-button">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                新規フォルダ
+            </button>
+            <button class="toolbar-button primary">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                アップロード
+            </button>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <div class="content-grid">
+        <!-- フォルダナビゲーション -->
+        <div class="folder-navigation">
+            <div class="folder-title">フォルダ構造</div>
+            
+            <div class="folder-tree">
+                <div class="tree-item">
+                    <div class="tree-label">
+                        <div class="tree-toggle">▼</div>
+                        <div class="tree-icon folder">📁</div>
+                        S-2025-0123
+                    </div>
+                    
+                    <div class="tree-children">
+                        <div class="tree-item">
+                            <div class="tree-label">
+                                <div class="tree-toggle">▼</div>
+                                <div class="tree-icon folder">📁</div>
+                                0_基本情報
+                            </div>
+                            
+                            <div class="tree-children">
+                                <div class="tree-item">
+                                    <div class="tree-label">
+                                        <div class="tree-toggle">▶</div>
+                                        <div class="tree-icon folder">📁</div>
+                                        00_概要
+                                    </div>
+                                </div>
+                                <div class="tree-item">
+                                    <div class="tree-label">
+                                        <div class="tree-toggle">▶</div>
+                                        <div class="tree-icon folder">📁</div>
+                                        01_スケジュール
+                                    </div>
+                                </div>
+                                <div class="tree-item">
+                                    <div class="tree-label">
+                                        <div class="tree-toggle">▶</div>
+                                        <div class="tree-icon folder">📁</div>
+                                        02_連絡先
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tree-item active">
+                            <div class="tree-label">
+                                <div class="tree-toggle">▼</div>
+                                <div class="tree-icon folder">📁</div>
+                                1_営業資料
+                            </div>
+                            
+                            <div class="tree-children">
+                                <div class="tree-item">
+                                    <div class="tree-label">
+                                        <div class="tree-toggle">▶</div>
+                                        <div class="tree-icon folder">📁</div>
+                                        10_要件定義
+                                    </div>
+                                </div>
+                                <div class="tree-item active">
+                                    <div class="tree-label">
+                                        <div class="tree-toggle">▼</div>
+                                        <div class="tree-icon folder">📁</div>
+                                        11_提案書
+                                    </div>
+                                    
+                                    <div class="tree-children">
+                                        <div class="tree-item">
+                                            <div class="tree-label">
+                                                <div class="tree-toggle">•</div>
+                                                <div class="tree-icon folder">📁</div>
+                                                送信
+                                            </div>
+                                        </div>
+                                        <div class="tree-item">
+                                            <div class="tree-label">
+                                                <div class="tree-toggle">•</div>
+                                                <div class="tree-icon folder">📁</div>
+                                                受信
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="tree-item">
+                                    <div class="tree-label">
+                                        <div class="tree-toggle">▶</div>
+                                        <div class="tree-icon folder">📁</div>
+                                        12_見積書
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="tree-item">
+                            <div class="tree-label">
+                                <div class="tree-toggle">▶</div>
+                                <div class="tree-icon folder">📁</div>
+                                2_契約関連
+                            </div>
+                        </div>
+                        
+                        <div class="tree-item">
+                            <div class="tree-label">
+                                <div class="tree-toggle">▶</div>
+                                <div class="tree-icon folder">📁</div>
+                                3_設計資料
+                            </div>
+                        </div>
+                        
+                        <div class="tree-item">
+                            <div class="tree-label">
+                                <div class="tree-toggle">▶</div>
+                                <div class="tree-icon folder">📁</div>
+                                4_施工管理
+                            </div>
+                        </div>
+                        
+                        <div class="tree-item">
+                            <div class="tree-label">
+                                <div class="tree-toggle">▶</div>
+                                <div class="tree-icon folder">📁</div>
+                                5_完工資料
+                            </div>
+                        </div>
+                        
+                        <div class="tree-item">
+                            <div class="tree-label">
+                                <div class="tree-toggle">▶</div>
+                                <div class="tree-icon folder">📁</div>
+                                6_請求・精算
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ファイルリスト -->
+        <div class="file-container">
+            <div class="file-header">
+                <div>
+                    <div class="file-title">11_提案書</div>
+                    <div class="file-path">S-2025-0123 > 1_営業資料 > 11_提案書</div>
+                </div>
+                
+                <div class="file-view-options">
+                    <button class="view-option active">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                    </button>
+                    <button class="view-option">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"></line>
+                            <line x1="8" y1="12" x2="21" y2="12"></line>
+                            <line x1="8" y1="18" x2="21" y2="18"></line>
+                            <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                            <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                            <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 送受信タブ -->
+            <div class="send-receive-tabs">
+                <div class="sr-tab active">すべて</div>
+                <div class="sr-tab">送信</div>
+                <div class="sr-tab">受信</div>
+            </div>
+            
+            <!-- ファイル一覧 -->
+            <div class="file-list">
+                <div class="file-item">
+                    <div class="file-icon folder">📁</div>
+                    <div class="file-name">送信</div>
+                    <div class="file-meta">フォルダ</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+                
+                <div class="file-item">
+                    <div class="file-icon folder">📁</div>
+                    <div class="file-name">受信</div>
+                    <div class="file-meta">フォルダ</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+                
+                <div class="file-item">
+                    <div class="file-icon pdf">PDF</div>
+                    <div class="file-name">S-2025-0123_提案書_v2.0_20250510.pdf</div>
+                    <div class="file-meta">2025/05/10更新</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+                
+                <div class="file-item">
+                    <div class="file-icon pdf">PDF</div>
+                    <div class="file-name">S-2025-0123_提案書_v1.0_20250428.pdf</div>
+                    <div class="file-meta">2025/04/28更新</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+                
+                <div class="file-item">
+                    <div class="file-icon doc">DOC</div>
+                    <div class="file-name">S-2025-0123_提案書原稿_v2.0.docx</div>
+                    <div class="file-meta">2025/05/10更新</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+                
+                <div class="file-item">
+                    <div class="file-icon doc">DOC</div>
+                    <div class="file-name">S-2025-0123_提案書原稿_v1.0.docx</div>
+                    <div class="file-meta">2025/04/28更新</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+                
+                <div class="file-item">
+                    <div class="file-icon xls">XLS</div>
+                    <div class="file-name">ABC工場_現状分析データ.xlsx</div>
+                    <div class="file-meta">2025/04/20更新</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+                
+                <div class="file-item">
+                    <div class="file-icon">PPT</div>
+                    <div class="file-name">省エネ提案_プレゼン資料.pptx</div>
+                    <div class="file-meta">2025/05/05更新</div>
+                    <div class="file-action">
+                        <button class="file-action-btn">⋮</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ファイルアップロード領域 -->
+            <div class="upload-zone">
+                <div class="upload-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                </div>
+                <div class="upload-text">
+                    ファイルをドラッグ＆ドロップ または クリックしてファイルを選択
+                </div>
+                <div class="upload-note">
+                    ファイル名の形式: 案件ID_資料種別_バージョン (例: S-2025-0123_提案書_v1.0)
+                </div>
+            </div>
+            
+            <!-- ファイルメタデータテーブル -->
+            <div style="margin-top: 30px;">
+                <div class="file-title">ファイル情報</div>
+                <table class="file-meta-table">
+                    <tr>
+                        <th>ファイル名</th>
+                        <td>S-2025-0123_提案書_v2.0_20250510.pdf</td>
+                    </tr>
+                    <tr>
+                        <th>種類</th>
+                        <td>PDF文書</td>
+                    </tr>
+                    <tr>
+                        <th>サイズ</th>
+                        <td>2.4 MB</td>
+                    </tr>
+                    <tr>
+                        <th>作成者</th>
+                        <td>佐藤一郎</td>
+                    </tr>
+                    <tr>
+                        <th>作成日</th>
+                        <td>2025/05/10 15:30</td>
+                    </tr>
+                    <tr>
+                        <th>最終更新</th>
+                        <td>2025/05/10 16:45</td>
+                    </tr>
+                    <tr>
+                        <th>ステータス</th>
+                        <td>承認済み</td>
+                    </tr>
+                    <tr>
+                        <th>シェア状況</th>
+                        <td>社内共有 (営業部、技術部)</td>
+                    </tr>
+                    <tr>
+                        <th>顧客送付</th>
+                        <td>2025/05/11 09:15 送信済み</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- コンテキストメニュー（通常は非表示、右クリック時に表示） -->
+    <div class="context-menu" style="display: none; top: 200px; left: 400px;">
+        <div class="menu-item">
+            <div class="menu-icon">📋</div>
+            開く
+        </div>
+        <div class="menu-item">
+            <div class="menu-icon">📥</div>
+            ダウンロード
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item">
+            <div class="menu-icon">🔄</div>
+            名前の変更
+        </div>
+        <div class="menu-item">
+            <div class="menu-icon">🔍</div>
+            プロパティ表示
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item">
+            <div class="menu-icon">📤</div>
+            送信フォルダへ移動
+        </div>
+        <div class="menu-item">
+            <div class="menu-icon">📋</div>
+            承認申請
+        </div>
+        <div class="menu-divider"></div>
+        <div class="menu-item">
+            <div class="menu-icon">🗑️</div>
+            削除
+        </div>
+    </div>
+</body>
+</html>

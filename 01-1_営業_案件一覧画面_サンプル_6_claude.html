@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業部門 案件一覧・管理画面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* カスタムスタイル */
+    .status-pill {
+      @apply px-2 py-1 rounded-full text-xs font-medium flex items-center justify-center;
+    }
+    .priority-badge {
+      @apply text-xs font-bold rounded flex items-center justify-center w-6 h-6;
+    }
+    .phase-indicator {
+      @apply flex items-center text-xs px-2 py-1 rounded-full;
+    }
+    .phase-1 { @apply bg-gray-100 text-gray-700; } /* 案件発掘 */
+    .phase-2 { @apply bg-purple-100 text-purple-700; } /* 調査・分析 */
+    .phase-3 { @apply bg-indigo-100 text-indigo-700; } /* 概算提案 */
+    .phase-4 { @apply bg-blue-100 text-blue-700; } /* 見積作成 */
+    .phase-5 { @apply bg-cyan-100 text-cyan-700; } /* 提案活動 */
+    .phase-6 { @apply bg-teal-100 text-teal-700; } /* 交渉段階 */
+    .phase-7 { @apply bg-amber-100 text-amber-700; } /* 成約処理 */
+    .phase-8 { @apply bg-green-100 text-green-700; } /* 契約完了 */
+    .phase-9 { @apply bg-red-100 text-red-700; } /* 失注 */
+    
+    /* リスクレベル表示用カスタムスタイル */
+    .risk-high {
+      @apply bg-red-100 text-red-700 border-l-4 border-red-500;
+    }
+    .risk-medium {
+      @apply bg-amber-50 text-amber-700 border-l-4 border-amber-500;
+    }
+    .risk-low {
+      @apply bg-blue-50 text-blue-700 border-l-4 border-blue-500;
+    }
+    
+    /* 受注確度表示用プログレスバー */
+    .probability-bar {
+      @apply h-1.5 rounded-full overflow-hidden bg-gray-200;
+    }
+    .probability-value {
+      @apply h-full rounded-full;
+    }
+    .probability-high { @apply bg-green-500; }
+    .probability-medium { @apply bg-blue-500; }
+    .probability-low { @apply bg-gray-500; }
+    
+    /* ターゲット案件フラグ */
+    .target-flag {
+      @apply inline-flex items-center bg-yellow-100 text-yellow-800 text-xs px-2 py-0.5 rounded;
+    }
+    
+    @media (max-width: 768px) {
+      .mobile-card {
+        @apply block mb-4 bg-white rounded-lg shadow-md overflow-hidden;
+      }
+      .mobile-card-header {
+        @apply flex justify-between items-center p-3 border-b;
+      }
+      .mobile-card-body {
+        @apply p-3;
+      }
+      .mobile-card-footer {
+        @apply p-3 bg-gray-50 flex justify-between;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-blue-800 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center mb-4 md:mb-0">
+        <h1 class="text-xl font-bold">営業活動支援システム</h1>
+        <span class="ml-4 bg-blue-700 px-3 py-1 rounded-full text-sm">営業部門</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="relative">
+          <i class="fas fa-bell text-xl"></i>
+          <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">7</span>
+        </button>
+        <span>山田 健太郎</span>
+        <div class="w-10 h-10 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">YK</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツエリア -->
+  <div class="container mx-auto p-4">
+    <!-- パンくずリスト -->
+    <div class="flex items-center text-sm text-gray-600 mb-4">
+      <a href="#" class="hover:text-blue-600">ホーム</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600">営業HUB</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-medium">案件一覧・管理</span>
+    </div>
+
+    <!-- タイトルとアクションボタン -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4 md:mb-0">案件一覧・管理</h2>
+      <div class="flex flex-wrap gap-2">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-plus mr-2"></i> 新規案件登録
+        </button>
+        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-file-export mr-2"></i> エクスポート
+        </button>
+      </div>
+    </div>
+
+    <!-- 統計サマリーカード -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- 案件総数 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-500">案件総数</p>
+            <p class="text-2xl font-bold">32件</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-briefcase text-blue-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-2 text-sm flex justify-between">
+          <span class="text-green-500"><i class="fas fa-arrow-up"></i> 前月比 +5件</span>
+          <span class="text-gray-500">ターゲット案件: 8件</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+          <div class="bg-blue-600 h-1.5 rounded-full" style="width: 90%"></div>
+        </div>
+      </div>
+      
+      <!-- 見込み売上 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-500">加重売上予測</p>
+            <p class="text-2xl font-bold">2.8億円</p>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-chart-line text-green-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-2 text-sm flex justify-between">
+          <span class="text-green-500"><i class="fas fa-arrow-up"></i> 目標比 85%</span>
+          <span class="text-gray-500">成約確定: 1.2億円</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-1.5 mt-3">
+          <div class="bg-green-600 h-1.5 rounded-full" style="width: 85%"></div>
+        </div>
+      </div>
+      
+      <!-- 受注確度別 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-500">確度別案件数</p>
+            <p class="text-2xl font-bold">高:8 / 中:14 / 低:10</p>
+          </div>
+          <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-percentage text-amber-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-2 text-sm flex justify-between">
+          <span class="text-blue-500"><i class="fas fa-info-circle"></i> 70%以上: 8件</span>
+          <span class="text-gray-500">40-69%: 14件</span>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-1">
+          <div class="h-1.5 bg-green-500 rounded-l-full"></div>
+          <div class="h-1.5 bg-blue-500"></div>
+          <div class="h-1.5 bg-gray-400 rounded-r-full"></div>
+        </div>
+      </div>
+      
+      <!-- 期限案件 -->
+      <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex justify-between items-center">
+          <div>
+            <p class="text-sm text-gray-500">今月期限案件</p>
+            <p class="text-2xl font-bold">8件</p>
+          </div>
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-calendar-alt text-red-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="mt-2 text-sm flex justify-between">
+          <span class="text-red-500"><i class="fas fa-exclamation-triangle"></i> 期限切れ: 3件</span>
+          <span class="text-amber-500">今週期限: 5件</span>
+        </div>
+        <div class="mt-3 grid grid-cols-4 gap-1">
+          <div class="h-1.5 bg-red-500 rounded-l-full"></div>
+          <div class="h-1.5 bg-amber-500"></div>
+          <div class="h-1.5 bg-blue-500"></div>
+          <div class="h-1.5 bg-gray-400 rounded-r-full"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- フィルターセクション -->
+    <div class="bg-white rounded-lg shadow mb-6 overflow-hidden">
+      <div class="p-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-gray-700 flex items-center">
+            <i class="fas fa-filter mr-2 text-blue-600"></i> 検索・フィルター
+          </h3>
+          <button class="text-blue-600 hover:text-blue-800 text-sm flex items-center">
+            <i class="fas fa-times-circle mr-1"></i> フィルターをクリア
+          </button>
+        </div>
+      </div>
+      
+      <div class="p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-4">
+          <!-- フリーテキスト検索 -->
+          <div>
+            <label for="search" class="block text-sm font-medium text-gray-700 mb-1">キーワード検索</label>
+            <div class="relative">
+              <input type="text" id="search" placeholder="案件名、顧客名、案件番号等" class="w-full pl-10 pr-4 py-2 border rounded-lg">
+              <div class="absolute left-3 top-2.5 text-gray-400">
+                <i class="fas fa-search"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- フェーズフィルター -->
+          <div>
+            <label for="phase" class="block text-sm font-medium text-gray-700 mb-1">フェーズ</label>
+            <select id="phase" class="w-full p-2 border rounded-lg">
+              <option value="all">すべてのフェーズ</option>
+              <option value="phase1">1. 案件発掘</option>
+              <option value="phase2">2. 調査・分析</option>
+              <option value="phase3">3. 概算提案</option>
+              <option value="phase4" selected>4. 見積作成</option>
+              <option value="phase5" selected>5. 提案活動</option>
+              <option value="phase6" selected>6. 交渉段階</option>
+              <option value="phase7">7. 成約処理</option>
+              <option value="phase8">8. 契約完了</option>
+              <option value="lost">失注</option>
+            </select>
+          </div>
+          
+          <!-- 受注確度フィルター -->
+          <div>
+            <label for="probability" class="block text-sm font-medium text-gray-700 mb-1">受注確度</label>
+            <select id="probability" class="w-full p-2 border rounded-lg">
+              <option value="all">すべての確度</option>
+              <option value="high" selected>高確度 (70-100%)</option>
+              <option value="medium">中確度 (40-69%)</option>
+              <option value="low">低確度 (5-39%)</option>
+              <option value="custom">カスタム範囲...</option>
+            </select>
+          </div>
+          
+          <!-- 優先度フィルター -->
+          <div>
+            <label for="priority" class="block text-sm font-medium text-gray-700 mb-1">優先度</label>
+            <select id="priority" class="w-full p-2 border rounded-lg">
+              <option value="all">すべての優先度</option>
+              <option value="high">A（高）</option>
+              <option value="medium">B（中）</option>
+              <option value="low">C（低）</option>
+            </select>
+          </div>
+          
+          <!-- 期限フィルター -->
+          <div>
+            <label for="deadline" class="block text-sm font-medium text-gray-700 mb-1">期限</label>
+            <select id="deadline" class="w-full p-2 border rounded-lg">
+              <option value="all">すべての期限</option>
+              <option value="overdue">期限切れ</option>
+              <option value="today">今日期限</option>
+              <option value="thisWeek" selected>今週期限</option>
+              <option value="thisMonth">今月期限</option>
+              <option value="nextMonth">来月期限</option>
+              <option value="noDeadline">期限なし</option>
+            </select>
+          </div>
+          
+          <!-- 担当者フィルター -->
+          <div>
+            <label for="assignee" class="block text-sm font-medium text-gray-700 mb-1">担当者</label>
+            <select id="assignee" class="w-full p-2 border rounded-lg">
+              <option value="all">すべての担当者</option>
+              <option value="me" selected>自分の案件</option>
+              <option value="team">部署内案件</option>
+              <option value="unassigned">未割当</option>
+              <option value="sato">佐藤一郎</option>
+              <option value="suzuki">鈴木智子</option>
+              <option value="tanaka">田中健太</option>
+            </select>
+          </div>
+          
+          <!-- 金額範囲フィルター -->
+          <div>
+            <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">金額範囲</label>
+            <select id="amount" class="w-full p-2 border rounded-lg">
+              <option value="all">すべての金額</option>
+              <option value="under1m">100万円未満</option>
+              <option value="1m-5m">100-500万円</option>
+              <option value="5m-10m">500-1,000万円</option>
+              <option value="10m-50m" selected>1,000-5,000万円</option>
+              <option value="over50m">5,000万円以上</option>
+              <option value="custom">カスタム範囲...</option>
+            </select>
+          </div>
+          
+          <!-- ターゲットフラグフィルター -->
+          <div>
+            <label for="target" class="block text-sm font-medium text-gray-700 mb-1">ターゲット案件</label>
+            <select id="target" class="w-full p-2 border rounded-lg">
+              <option value="all">すべての案件</option>
+              <option value="target" selected>ターゲット案件のみ</option>
+              <option value="nontarget">通常案件のみ</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- 現在のフィルター表示 -->
+        <div class="flex flex-wrap gap-2 mt-4">
+          <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+            フェーズ: 見積作成～交渉段階 <button class="ml-2 text-blue-600"><i class="fas fa-times"></i></button>
+          </span>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+            確度: 高確度 (70-100%) <button class="ml-2 text-blue-600"><i class="fas fa-times"></i></button>
+          </span>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+            担当者: 自分の案件 <button class="ml-2 text-blue-600"><i class="fas fa-times"></i></button>
+          </span>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+            ターゲット案件: 対象 <button class="ml-2 text-blue-600"><i class="fas fa-times"></i></button>
+          </span>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center">
+            期限: 今週期限 <button class="ml-2 text-blue-600"><i class="fas fa-times"></i></button>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 案件リストセクション -->
+    <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+      <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+        <h3 class="font-bold text-gray-700">案件リスト（8件 / 全32件）</h3>
+        <div class="flex items-center gap-4">
+          <!-- 表示件数選択 -->
+          <div class="flex items-center">
+            <label for="perPage" class="text-sm text-gray-600 mr-2">表示件数:</label>
+            <select id="perPage" class="border rounded p-1 text-sm">
+              <option value="10" selected>10件</option>
+              <option value="20">20件</option>
+              <option value="50">50件</option>
+              <option value="100">100件</option>
+            </select>
+          </div>
+          
+          <!-- 並び替え選択 -->
+          <div class="flex items-center">
+            <label for="sortBy" class="text-sm text-gray-600 mr-2">並び順:</label>
+            <select id="sortBy" class="border rounded p-1 text-sm">
+              <option value="deadlineAsc" selected>期限（近い順）</option>
+              <option value="deadlineDesc">期限（遠い順）</option>
+              <option value="probDesc">確度（高い順）</option>
+              <option value="probAsc">確度（低い順）</option>
+              <option value="amountDesc">金額（高い順）</option>
+              <option value="amountAsc">金額（低い順）</option>
+              <option value="priorityDesc">優先度（高い順）</option>
+              <option value="createdDesc">登録日（新しい順）</option>
+            </select>
+          </div>
+          
+          <!-- 表示切替ボタン -->
+          <div class="flex bg-gray-100 rounded">
+            <button class="px-3 py-1 bg-blue-600 text-white rounded-l">
+              <i class="fas fa-th-list"></i>
+            </button>
+            <button class="px-3 py-1 text-gray-600 rounded-r">
+              <i class="fas fa-th-large"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- PCビュー用テーブル（モバイルでは非表示） -->
+      <div class="overflow-x-auto hidden md:block">
+        <table class="min-w-full">
+          <thead class="bg-gray-50 border-b">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                <input type="checkbox" class="rounded">
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                案件番号 / 案件名
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                顧客名
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                フェーズ
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                金額（万円）
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                受注確度
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                期限
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                優先度
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                担当者
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                アクション
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <!-- 案件1 - ターゲット＋期限間近 -->
+            <tr class="hover:bg-blue-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="text-sm font-medium text-gray-900">S-2025-0123</div>
+                  <span class="target-flag ml-2">
+                    <i class="fas fa-star text-yellow-500 mr-1"></i> ターゲット
+                  </span>
+                </div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">ABC工場省エネ設備導入</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                株式会社ABC工業
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-5">
+                  <i class="fas fa-file-signature mr-1"></i> 5. 提案活動
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                8,000
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">75%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 75%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-amber-600">
+                  <i class="fas fa-exclamation-triangle mr-1"></i> 2025/05/20
+                  <span class="ml-1 text-xs bg-amber-100 px-1.5 py-0.5 rounded">2日後</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-red-100 text-red-600">A</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    YK
+                  </div>
+                  山田健太郎
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+            
+            <!-- 案件2 - ターゲット＋期限切れ -->
+            <tr class="hover:bg-blue-50 bg-red-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="text-sm font-medium text-gray-900">S-2025-0098</div>
+                  <span class="target-flag ml-2">
+                    <i class="fas fa-star text-yellow-500 mr-1"></i> ターゲット
+                  </span>
+                </div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">JKL本社ビル空調改修</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                JKL株式会社
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-6">
+                  <i class="fas fa-handshake mr-1"></i> 6. 交渉段階
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                4,200
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">85%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 85%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-red-600">
+                  <i class="fas fa-exclamation-circle mr-1"></i> 2025/05/15
+                  <span class="ml-1 text-xs bg-red-100 px-1.5 py-0.5 rounded">3日遅延</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-red-100 text-red-600">A</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-green-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    SI
+                  </div>
+                  佐藤一郎
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+            
+            <!-- 案件3 - 通常案件（受注確度高） -->
+            <tr class="hover:bg-blue-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">S-2025-0115</div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">DEF社本社空調更新</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                DEF株式会社
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-7">
+                  <i class="fas fa-check-double mr-1"></i> 7. 成約処理
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                5,200
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">95%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 95%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-green-600">
+                  <i class="fas fa-calendar-check mr-1"></i> 2025/05/22
+                  <span class="ml-1 text-xs bg-green-100 px-1.5 py-0.5 rounded">4日後</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-orange-100 text-orange-600">B</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    YK
+                  </div>
+                  山田健太郎
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+            
+            <!-- 案件4 - ターゲット＋期限間近 -->
+            <tr class="hover:bg-blue-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="text-sm font-medium text-gray-900">S-2025-0154</div>
+                  <span class="target-flag ml-2">
+                    <i class="fas fa-star text-yellow-500 mr-1"></i> ターゲット
+                  </span>
+                </div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">MNO工場LED照明更新</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                MNO製造株式会社
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-4">
+                  <i class="fas fa-file-invoice-dollar mr-1"></i> 4. 見積作成
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                2,500
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">70%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 70%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-amber-600">
+                  <i class="fas fa-exclamation-triangle mr-1"></i> 2025/05/21
+                  <span class="ml-1 text-xs bg-amber-100 px-1.5 py-0.5 rounded">3日後</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-orange-100 text-orange-600">B</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    YK
+                  </div>
+                  山田健太郎
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+            
+            <!-- 案件5 - 通常案件 -->
+            <tr class="hover:bg-blue-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">S-2025-0132</div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">PQR社オフィス照明更新</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                PQR株式会社
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-5">
+                  <i class="fas fa-file-signature mr-1"></i> 5. 提案活動
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                1,800
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">75%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 75%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-gray-600">
+                  <i class="fas fa-calendar mr-1"></i> 2025/05/23
+                  <span class="ml-1 text-xs bg-gray-100 px-1.5 py-0.5 rounded">5日後</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-blue-100 text-blue-600">C</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-purple-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    ST
+                  </div>
+                  鈴木智子
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+
+            <!-- 案件6 - ターゲット -->
+            <tr class="hover:bg-blue-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="text-sm font-medium text-gray-900">S-2025-0129</div>
+                  <span class="target-flag ml-2">
+                    <i class="fas fa-star text-yellow-500 mr-1"></i> ターゲット
+                  </span>
+                </div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">HIJ製薬 省エネ改修</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                HIJ製薬株式会社
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-6">
+                  <i class="fas fa-handshake mr-1"></i> 6. 交渉段階
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                4,800
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">80%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 80%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-gray-600">
+                  <i class="fas fa-calendar mr-1"></i> 2025/05/25
+                  <span class="ml-1 text-xs bg-gray-100 px-1.5 py-0.5 rounded">7日後</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-red-100 text-red-600">A</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    YK
+                  </div>
+                  山田健太郎
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+
+            <!-- 案件7 - 通常案件 -->
+            <tr class="hover:bg-blue-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">S-2025-0140</div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">STU倉庫空調機交換</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                STU物流株式会社
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-4">
+                  <i class="fas fa-file-invoice-dollar mr-1"></i> 4. 見積作成
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                3,200
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">70%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 70%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-gray-600">
+                  <i class="fas fa-calendar mr-1"></i> 2025/05/26
+                  <span class="ml-1 text-xs bg-gray-100 px-1.5 py-0.5 rounded">8日後</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-orange-100 text-orange-600">B</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-green-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    SI
+                  </div>
+                  佐藤一郎
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+
+            <!-- 案件8 - ターゲット -->
+            <tr class="hover:bg-blue-50">
+              <td class="px-4 py-3 whitespace-nowrap">
+                <input type="checkbox" class="rounded">
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="text-sm font-medium text-gray-900">S-2025-0126</div>
+                  <span class="target-flag ml-2">
+                    <i class="fas fa-star text-yellow-500 mr-1"></i> ターゲット
+                  </span>
+                </div>
+                <div class="text-sm font-medium text-blue-600">
+                  <a href="#">VWX工場照明制御更新</a>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                VWX電子株式会社
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="phase-indicator phase-5">
+                  <i class="fas fa-file-signature mr-1"></i> 5. 提案活動
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                3,800
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <div class="flex items-center">
+                  <span class="mr-2 font-medium">75%</span>
+                  <div class="w-16 probability-bar">
+                    <div class="probability-value probability-high" style="width: 75%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm">
+                <span class="flex items-center text-gray-600">
+                  <i class="fas fa-calendar mr-1"></i> 2025/05/27
+                  <span class="ml-1 text-xs bg-gray-100 px-1.5 py-0.5 rounded">9日後</span>
+                </span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap">
+                <span class="priority-badge bg-orange-100 text-orange-600">B</span>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                <div class="flex items-center">
+                  <div class="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center mr-2 text-xs font-medium">
+                    YK
+                  </div>
+                  山田健太郎
+                </div>
+              </td>
+              <td class="px-4 py-3 whitespace-nowrap text-sm text-right">
+                <button class="text-blue-600 hover:text-blue-800 mr-3"><i class="fas fa-edit"></i></button>
+                <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- モバイルビュー用カード（PCでは非表示） -->
+      <div class="md:hidden">
+        <!-- 案件1（モバイル表示） -->
+        <div class="mobile-card">
+          <div class="mobile-card-header bg-gray-50">
+            <div class="flex items-center">
+              <input type="checkbox" class="rounded mr-2">
+              <div class="flex flex-col">
+                <div class="flex items-center">
+                  <span class="text-sm font-medium">S-2025-0123</span>
+                  <span class="target-flag ml-2">ターゲット</span>
+                </div>
+                <span class="phase-indicator phase-5 mt-1">5. 提案活動</span>
+              </div>
+            </div>
+            <span class="priority-badge bg-red-100 text-red-600">A</span>
+          </div>
+          <div class="mobile-card-body">
+            <h4 class="font-medium text-blue-600 mb-1">ABC工場省エネ設備導入</h4>
+            <div class="text-sm text-gray-600 mb-3">株式会社ABC工業</div>
+            
+            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+              <div>
+                <div class="text-gray-500">金額（万円）</div>
+                <div class="font-medium">8,000</div>
+              </div>
+              <div>
+                <div class="text-gray-500">受注確度</div>
+                <div class="font-medium">
+                  <div class="flex items-center">
+                    <span class="mr-2">75%</span>
+                    <div class="w-16 probability-bar">
+                      <div class="probability-value probability-high" style="width: 75%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="text-gray-500">期限</div>
+                <div class="font-medium text-amber-600">
+                  <i class="fas fa-exclamation-triangle mr-1"></i> 2025/05/20
+                  <span class="ml-1 text-xs bg-amber-100 px-1.5 py-0.5 rounded">2日後</span>
+                </div>
+              </div>
+              <div>
+                <div class="text-gray-500">担当者</div>
+                <div class="font-medium flex items-center">
+                  <div class="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center mr-1 text-xs">
+                    YK
+                  </div>
+                  山田健太郎
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mobile-card-footer">
+            <div>
+              <span class="text-xs text-gray-500">更新: 2025/05/16</span>
+            </div>
+            <div class="space-x-3">
+              <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i> 編集</button>
+              <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 案件2（モバイル表示） -->
+        <div class="mobile-card risk-high">
+          <div class="mobile-card-header bg-red-50">
+            <div class="flex items-center">
+              <input type="checkbox" class="rounded mr-2">
+              <div class="flex flex-col">
+                <div class="flex items-center">
+                  <span class="text-sm font-medium">S-2025-0098</span>
+                  <span class="target-flag ml-2">ターゲット</span>
+                </div>
+                <span class="phase-indicator phase-6 mt-1">6. 交渉段階</span>
+              </div>
+            </div>
+            <span class="priority-badge bg-red-100 text-red-600">A</span>
+          </div>
+          <div class="mobile-card-body">
+            <h4 class="font-medium text-blue-600 mb-1">JKL本社ビル空調改修</h4>
+            <div class="text-sm text-gray-600 mb-3">JKL株式会社</div>
+            
+            <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+              <div>
+                <div class="text-gray-500">金額（万円）</div>
+                <div class="font-medium">4,200</div>
+              </div>
+              <div>
+                <div class="text-gray-500">受注確度</div>
+                <div class="font-medium">
+                  <div class="flex items-center">
+                    <span class="mr-2">85%</span>
+                    <div class="w-16 probability-bar">
+                      <div class="probability-value probability-high" style="width: 85%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div class="text-gray-500">期限</div>
+                <div class="font-medium text-red-600">
+                  <i class="fas fa-exclamation-circle mr-1"></i> 2025/05/15
+                  <span class="ml-1 text-xs bg-red-100 px-1.5 py-0.5 rounded">3日遅延</span>
+                </div>
+              </div>
+              <div>
+                <div class="text-gray-500">担当者</div>
+                <div class="font-medium flex items-center">
+                  <div class="w-5 h-5 bg-green-600 text-white rounded-full flex items-center justify-center mr-1 text-xs">
+                    SI
+                  </div>
+                  佐藤一郎
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mobile-card-footer">
+            <div>
+              <span class="text-xs text-gray-500">更新: 2025/05/17</span>
+            </div>
+            <div class="space-x-3">
+              <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-edit"></i> 編集</button>
+              <button class="text-blue-600 hover:text-blue-800"><i class="fas fa-ellipsis-v"></i></button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 他の案件カード... -->
+      </div>
+      
+      <!-- ページネーション -->
+      <div class="px-4 py-3 flex items-center justify-between border-t border-gray-200">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            前へ
+          </button>
+          <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            次へ
+          </button>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              全<span class="font-medium">32</span>件中
+              <span class="font-medium">1</span>から
+              <span class="font-medium">8</span>件を表示
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">前へ</span>
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-blue-50 text-sm font-medium text-blue-600 hover:bg-blue-100">
+                1
+              </button>
+              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                2
+              </button>
+              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                3
+              </button>
+              <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                ...
+              </span>
+              <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                4
+              </button>
+              <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">次へ</span>
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- リスク管理セクション -->
+    <div class="bg-white rounded-lg shadow overflow-hidden mb-6">
+      <div class="p-4 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-gray-700 flex items-center">
+            <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i> リスク・要注意案件
+          </h3>
+          <a href="#" class="text-blue-600 hover:text-blue-800 text-sm">全てのリスク表示</a>
+        </div>
+      </div>
+      
+      <div class="p-4">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  リスク種別
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  案件
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  状況
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  担当者
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  対応期限
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  アクション
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <span class="status-pill bg-red-100 text-red-800">
+                    <i class="fas fa-calendar-times mr-1"></i> 期限超過
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  <div class="font-medium text-blue-600">JKL本社ビル空調改修</div>
+                  <div class="text-gray-500 text-xs">S-2025-0098 / 確度85%</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  見積修正書未提出 (3日遅延)
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  佐藤一郎
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-red-600">
+                  2025/05/15 (期限切れ)
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs">
+                    対応開始
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <span class="status-pill bg-amber-100 text-amber-800">
+                    <i class="fas fa-exclamation-circle mr-1"></i> 期限間近
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  <div class="font-medium text-blue-600">ABC工場省エネ設備導入</div>
+                  <div class="text-gray-500 text-xs">S-2025-0123 / 確度75%</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  見積調整中 (期限2日前)
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  山田健太郎
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-amber-600">
+                  2025/05/20
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs">
+                    対応開始
+                  </button>
+                </td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 whitespace-nowrap">
+                  <span class="status-pill bg-purple-100 text-purple-800">
+                    <i class="fas fa-comments mr-1"></i> 顧客反応なし
+                  </span>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  <div class="font-medium text-blue-600">PQR社オフィス照明更新</div>
+                  <div class="text-gray-500 text-xs">S-2025-0132 / 確度75%</div>
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  提案後10日間反応なし
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  鈴木智子
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                  2025/05/23
+                </td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm">
+                  <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-xs">
+                    対応開始
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    
+    <!-- クイックフィルター -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <!-- フェーズ別 -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-4 border-b border-gray-200">
+          <h3 class="font-bold text-gray-700">フェーズ別</h3>
+        </div>
+        <div class="p-4">
+          <div class="space-y-2">
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-gray-50 rounded-md hover:bg-gray-100">
+              <span class="flex items-center">
+                <i class="fas fa-search text-gray-500 mr-2"></i>
+                <span>1. 案件発掘</span>
+              </span>
+              <span class="bg-gray-500 text-white text-xs px-2 py-1 rounded-full">4件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-purple-50 rounded-md hover:bg-purple-100">
+              <span class="flex items-center">
+                <i class="fas fa-clipboard-check text-purple-500 mr-2"></i>
+                <span>2. 調査・分析</span>
+              </span>
+              <span class="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">3件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-indigo-50 rounded-md hover:bg-indigo-100">
+              <span class="flex items-center">
+                <i class="fas fa-file-alt text-indigo-500 mr-2"></i>
+                <span>3. 概算提案</span>
+              </span>
+              <span class="bg-indigo-500 text-white text-xs px-2 py-1 rounded-full">3件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-blue-50 rounded-md hover:bg-blue-100">
+              <span class="flex items-center">
+                <i class="fas fa-file-invoice-dollar text-blue-500 mr-2"></i>
+                <span>4. 見積作成</span>
+              </span>
+              <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">5件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-cyan-50 rounded-md hover:bg-cyan-100">
+              <span class="flex items-center">
+                <i class="fas fa-file-signature text-cyan-500 mr-2"></i>
+                <span>5. 提案活動</span>
+              </span>
+              <span class="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full">7件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-teal-50 rounded-md hover:bg-teal-100">
+              <span class="flex items-center">
+                <i class="fas fa-handshake text-teal-500 mr-2"></i>
+                <span>6. 交渉段階</span>
+              </span>
+              <span class="bg-teal-500 text-white text-xs px-2 py-1 rounded-full">4件</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 受注確度別 -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-4 border-b border-gray-200">
+          <h3 class="font-bold text-gray-700">受注確度別</h3>
+        </div>
+        <div class="p-4">
+          <div class="space-y-2">
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-green-50 rounded-md hover:bg-green-100">
+              <span class="flex items-center">
+                <span class="w-12 probability-bar mr-2">
+                  <span class="probability-value probability-high" style="width: 100%"></span>
+                </span>
+                <span>90-100%</span>
+              </span>
+              <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">3件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-green-50 rounded-md hover:bg-green-100">
+              <span class="flex items-center">
+                <span class="w-12 probability-bar mr-2">
+                  <span class="probability-value probability-high" style="width: 80%"></span>
+                </span>
+                <span>70-89%</span>
+              </span>
+              <span class="bg-green-500 text-white text-xs px-2 py-1 rounded-full">5件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-blue-50 rounded-md hover:bg-blue-100">
+              <span class="flex items-center">
+                <span class="w-12 probability-bar mr-2">
+                  <span class="probability-value probability-medium" style="width: 60%"></span>
+                </span>
+                <span>40-69%</span>
+              </span>
+              <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">14件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-gray-50 rounded-md hover:bg-gray-100">
+              <span class="flex items-center">
+                <span class="w-12 probability-bar mr-2">
+                  <span class="probability-value probability-low" style="width: 30%"></span>
+                </span>
+                <span>5-39%</span>
+              </span>
+              <span class="bg-gray-500 text-white text-xs px-2 py-1 rounded-full">10件</span>
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 優先度別 -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-4 border-b border-gray-200">
+          <h3 class="font-bold text-gray-700">優先度別</h3>
+        </div>
+        <div class="p-4">
+          <div class="space-y-2">
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-red-50 rounded-md hover:bg-red-100">
+              <span class="flex items-center">
+                <span class="priority-badge bg-red-100 text-red-600 mr-2">A</span>
+                <span>高優先度</span>
+              </span>
+              <span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full">8件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-orange-50 rounded-md hover:bg-orange-100">
+              <span class="flex items-center">
+                <span class="priority-badge bg-orange-100 text-orange-600 mr-2">B</span>
+                <span>中優先度</span>
+              </span>
+              <span class="bg-orange-500 text-white text-xs px-2 py-1 rounded-full">14件</span>
+            </a>
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-blue-50 rounded-md hover:bg-blue-100">
+              <span class="flex items-center">
+                <span class="priority-badge bg-blue-100 text-blue-600 mr-2">C</span>
+                <span>低優先度</span>
+              </span>
+              <span class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">10件</span>
+            </a>
+          </div>
+        </div>
+        <div class="p-4 border-t border-gray-200">
+          <div class="flex justify-between items-center">
+            <h3 class="font-bold text-gray-700">ターゲット案件</h3>
+            <span class="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">8件</span>
+          </div>
+          <div class="mt-2">
+            <a href="#" class="flex justify-between items-center px-3 py-2 bg-yellow-50 rounded-md hover:bg-yellow-100">
+              <span class="flex items-center">
+                <i class="fas fa-star text-yellow-500 mr-2"></i>
+                <span>ターゲット案件のみ表示</span>
+              </span>
+              <i class="fas fa-chevron-right text-yellow-500"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- フッター -->
+  <footer class="bg-gray-800 text-white p-4 text-center text-sm">
+    <div>営業活動支援システム Ver.1.0</div>
+    <div class="mt-2">© 2025 エネルギーサービス企業</div>
+  </footer>
+  
+  <!-- アクションメニュー（通常は非表示、必要時に表示） -->
+  <div id="action-menu" class="hidden fixed bg-white rounded-lg shadow-lg overflow-hidden" style="width: 200px; z-index: 1000;">
+    <div class="py-2">
+      <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-edit w-5 text-center mr-2 text-gray-500"></i> 案件編集
+      </a>
+      <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-eye w-5 text-center mr-2 text-gray-500"></i> 詳細表示
+      </a>
+      <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-clipboard w-5 text-center mr-2 text-gray-500"></i> 活動記録追加
+      </a>
+      <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-file-invoice-dollar w-5 text-center mr-2 text-gray-500"></i> 見積作成
+      </a>
+      <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-bell w-5 text-center mr-2 text-gray-500"></i> リマインダー設定
+      </a>
+      <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-star w-5 text-center mr-2 text-gray-500"></i> ターゲット設定
+      </a>
+      <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+        <i class="fas fa-exchange-alt w-5 text-center mr-2 text-gray-500"></i> フェーズ変更
+      </a>
+      <div class="border-t border-gray-200 my-1"></div>
+      <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+        <i class="fas fa-trash-alt w-5 text-center mr-2 text-red-500"></i> 案件削除
+      </a>
+    </div>
+  </div>
+</body>
+</html>

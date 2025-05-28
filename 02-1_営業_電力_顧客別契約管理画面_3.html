@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>顧客別契約管理画面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .tag-low { background-color: #9CA3AF; color: white; }
+    .tag-high { background-color: #3B82F6; color: white; }
+    .tag-market { background-color: #F97316; color: white; }
+    .status-valid { color: white; background-color: #16A34A; }
+    .status-expired { color: white; background-color: #DC2626; }
+    .status-updating { color: black; background-color: #FACC15; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <!-- ヘッダー部分 - アプリケーション名と担当部門表示 -->
+  <header class="bg-blue-800 text-white p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">顧客別契約管理</h1>
+    <div class="flex items-center gap-4">
+      <span>電力販売部門</span>
+      <div class="w-8 h-8 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">ES</div>
+    </div>
+  </header>
+
+  <!-- 検索・フィルター部分 - 基本的な検索機能と日付、ステータスフィルター -->
+  <section class="p-4 bg-white shadow mt-4 mx-4 rounded-xl">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+      <input type="text" placeholder="契約番号または顧客名で検索" class="border p-2 rounded w-full" />
+      <input type="date" class="border p-2 rounded w-full" />
+      <select class="border p-2 rounded w-full">
+        <option>すべてのステータス</option>
+        <option>有効</option>
+        <option>期限切れ</option>
+        <option>更新手続中</option>
+      </select>
+    </div>
+    <button class="bg-blue-600 text-white px-4 py-2 rounded">検索</button>
+    <button class="bg-green-600 text-white px-4 py-2 rounded ml-2">新規登録</button>
+  </section>
+
+  <!-- 契約一覧テーブル部分 - 一覧表示と詳細リンク -->
+  <section class="p-4">
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white shadow rounded-xl overflow-hidden">
+        <thead class="bg-gray-200 text-gray-600 text-sm">
+          <tr>
+            <th class="p-3 text-left">契約番号</th>
+            <th class="p-3 text-left">顧客名</th>
+            <th class="p-3 text-left">建物名</th>
+            <th class="p-3 text-left">地域</th>
+            <th class="p-3 text-left">供給開始日</th>
+            <th class="p-3 text-left">契約期間</th>
+            <th class="p-3 text-left">契約容量（kW）</th>
+            <th class="p-3 text-left">契約種別</th>
+            <th class="p-3 text-left">ステータス</th>
+            <th class="p-3 text-left">担当営業/部署</th>
+            <th class="p-3 text-left">最終更新日</th>
+            <th class="p-3 text-left">契約書</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm divide-y divide-gray-100">
+          <tr class="hover:bg-blue-50 cursor-pointer">
+            <td class="p-3">D-2025-0001</td>
+            <td class="p-3">株式会社ライフテック</td>
+            <td class="p-3">ライフビル本館</td>
+            <td class="p-3">東京都新宿区</td>
+            <td class="p-3">2025/04/01</td>
+            <td class="p-3">2025/04/01～2030/03/31</td>
+            <td class="p-3">500</td>
+            <td class="p-3"><span class="tag-market px-2 py-1 rounded text-xs">市場連動型</span></td>
+            <td class="p-3"><span class="status-valid px-2 py-1 rounded text-xs">有効</span></td>
+            <td class="p-3">山田健太郎 / 営業部</td>
+            <td class="p-3">2025/05/01</td>
+            <td class="p-3"><button class="text-blue-600 underline">参照</button></td>
+          </tr>
+          <tr class="hover:bg-blue-50 cursor-pointer">
+            <td class="p-3">D-2025-0002</td>
+            <td class="p-3">株式会社アイエス</td>
+            <td class="p-3">福岡アイエスセンター</td>
+            <td class="p-3">福岡県福岡市博多区</td>
+            <td class="p-3">2023/07/01</td>
+            <td class="p-3">2023/07/01～2028/06/30</td>
+            <td class="p-3">200</td>
+            <td class="p-3"><span class="tag-high px-2 py-1 rounded text-xs">高圧</span></td>
+            <td class="p-3"><span class="status-valid px-2 py-1 rounded text-xs">有効</span></td>
+            <td class="p-3">佐藤美咲 / 営業部</td>
+            <td class="p-3">2025/04/15</td>
+            <td class="p-3"><button class="text-blue-600 underline">参照</button></td>
+          </tr>
+          <tr class="hover:bg-blue-50 cursor-pointer">
+            <td class="p-3">D-2024-0015</td>
+            <td class="p-3">東信工業株式会社</td>
+            <td class="p-3">東信第2工場</td>
+            <td class="p-3">埼玉県川口市</td>
+            <td class="p-3">2024/01/15</td>
+            <td class="p-3">2024/01/15～2025/01/14</td>
+            <td class="p-3">350</td>
+            <td class="p-3"><span class="tag-high px-2 py-1 rounded text-xs">高圧</span></td>
+            <td class="p-3"><span class="status-updating px-2 py-1 rounded text-xs">更新手続中</span></td>
+            <td class="p-3">田中誠 / 営業部</td>
+            <td class="p-3">2025/04/28</td>
+            <td class="p-3"><button class="text-blue-600 underline">参照</button></td>
+          </tr>
+          <tr class="hover:bg-blue-50 cursor-pointer">
+            <td class="p-3">D-2023-0089</td>
+            <td class="p-3">グリーンエナジー株式会社</td>
+            <td class="p-3">本社ビル</td>
+            <td class="p-3">大阪府大阪市中央区</td>
+            <td class="p-3">2023/10/01</td>
+            <td class="p-3">2023/10/01～2025/09/30</td>
+            <td class="p-3">180</td>
+            <td class="p-3"><span class="tag-low px-2 py-1 rounded text-xs">低圧</span></td>
+            <td class="p-3"><span class="status-expired px-2 py-1 rounded text-xs">期限切れ</span></td>
+            <td class="p-3">小林健二 / 営業部</td>
+            <td class="p-3">2025/03/20</td>
+            <td class="p-3"><button class="text-blue-600 underline">参照</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 拡張機能部分 - 更新アラート、単価変動グラフ、稼働実績 -->
+  <section class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <!-- 契約更新アラート -->
+    <div class="bg-white p-4 rounded-xl shadow">
+      <h3 class="text-lg font-semibold mb-3">⚠️ 契約更新アラート</h3>
+      <div class="space-y-3">
+        <div class="border-l-4 border-yellow-500 p-3 bg-yellow-50">
+          <p class="font-medium">東信工業株式会社（D-2024-0015）</p>
+          <p class="text-sm text-gray-600">更新期限: 2025/01/14（あと30日）</p>
+          <div class="mt-2">
+            <button class="bg-blue-600 text-white text-xs px-3 py-1 rounded">更新案内作成</button>
+          </div>
+        </div>
+        <div class="border-l-4 border-red-500 p-3 bg-red-50">
+          <p class="font-medium">グリーンエナジー株式会社（D-2023-0089）</p>
+          <p class="text-sm text-red-600 font-medium">期限超過: 2025/09/30（30日超過）</p>
+          <div class="mt-2">
+            <button class="bg-red-600 text-white text-xs px-3 py-1 rounded">緊急案内作成</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 市場連動単価履歴グラフ (Power BI埋め込み想定) -->
+    <div class="bg-white p-4 rounded-xl shadow">
+      <h3 class="text-lg font-semibold mb-3">📊 市場連動単価履歴</h3>
+      <div class="text-sm text-gray-600 mb-2">株式会社ライフテック・D-2025-0001</div>
+      <canvas id="priceChart" height="200"></canvas>
+      <script>
+        const ctx = document.getElementById('priceChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['4月', '5月', '6月', '7月', '8月', '9月'],
+            datasets: [{
+              label: '市場単価 (円/kWh)',
+              data: [18.5, 19.2, 22.8, 24.5, 21.3, 20.1],
+              borderColor: 'rgb(249, 115, 22)',
+              tension: 0.1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: false,
+                min: 15,
+                max: 30
+              }
+            }
+          }
+        });
+      </script>
+    </div>
+
+    <!-- 営業担当者稼働実績 (Power BI埋め込み想定) -->
+    <div class="bg-white p-4 rounded-xl shadow">
+      <h3 class="text-lg font-semibold mb-3">👥 担当営業稼働実績</h3>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-medium">山田健太郎</span>
+            <p class="text-xs text-gray-600">13件の契約管理中（更新率95%）</p>
+          </div>
+          <button class="text-blue-600 underline text-sm">詳細</button>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-medium">佐藤美咲</span>
+            <p class="text-xs text-gray-600">8件の契約管理中（更新率92%）</p>
+          </div>
+          <button class="text-blue-600 underline text-sm">詳細</button>
+        </div>
+        <div class="flex items-center justify-between">
+          <div>
+            <span class="font-medium">田中誠</span>
+            <p class="text-xs text-gray-600">10件の契約管理中（更新率88%）</p>
+          </div>
+          <button class="text-blue-600 underline text-sm">詳細</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ツールチップの実装（契約種別の説明用） -->
+  <div id="tooltip" class="hidden fixed bg-gray-900 text-white p-2 rounded text-xs max-w-xs z-50"></div>
+  <script>
+    // ツールチップの実装（簡易版）
+    document.querySelectorAll('.tag-market, .tag-high, .tag-low').forEach(tag => {
+      tag.addEventListener('mouseover', (e) => {
+        const tooltip = document.getElementById('tooltip');
+        let text = '';
+        
+        if (e.target.classList.contains('tag-market')) {
+          text = '市場連動型: JEPX価格に連動して毎月単価が変動する契約。変動リスクあり。';
+        } else if (e.target.classList.contains('tag-high')) {
+          text = '高圧: 契約電力50kW以上の需要家向け。一般的に単価が安いが基本料金が高い。';
+        } else if (e.target.classList.contains('tag-low')) {
+          text = '低圧: 契約電力50kW未満の需要家向け。小規模施設やオフィス向け。';
+        }
+        
+        tooltip.textContent = text;
+        tooltip.style.left = `${e.pageX + 10}px`;
+        tooltip.style.top = `${e.pageY + 10}px`;
+        tooltip.classList.remove('hidden');
+      });
+      
+      tag.addEventListener('mouseout', () => {
+        document.getElementById('tooltip').classList.add('hidden');
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>技術の納期管理ダッシュボード</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-delivered { background-color: #10B981; color: white; }
+    .status-ontime { background-color: #3B82F6; color: white; }
+    .status-today { background-color: #F59E0B; color: white; }
+    .status-delayed { background-color: #EF4444; color: white; }
+    
+    .days-left { color: #3B82F6; font-weight: 600; }
+    .days-left.warning { color: #F59E0B; }
+    .days-late { color: #EF4444; font-weight: 600; }
+    
+    .table-row-highlight:nth-child(odd) {
+      background-color: rgba(229, 231, 235, 0.3);
+    }
+    .table-row-highlight:hover {
+      background-color: rgba(59, 130, 246, 0.1);
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans">
+  <!-- ヘッダーセクション -->
+  <header class="bg-blue-600 text-white p-4 shadow-md">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center">
+        <h1 class="text-xl font-bold">技術の納期管理ダッシュボード</h1>
+        <span class="ml-4 text-sm bg-blue-500 px-2 py-1 rounded">技術部門</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span class="text-sm">2025年5月18日（日）</span>
+        <div class="flex items-center">
+          <span class="mr-2">山田 健太郎</span>
+          <div class="w-8 h-8 bg-white text-blue-600 rounded-full flex items-center justify-center font-semibold">YK</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto py-6 px-4">
+    <!-- ステータスカード群 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- 遅延案件カード -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-red-500 text-white px-4 py-3 font-medium flex justify-between items-center">
+          <span>遅延案件</span>
+          <span class="text-2xl">2</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="text-sm text-gray-500">進行中の全案件の<br>3%が遅延中</div>
+          <div class="text-red-500 text-3xl">⚠️</div>
+        </div>
+      </div>
+      
+      <!-- 本日納期カード -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-yellow-500 text-white px-4 py-3 font-medium flex justify-between items-center">
+          <span>本日納期</span>
+          <span class="text-2xl">3</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="text-sm text-gray-500">今日が納期の案件<br>すべて対応予定</div>
+          <div class="text-yellow-500 text-3xl">⏰</div>
+        </div>
+      </div>
+      
+      <!-- 未納品カード -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-blue-500 text-white px-4 py-3 font-medium flex justify-between items-center">
+          <span>未納品</span>
+          <span class="text-2xl">8</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="text-sm text-gray-500">納期前の案件<br>平均12日の余裕</div>
+          <div class="text-blue-500 text-3xl">📋</div>
+        </div>
+      </div>
+      
+      <!-- 納品済カード -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-green-500 text-white px-4 py-3 font-medium flex justify-between items-center">
+          <span>納品済</span>
+          <span class="text-2xl">45</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="text-sm text-gray-500">今月の納品完了<br>納期遵守率：94%</div>
+          <div class="text-green-500 text-3xl">✓</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 追加の集計情報カード -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <!-- 今週納期カード -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-purple-500 text-white px-4 py-3 font-medium flex justify-between items-center">
+          <span>今週納期</span>
+          <span class="text-2xl">5</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="text-purple-500 font-semibold">5月18日〜5月24日</div>
+          <div class="text-purple-500 text-3xl">📅</div>
+        </div>
+      </div>
+      
+      <!-- 平均遅延日数カード -->
+      <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-gray-600 text-white px-4 py-3 font-medium flex justify-between items-center">
+          <span>平均遅延日数</span>
+          <span class="text-2xl">2.3</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="text-sm text-gray-500">前月比<span class="text-green-500">▼0.8日</span></div>
+          <div class="text-gray-600 text-3xl">⏱️</div>
+        </div>
+      </div>
+      
+      <!-- 納期遵守率カード -->
+      <div class="bg-white rounded-lg shadow overflow-hidden col-span-2">
+        <div class="bg-blue-600 text-white px-4 py-3 font-medium">
+          <span>納期遵守率</span>
+        </div>
+        <div class="p-4 flex justify-between items-center">
+          <div class="w-1/3">
+            <div class="relative pt-1">
+              <div class="flex mb-2 items-center justify-between">
+                <div>
+                  <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-blue-600 bg-blue-200">
+                    今月
+                  </span>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-semibold inline-block text-blue-600">
+                    94%
+                  </span>
+                </div>
+              </div>
+              <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-blue-200">
+                <div style="width:94%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"></div>
+              </div>
+            </div>
+          </div>
+          <div class="w-1/3">
+            <div class="relative pt-1">
+              <div class="flex mb-2 items-center justify-between">
+                <div>
+                  <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-green-600 bg-green-200">
+                    前月
+                  </span>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-semibold inline-block text-green-600">
+                    91%
+                  </span>
+                </div>
+              </div>
+              <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-green-200">
+                <div style="width:91%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-green-500"></div>
+              </div>
+            </div>
+          </div>
+          <div class="w-1/3">
+            <div class="relative pt-1">
+              <div class="flex mb-2 items-center justify-between">
+                <div>
+                  <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-yellow-600 bg-yellow-200">
+                    目標
+                  </span>
+                </div>
+                <div class="text-right">
+                  <span class="text-xs font-semibold inline-block text-yellow-600">
+                    95%
+                  </span>
+                </div>
+              </div>
+              <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-yellow-200">
+                <div style="width:95%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-yellow-500"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- フィルターセクション -->
+    <div class="bg-white rounded-lg shadow p-4 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">プロジェクト検索</label>
+          <input type="text" placeholder="プロジェクト名を入力..." class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">業者選択</label>
+          <select class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">すべての業者</option>
+            <option value="山田設備">山田設備</option>
+            <option value="電気商会">電気商会</option>
+            <option value="省エネ社">省エネ社</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">ステータス</label>
+          <select class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">すべてのステータス</option>
+            <option value="未納">未納</option>
+            <option value="本日納期">本日納期</option>
+            <option value="納期前">納期前</option>
+            <option value="納品済">納品済</option>
+            <option value="遅延">遅延</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">納期開始日</label>
+          <input type="date" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">納期終了日</label>
+          <input type="date" class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+      <div class="flex justify-between items-center">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+          検索
+        </button>
+        <div class="flex gap-2">
+          <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8.5 5.5a.5.5 0 0 0-1 0v3.362l-1.429 2.38a.5.5 0 1 0 .858.515l1.5-2.5A.5.5 0 0 0 8.5 9V5.5z"/>
+              <path d="M6.5 0a.5.5 0 0 0 0 1H7v1.07a7.001 7.001 0 0 0-3.273 12.474l-.602.602a.5.5 0 0 0 .707.708l.746-.746A6.97 6.97 0 0 0 8 16a6.97 6.97 0 0 0 3.422-.892l.746.746a.5.5 0 0 0 .707-.708l-.601-.602A7.001 7.001 0 0 0 9 2.07V1h.5a.5.5 0 0 0 0-1h-3zm1.038 3.018a6.093 6.093 0 0 1 .924 0 6 6 0 1 1-.924 0zM0 8.5A.5.5 0 0 1 .5 8h1.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1-.5-.5zm13 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1h-1.5a.5.5 0 0 1-.5-.5z"/>
+            </svg>
+            今日の優先対応
+          </button>
+          <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-md flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M5 1a2 2 0 0 0-2 2v1h10V3a2 2 0 0 0-2-2H5zm6 8H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1z"/>
+              <path d="M0 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2H2a2 2 0 0 1-2-2V7zm2.5 1a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+            </svg>
+            CSVエクスポート
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 発注案件一覧 -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+      <div class="px-6 py-4 bg-gray-50 border-b border-gray-200 font-medium flex justify-between items-center">
+        <h2 class="text-lg">発注案件一覧</h2>
+        <div class="text-sm text-gray-600">全58件中 13件表示（遅延・本日納期優先表示）</div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                プロジェクト情報
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                発注先
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                発注日
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                納期
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                実納品日
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                差分/遅延
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                ステータス
+              </th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                操作
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <!-- 遅延案件 -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">ABC工場空調更新</div>
+                <div class="text-xs text-gray-500">P-2025-0001</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">山田設備</div>
+                <div class="text-xs text-gray-500">担当: 田中</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/01
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/16
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                <input type="date" class="border border-gray-300 rounded p-1 text-sm">
+              </td>
+              <td class="px-6 py-4">
+                <div class="days-late">遅延: 2日</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-delayed">⚠️ 遅延</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex gap-2">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">納品登録</button>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- 遅延案件 -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">FGH物流センター照明</div>
+                <div class="text-xs text-gray-500">P-2025-0015</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">電気商会</div>
+                <div class="text-xs text-gray-500">担当: 吉田</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/03
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/14
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                <input type="date" class="border border-gray-300 rounded p-1 text-sm">
+              </td>
+              <td class="px-6 py-4">
+                <div class="days-late">遅延: 4日</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-delayed">⚠️ 遅延</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex gap-2">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">納品登録</button>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- 本日納期 -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">DEF倉庫LED更新</div>
+                <div class="text-xs text-gray-500">P-2025-0008</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">電気商会</div>
+                <div class="text-xs text-gray-500">担当: 鈴木</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/10
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/18
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                <input type="date" class="border border-gray-300 rounded p-1 text-sm">
+              </td>
+              <td class="px-6 py-4">
+                <div class="days-left warning">今日が納期</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-today">⏰ 本日納期</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex gap-2">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">納品登録</button>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- 本日納期 -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">IJK本社ビル空調部品</div>
+                <div class="text-xs text-gray-500">P-2025-0022</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">山田設備</div>
+                <div class="text-xs text-gray-500">担当: 田中</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/12
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/18
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                <input type="date" class="border border-gray-300 rounded p-1 text-sm">
+              </td>
+              <td class="px-6 py-4">
+                <div class="days-left warning">今日が納期</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-today">⏰ 本日納期</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex gap-2">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">納品登録</button>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- 納期前 -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">GHI工場省エネ化</div>
+                <div class="text-xs text-gray-500">P-2025-0012</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">省エネ社</div>
+                <div class="text-xs text-gray-500">担当: 佐藤</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/15
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/06/15
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                <input type="date" class="border border-gray-300 rounded p-1 text-sm">
+              </td>
+              <td class="px-6 py-4">
+                <div class="days-left">あと28日</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-ontime">🔵 納期前</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex gap-2">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">納品登録</button>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- 納期前（期限近い） -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">MNOビル照明器具</div>
+                <div class="text-xs text-gray-500">P-2025-0018</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">電気商会</div>
+                <div class="text-xs text-gray-500">担当: 吉田</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/13
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/20
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                <input type="date" class="border border-gray-300 rounded p-1 text-sm">
+              </td>
+              <td class="px-6 py-4">
+                <div class="days-left warning">あと2日</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-ontime">🔵 納期前</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <div class="flex gap-2">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs">納品登録</button>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- 納品済（前倒し） -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">PQR薬品倉庫空調</div>
+                <div class="text-xs text-gray-500">P-2025-0005</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">山田設備</div>
+                <div class="text-xs text-gray-500">担当: 田中</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/04/25
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/25
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/16
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-green-500 font-medium">-9日（前倒し）</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-delivered">✓ 納品済</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <button class="text-blue-600 hover:text-blue-900">詳細</button>
+              </td>
+            </tr>
+            
+            <!-- 納品済（ジャストインタイム） -->
+            <tr class="table-row-highlight">
+              <td class="px-6 py-4">
+                <div class="font-medium text-gray-900">STU事務所LED照明</div>
+                <div class="text-xs text-gray-500">P-2025-0003</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">電気商会</div>
+                <div class="text-xs text-gray-500">担当: 鈴木</div>
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/04/20
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/15
+              </td>
+              <td class="px-6 py-4 text-sm text-gray-900">
+                2025/05/15
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-blue-500 font-medium">±0日（納期通り）</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="status-badge status-delivered">✓ 納品済</span>
+              </td>
+              <td class="px-6 py-4 text-sm font-medium">
+                <button class="text-blue-600 hover:text-blue-900">詳細</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- ページネーション -->
+      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <a href="#" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            前へ
+          </a>
+          <a href="#" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            次へ
+          </a>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              <span class="font-medium">58</span>
+              件中
+              <span class="font-medium">1</span>
+              から
+              <span class="font-medium">10</span>
+              件を表示
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">前へ</span>
+                <!-- Heroicon name: solid/chevron-left -->
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+              <a href="#" aria-current="page" class="z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                1
+              </a>
+              <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                2
+              </a>
+              <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                3
+              </a>
+              <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                ...
+              </span>
+              <a href="#" class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                6
+              </a>
+              <a href="#" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">次へ</span>
+                <!-- Heroicon name: solid/chevron-right -->
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>発注予定一覧</title>
+    <style>
+        /* 基本スタイル */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'メイリオ', sans-serif;
+        }
+        
+        body {
+            background-color: #F3F4F6;
+            color: #333333;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* ヘッダー */
+        .header {
+            background-color: #3B82F6;
+            color: white;
+            padding: 16px 20px;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            font-weight: normal;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background-color: white;
+            color: #3B82F6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        /* フィルターエリア */
+        .filter-area {
+            background-color: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+        
+        .filter-label {
+            font-size: 12px;
+            margin-bottom: 4px;
+            color: #666;
+        }
+        
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid #D1D5DB;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .filter-date {
+            display: flex;
+            align-items: center;
+        }
+        
+        .filter-date input {
+            width: 120px;
+        }
+        
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            margin-left: auto;
+            align-self: flex-end;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #3B82F6;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #9CA3AF;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #10B981;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #EF4444;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        /* 一覧ヘッダー */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 16px 0;
+            padding: 0 8px;
+        }
+        
+        .counts {
+            font-weight: bold;
+        }
+        
+        .highlight {
+            color: #3B82F6;
+        }
+        
+        .sort-buttons {
+            display: flex;
+            gap: 16px;
+        }
+        
+        .sort-button {
+            background: none;
+            border: none;
+            color: #3B82F6;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        /* 一覧表示 */
+        .order-list {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .order-item {
+            display: flex;
+            border-bottom: 1px solid #E5E7EB;
+            position: relative;
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            flex-shrink: 0;
+            height: 100%;
+        }
+        
+        .status-pending {
+            background-color: #F59E0B;
+        }
+        
+        .status-approved {
+            background-color: #10B981;
+        }
+        
+        .status-rejected {
+            background-color: #EF4444;
+        }
+        
+        .order-content {
+            padding: 16px;
+            flex-grow: 1;
+        }
+        
+        .order-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-icon {
+            margin-right: 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+        
+        .status-icon.pending {
+            color: #F59E0B;
+        }
+        
+        .status-icon.approved {
+            color: #10B981;
+        }
+        
+        .status-icon.rejected {
+            color: #EF4444;
+        }
+        
+        .order-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .order-amount {
+            font-weight: bold;
+            text-align: right;
+        }
+        
+        .order-status {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-badge.pending {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        
+        .status-badge.approved {
+            background-color: #D1FAE5;
+            color: #065F46;
+        }
+        
+        .status-badge.rejected {
+            background-color: #FEE2E2;
+            color: #991B1B;
+        }
+        
+        .detail-button {
+            padding: 8px 16px;
+            background-color: transparent;
+            color: #3B82F6;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            align-self: center;
+            margin-right: 8px;
+        }
+        
+        .detail-button:hover {
+            background-color: #EFF6FF;
+        }
+        
+        /* アクションエリア */
+        .action-area {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .filter-area {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                width: 100%;
+            }
+            
+            .filter-buttons {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 12px;
+            }
+            
+            .order-info {
+                flex-direction: column;
+            }
+            
+            .order-amount {
+                text-align: left;
+                margin-top: 4px;
+            }
+            
+            .action-area {
+                justify-content: space-between;
+            }
+            
+            .action-area .btn {
+                flex: 1;
+                white-space: nowrap;
+                padding: 8px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div>発注予定一覧</div>
+        <div class="user-info">
+            <span>技術部 山田太郎</span>
+            <div class="user-avatar">山</div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- フィルターエリア -->
+        <div class="filter-area">
+            <div class="filter-group">
+                <label class="filter-label">プロジェクト</label>
+                <select class="filter-input">
+                    <option>全て</option>
+                    <option>照明設備更新</option>
+                    <option>空調制御盤</option>
+                    <option>配管工事資材</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">担当者</label>
+                <select class="filter-input">
+                    <option>全て</option>
+                    <option>田中</option>
+                    <option>佐藤</option>
+                    <option>山田</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">期間</label>
+                <div class="filter-date">
+                    <input type="date" class="filter-input" value="2025-04-18">
+                    <span style="margin: 0 8px;">～</span>
+                    <input type="date" class="filter-input" value="2025-07-18">
+                </div>
+            </div>
+            
+            <div class="filter-buttons">
+                <button class="btn btn-primary">検索</button>
+                <button class="btn btn-secondary">リセット</button>
+            </div>
+        </div>
+        
+        <!-- 一覧ヘッダー -->
+        <div class="list-header">
+            <div class="counts">全<span class="highlight">45</span>件中、未承認<span class="highlight">15</span>件</div>
+            <div class="sort-buttons">
+                <button class="sort-button">発注日 ▼</button>
+                <button class="sort-button">金額 ▼</button>
+                <button class="sort-button">重要度 ▼</button>
+            </div>
+        </div>
+        
+        <!-- 一覧表示 -->
+        <div class="order-list">
+            <!-- 未承認のアイテム -->
+            <div class="order-item">
+                <div class="status-indicator status-pending"></div>
+                <div class="order-content">
+                    <div class="order-title">
+                        <div class="status-icon pending">⏱</div>
+                        P-2025-0012 照明設備更新
+                    </div>
+                    <div class="order-info">
+                        <div>発注日: 2025/05/20  内容: LED照明一式</div>
+                        <div class="order-amount">850,000円</div>
+                    </div>
+                    <div class="order-status">
+                        <div>
+                            <span class="status-badge pending">未承認</span>
+                            担当: 田中
+                        </div>
+                    </div>
+                </div>
+                <button class="detail-button">詳細▶</button>
+            </div>
+            
+            <!-- 承認済みのアイテム -->
+            <div class="order-item">
+                <div class="status-indicator status-approved"></div>
+                <div class="order-content">
+                    <div class="order-title">
+                        <div class="status-icon approved">✓</div>
+                        P-2025-0008 空調制御盤
+                    </div>
+                    <div class="order-info">
+                        <div>発注日: 2025/05/18  内容: 温度センサー交換</div>
+                        <div class="order-amount">250,000円</div>
+                    </div>
+                    <div class="order-status">
+                        <div>
+                            <span class="status-badge approved">承認済</span>
+                            担当: 佐藤
+                        </div>
+                    </div>
+                </div>
+                <button class="detail-button">詳細▶</button>
+            </div>
+            
+            <!-- 却下のアイテム -->
+            <div class="order-item">
+                <div class="status-indicator status-rejected"></div>
+                <div class="order-content">
+                    <div class="order-title">
+                        <div class="status-icon rejected">✕</div>
+                        P-2025-0010 配管工事資材
+                    </div>
+                    <div class="order-info">
+                        <div>発注日: 2025/05/19  内容: 高圧継手部材</div>
+                        <div class="order-amount">120,000円</div>
+                    </div>
+                    <div class="order-status">
+                        <div>
+                            <span class="status-badge rejected">却下</span>
+                            担当: 山田  理由: 仕様再確認
+                        </div>
+                    </div>
+                </div>
+                <button class="detail-button">詳細▶</button>
+            </div>
+            
+            <!-- 未承認・緊急のアイテム -->
+            <div class="order-item">
+                <div class="status-indicator status-pending"></div>
+                <div class="order-content" style="background-color: #FEF3C7;">
+                    <div class="order-title">
+                        <div class="status-icon pending">⏱</div>
+                        P-2025-0015 冷温水配管修繕
+                    </div>
+                    <div class="order-info">
+                        <div>発注日: 2025/05/21  内容: バルブ交換部品  緊急度: <strong>高</strong></div>
+                        <div class="order-amount">480,000円</div>
+                    </div>
+                    <div class="order-status">
+                        <div>
+                            <span class="status-badge pending">未承認</span>
+                            担当: 鈴木
+                        </div>
+                    </div>
+                </div>
+                <button class="detail-button">詳細▶</button>
+            </div>
+            
+            <!-- 承認済みの大型予算アイテム -->
+            <div class="order-item">
+                <div class="status-indicator status-approved"></div>
+                <div class="order-content">
+                    <div class="order-title">
+                        <div class="status-icon approved">✓</div>
+                        P-2025-0009 監視システム更新
+                    </div>
+                    <div class="order-info">
+                        <div>発注日: 2025/05/17  内容: 中央監視装置一式</div>
+                        <div class="order-amount">3,200,000円</div>
+                    </div>
+                    <div class="order-status">
+                        <div>
+                            <span class="status-badge approved">承認済</span>
+                            担当: 高橋
+                        </div>
+                    </div>
+                </div>
+                <button class="detail-button">詳細▶</button>
+            </div>
+        </div>
+        
+        <!-- アクションエリア -->
+        <div class="action-area">
+            <button class="btn btn-primary">+ 新規発注</button>
+            <button class="btn btn-success">一括承認</button>
+            <button class="btn btn-secondary">承認状況変更履歴</button>
+            <button class="btn btn-secondary">発注実績ダッシュボード</button>
+        </div>
+    </div>
+    
+    <!-- 詳細表示ポップアップ（非表示） -->
+    <div id="detailPopup" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border-radius: 8px; padding: 24px; width: 80%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
+            <h2 style="margin-bottom: 16px; display: flex; justify-content: space-between;">
+                発注詳細・承認管理
+                <button style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+            </h2>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 8px;">基本情報</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>プロジェクト: P-2025-0012 照明設備更新</div>
+                    <div>発注日: 2025/05/20</div>
+                    <div>納期予定日: 2025/06/15</div>
+                    <div>緊急度: 中</div>
+                    <div>担当者: 田中 太郎</div>
+                    <div>部門: 技術部</div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 8px;">発注内容</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div>品名: LED照明一式</div>
+                    <div>発注先: 株式会社ライティング</div>
+                    <div style="grid-column: span 2;">仕様: 40W相当 天井埋込型 調光対応 50台</div>
+                    <div style="grid-column: span 2; text-align: right; font-weight: bold;">合計: 850,000円（税込）</div>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 8px;">添付ファイル</h3>
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn" style="background-color: #F3F4F6; color: #333;">📄 見積書.pdf</button>
+                    <button class="btn" style="background-color: #F3F4F6; color: #333;">📄 仕様書.docx</button>
+                    <button class="btn" style="background-color: #F3F4F6; color: #333;">📄 図面.dwg</button>
+                </div>
+            </div>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="margin-bottom: 8px;">承認フロー</h3>
+                <div style="margin-bottom: 12px;">
+                    <div>1. 技術部門承認 → ✓ 山本部長 (5/16承認)</div>
+                    <div>2. 予算確認 → ✓ 経理部 佐々木 (5/17承認)</div>
+                    <div>3. 最終承認 → ⏱ 購買部 鈴木 (未承認)</div>
+                </div>
+                
+                <h3 style="margin-bottom: 8px;">承認履歴</h3>
+                <div style="background-color: #F3F4F6; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    <div>5/16 10:30 山本部長：技術仕様を確認、承認します</div>
+                    <div>5/17 14:45 佐々木：予算内で問題ありません</div>
+                </div>
+            </div>
+            
+            <div>
+                <h3 style="margin-bottom: 8px;">承認コメント入力</h3>
+                <textarea style="width: 100%; padding: 12px; border: 1px solid #D1D5DB; border-radius: 8px; min-height: 100px; margin-bottom: 16px;"></textarea>
+                
+                <div style="display: flex; gap: 12px;">
+                    <button class="btn btn-primary">承認する</button>
+                    <button class="btn btn-secondary">差し戻す</button>
+                    <button class="btn btn-danger">却下する</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

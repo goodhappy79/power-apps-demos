@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電力販売HUB画面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <!-- ヘッダーセクション -->
+  <header class="bg-green-800 text-white p-4 flex justify-between items-center shadow-lg">
+    <div class="flex items-center">
+      <h1 class="text-2xl font-bold">営業活動支援システム</h1>
+      <span class="ml-4 bg-green-700 px-3 py-1 rounded-full text-sm">電力販売部門</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="relative">
+        <i class="fas fa-bell text-xl cursor-pointer"></i>
+        <span class="absolute -top-1 -right-1 bg-red-500 text-xs text-white rounded-full w-4 h-4 flex items-center justify-center">5</span>
+      </div>
+      <span>佐々木 誠</span>
+      <div class="w-10 h-10 bg-white text-green-800 rounded-full flex items-center justify-center font-semibold">SS</div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <div class="container mx-auto px-4 py-6">
+    
+    <!-- 検索/フィルターバー -->
+    <div class="flex flex-col md:flex-row gap-4 mb-6">
+      <div class="flex-grow relative">
+        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        <input type="text" placeholder="顧客/契約検索..." class="w-full pl-10 pr-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500">
+      </div>
+      <div class="flex gap-2">
+        <select class="px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-green-500">
+          <option>契約種別：全て</option>
+          <option>高圧</option>
+          <option>低圧</option>
+        </select>
+        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+          <i class="fas fa-filter mr-2"></i>フィルター
+        </button>
+      </div>
+    </div>
+    
+    <!-- 優先アクションエリア -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold flex items-center">
+          <i class="fas fa-bolt text-amber-500 mr-2"></i> 優先アクション
+          <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">4</span>
+        </h2>
+        <a href="#" class="text-green-600 hover:text-green-800 text-sm font-medium">
+          <i class="fas fa-plus"></i> 追加
+        </a>
+      </div>
+      
+      <!-- 優先アクションリスト -->
+      <div class="space-y-3">
+        <!-- アクション1 -->
+        <div class="bg-red-50 border-l-4 border-red-500 rounded p-3 flex justify-between items-center">
+          <div>
+            <div class="font-medium">5月分請求作成（25件）</div>
+            <div class="text-sm text-gray-600">締切：2025/05/20（残り2日）</div>
+          </div>
+          <a href="#" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">今すぐ対応</a>
+        </div>
+        
+        <!-- アクション2 -->
+        <div class="bg-amber-50 border-l-4 border-amber-500 rounded p-3 flex justify-between items-center">
+          <div>
+            <div class="font-medium">契約切替中：8件</div>
+            <div class="text-sm text-gray-600">進捗確認が必要です</div>
+          </div>
+          <a href="#" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-sm">一覧確認</a>
+        </div>
+        
+        <!-- アクション3 -->
+        <div class="bg-amber-50 border-l-4 border-amber-500 rounded p-3 flex justify-between items-center">
+          <div>
+            <div class="font-medium">単価改定告知：15件（6月適用）</div>
+            <div class="text-sm text-gray-600">顧客通知期限：2025/05/25（残り7日）</div>
+          </div>
+          <a href="#" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-sm">一括処理</a>
+        </div>
+        
+        <!-- アクション4 -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 rounded p-3 flex justify-between items-center">
+          <div>
+            <div class="font-medium">満了予定：10件（3ヶ月以内）</div>
+            <div class="text-sm text-gray-600">更新提案の準備が必要です</div>
+          </div>
+          <a href="#" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">一覧表示</a>
+        </div>
+      </div>
+    </div>
+    
+    <!-- リスク・遅延アラートセクション -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold flex items-center">
+          <i class="fas fa-exclamation-triangle text-red-500 mr-2"></i> リスク・遅延アラート
+          <span class="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
+        </h2>
+        <a href="#" class="text-green-600 hover:text-green-800 text-sm font-medium">
+          すべて表示
+        </a>
+      </div>
+      
+      <!-- リスクアラートリスト -->
+      <div class="space-y-3">
+        <!-- リスク1 -->
+        <div class="bg-white border border-red-200 rounded p-3 flex justify-between items-center">
+          <div class="flex items-start gap-3">
+            <div class="bg-red-100 text-red-500 p-2 rounded-full">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div>
+              <div class="font-medium">請求未作成：5件</div>
+              <div class="text-sm text-gray-600">期限まで2日（担当：山田）</div>
+              <div class="mt-1 text-xs text-red-600">リスク：請求遅延による入金遅れ</div>
+            </div>
+          </div>
+          <a href="#" class="bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded text-sm">一括作成</a>
+        </div>
+        
+        <!-- リスク2 -->
+        <div class="bg-white border border-amber-200 rounded p-3 flex justify-between items-center">
+          <div class="flex items-start gap-3">
+            <div class="bg-amber-100 text-amber-500 p-2 rounded-full">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div>
+              <div class="font-medium">切替遅延：3件</div>
+              <div class="text-sm text-gray-600">標準期間超過15日以上（担当：鈴木）</div>
+              <div class="mt-1 text-xs text-amber-600">リスク：顧客満足度低下</div>
+            </div>
+          </div>
+          <a href="#" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1 rounded text-sm">確認</a>
+        </div>
+        
+        <!-- リスク3 -->
+        <div class="bg-white border border-amber-200 rounded p-3 flex justify-between items-center">
+          <div class="flex items-start gap-3">
+            <div class="bg-amber-100 text-amber-500 p-2 rounded-full">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div>
+              <div class="font-medium">入金遅延：4件</div>
+              <div class="text-sm text-gray-600">支払期限超過（最大：15日）</div>
+              <div class="mt-1 text-xs text-amber-600">リスク：キャッシュフロー影響</div>
+            </div>
+          </div>
+          <a href="#" class="bg-amber-100 hover:bg-amber-200 text-amber-800 px-3 py-1 rounded text-sm">督促</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI/概要セクション -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <!-- KPI カラム1 -->
+      <div class="bg-white rounded-xl shadow-md p-4">
+        <h3 class="text-sm font-semibold text-gray-500 mb-2">電力販売KPI</h3>
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between">
+              <span class="text-sm">契約件数</span>
+              <span class="text-sm font-semibold">158件</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+              <div class="bg-green-600 h-2 rounded-full" style="width: 85%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between">
+              <span class="text-sm">月間売上</span>
+              <span class="text-sm font-semibold">3,250万円</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+              <div class="bg-green-600 h-2 rounded-full" style="width: 78%"></div>
+            </div>
+          </div>
+          <div>
+            <div class="flex justify-between">
+              <span class="text-sm">平均粗利率</span>
+              <span class="text-sm font-semibold">12.8% <span class="text-red-500">(-0.5%)</span></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
+              <div class="bg-amber-500 h-2 rounded-full" style="width: 65%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- KPI カラム2 -->
+      <div class="bg-white rounded-xl shadow-md p-4">
+        <h3 class="text-sm font-semibold text-gray-500 mb-2">契約状況</h3>
+        <div class="flex mb-4">
+          <div class="w-1/2 mr-2">
+            <div class="bg-green-50 p-3 rounded-lg text-center">
+              <div class="text-xs text-gray-500">高圧</div>
+              <div class="text-xl font-bold text-green-700">45件</div>
+              <div class="text-xs text-gray-500">平均単価: 17.2円</div>
+            </div>
+          </div>
+          <div class="w-1/2 ml-2">
+            <div class="bg-blue-50 p-3 rounded-lg text-center">
+              <div class="text-xs text-gray-500">低圧</div>
+              <div class="text-xl font-bold text-blue-700">113件</div>
+              <div class="text-xs text-gray-500">平均単価: 26.5円</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-2 p-2 bg-amber-50 rounded-lg">
+          <div>
+            <div class="text-xs text-gray-500">切替中</div>
+            <div class="text-sm font-bold text-amber-700">8件</div>
+          </div>
+          <div class="text-xs text-gray-600">
+            <div>標準期間内：5件</div>
+            <div>遅延中：3件</div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between mt-2 p-2 bg-red-50 rounded-lg">
+          <div>
+            <div class="text-xs text-gray-500">満了3ヶ月内</div>
+            <div class="text-sm font-bold text-red-700">10件</div>
+          </div>
+          <div class="text-xs text-gray-600">
+            <div>更新提案済：2件</div>
+            <div>未対応：8件</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- KPI カラム3 -->
+      <div class="bg-white rounded-xl shadow-md p-4">
+        <h3 class="text-sm font-semibold text-gray-500 mb-2">今日の予定／最近の更新</h3>
+        <div class="divide-y">
+          <div class="py-2">
+            <div class="text-sm font-medium">10:00 MNO社訪問</div>
+            <div class="text-xs text-gray-500">単価改定の説明</div>
+          </div>
+          <div class="py-2">
+            <div class="text-sm font-medium">13:00 請求処理</div>
+            <div class="text-xs text-gray-500">5月分請求書作成</div>
+          </div>
+          <div class="py-2">
+            <div class="text-sm font-medium">16:00 価格検討会議</div>
+            <div class="text-xs text-gray-500">7月度単価改定会議</div>
+          </div>
+          <div class="py-2">
+            <div class="text-sm font-medium flex items-center">
+              <i class="fas fa-file-alt text-green-500 mr-1"></i> 新規契約登録×2件
+              <span class="text-xs text-gray-500 ml-auto">14:30</span>
+            </div>
+          </div>
+          <div class="py-2">
+            <div class="text-sm font-medium flex items-center">
+              <i class="fas fa-check text-green-500 mr-1"></i> 請求完了15件
+              <span class="text-xs text-gray-500 ml-auto">11:15</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 市場価格トレンド -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold flex items-center">
+          <i class="fas fa-chart-line text-green-500 mr-2"></i> 電力市場価格トレンド
+        </h2>
+        <a href="#" class="text-green-600 hover:text-green-800 text-sm font-medium">
+          詳細分析
+        </a>
+      </div>
+      
+      <div class="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
+        <!-- ここに実際のグラフが入る想定 -->
+        <div class="text-center text-gray-500">
+          <i class="fas fa-chart-line text-4xl mb-2"></i>
+          <div>電力市場価格推移グラフ</div>
+          <div class="text-sm">現在の市場価格: 17.8円/kWh (前月比 +2.1%)</div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-3 gap-4 mt-4">
+        <div class="bg-green-50 p-3 rounded-lg">
+          <div class="text-xs text-gray-600">JEPX平均価格</div>
+          <div class="text-lg font-bold text-green-700">17.8円/kWh</div>
+          <div class="text-xs text-gray-600 flex items-center">
+            <i class="fas fa-arrow-up text-red-500 mr-1"></i> 前月比 +2.1%
+          </div>
+        </div>
+        <div class="bg-blue-50 p-3 rounded-lg">
+          <div class="text-xs text-gray-600">当社平均販売単価</div>
+          <div class="text-lg font-bold text-blue-700">24.5円/kWh</div>
+          <div class="text-xs text-gray-600 flex items-center">
+            <i class="fas fa-arrow-up text-red-500 mr-1"></i> 前月比 +0.8%
+          </div>
+        </div>
+        <div class="bg-purple-50 p-3 rounded-lg">
+          <div class="text-xs text-gray-600">予測（次月）</div>
+          <div class="text-lg font-bold text-purple-700">18.2円/kWh</div>
+          <div class="text-xs text-gray-600 flex items-center">
+            <i class="fas fa-arrow-up text-red-500 mr-1"></i> 当月比 +2.2%
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 主要機能へのリンクセクション -->
+    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-8">
+      
+      <!-- 契約管理カード -->
+      <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+        <div class="bg-gradient-to-r from-green-600 to-green-800 text-white p-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-semibold text-lg">契約管理</h3>
+            <i class="fas fa-file-contract text-2xl"></i>
+          </div>
+          <p class="text-sm text-green-100 mt-2">顧客契約情報の管理と検索</p>
+        </div>
+        <div class="p-4">
+          <div class="flex flex-col gap-2">
+            <a href="#" class="flex items-center text-green-600 hover:text-green-800 py-2 border-b">
+              <i class="fas fa-list mr-2"></i> 顧客別契約管理
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+            <a href="#" class="flex items-center text-green-600 hover:text-green-800 py-2 border-b">
+              <i class="fas fa-exchange-alt mr-2"></i> 契約切替管理
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+            <a href="#" class="flex items-center text-green-600 hover:text-green-800 py-2">
+              <i class="fas fa-hourglass-end mr-2"></i> 契約満了管理
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+          </div>
+          <div class="mt-4 bg-green-50 p-3 rounded-lg text-sm">
+            <div class="font-medium text-green-800">契約状況</div>
+            <div class="flex justify-between mt-1">
+              <span>有効契約：158件</span>
+              <span>今月新規：5件</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 請求管理カード -->
+      <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-800 text-white p-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-semibold text-lg">請求管理</h3>
+            <i class="fas fa-file-invoice-dollar text-2xl"></i>
+          </div>
+          <p class="text-sm text-blue-100 mt-2">電力量に基づく請求処理と管理</p>
+        </div>
+        <div class="p-4">
+          <div class="flex flex-col gap-2">
+            <a href="#" class="flex items-center text-blue-600 hover:text-blue-800 py-2 border-b">
+              <i class="fas fa-file-alt mr-2"></i> 従量請求作成
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+            <a href="#" class="flex items-center text-blue-600 hover:text-blue-800 py-2 border-b">
+              <i class="fas fa-history mr-2"></i> 請求履歴・修正
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+            <a href="#" class="flex items-center text-blue-600 hover:text-blue-800 py-2">
+              <i class="fas fa-calculator mr-2"></i> 使用量入力
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+          </div>
+          <div class="mt-4 bg-blue-50 p-3 rounded-lg text-sm">
+            <div class="font-medium text-blue-800">請求状況</div>
+            <div class="flex justify-between mt-1">
+              <span>当月請求：25件未処理</span>
+              <span>前月完了：152件</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 分析管理カード -->
+      <div class="bg-white rounded-xl shadow-md overflow-hidden card-hover">
+        <div class="bg-gradient-to-r from-purple-600 to-purple-800 text-white p-4">
+          <div class="flex justify-between items-center">
+            <h3 class="font-semibold text-lg">分析・収益管理</h3>
+            <i class="fas fa-chart-pie text-2xl"></i>
+          </div>
+          <p class="text-sm text-purple-100 mt-2">販売実績と収益分析</p>
+        </div>
+        <div class="p-4">
+          <div class="flex flex-col gap-2">
+            <a href="#" class="flex items-center text-purple-600 hover:text-purple-800 py-2 border-b">
+              <i class="fas fa-chart-line mr-2"></i> 市場価格分析
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+            <a href="#" class="flex items-center text-purple-600 hover:text-purple-800 py-2 border-b">
+              <i class="fas fa-percentage mr-2"></i> 売上・粗利モニター
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+            <a href="#" class="flex items-center text-purple-600 hover:text-purple-800 py-2">
+              <i class="fas fa-tags mr-2"></i> 単価管理
+              <i class="fas fa-chevron-right ml-auto"></i>
+            </a>
+          </div>
+          <div class="mt-4 bg-purple-50 p-3 rounded-lg text-sm">
+            <div class="font-medium text-purple-800">収益状況</div>
+            <div class="flex justify-between mt-1">
+              <span>当月粗利：417万円</span>
+              <span>前月比：-2.1%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 燃料費調整情報 -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-lg font-semibold flex items-center">
+          <i class="fas fa-gas-pump text-amber-500 mr-2"></i> 燃料費調整情報
+        </h2>
+        <a href="#" class="text-green-600 hover:text-green-800 text-sm font-medium">
+          詳細表示
+        </a>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-amber-50 p-3 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <div class="text-sm font-medium">当月調整単価</div>
+            <div class="text-xs text-gray-500">2025年5月</div>
+          </div>
+          <div class="text-2xl font-bold text-amber-700">+3.24円/kWh</div>
+          <div class="text-xs text-gray-600 flex items-center mt-1">
+            <i class="fas fa-arrow-up text-red-500 mr-1"></i> 前月比 +0.18円
+          </div>
+        </div>
+        
+        <div class="bg-blue-50 p-3 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <div class="text-sm font-medium">翌月見通し</div>
+            <div class="text-xs text-gray-500">2025年6月</div>
+          </div>
+          <div class="text-2xl font-bold text-blue-700">+3.38円/kWh</div>
+          <div class="text-xs text-gray-600 flex items-center mt-1">
+            <i class="fas fa-arrow-up text-red-500 mr-1"></i> 当月比 +0.14円
+          </div>
+        </div>
+        
+        <div class="bg-gray-50 p-3 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <div class="text-sm font-medium">参照原油価格</div>
+            <div class="text-xs text-gray-500">直近3ヶ月平均</div>
+          </div>
+          <div class="text-2xl font-bold text-gray-700">$82.5/バレル</div>
+          <div class="text-xs text-gray-600 flex items-center mt-1">
+            <i class="fas fa-arrow-up text-red-500 mr-1"></i> 前月比 +$1.8
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-4 text-sm text-gray-600">
+        <div class="flex items-center">
+          <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+          <span>次回単価改定告知期限：2025/05/25（15件対象）</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 下部グリッドエリア -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      
+      <!-- 顧客満足度/サポート情報 -->
+      <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-lg flex items-center">
+            <i class="fas fa-smile text-green-500 mr-2"></i> 顧客満足度
+          </h3>
+          <a href="#" class="text-green-600 hover:text-green-800 text-sm">
+            詳細
+          </a>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4 mb-4">
+          <div class="bg-gray-50 p-3 rounded-lg text-center">
+            <div class="text-3xl font-bold text-green-600">4.2</div>
+            <div class="text-xs text-gray-500">総合評価 (5点満点)</div>
+          </div>
+          <div class="bg-gray-50 p-3 rounded-lg text-center">
+            <div class="text-3xl font-bold text-blue-600">98%</div>
+            <div class="text-xs text-gray-500">契約継続率</div>
+          </div>
+          <div class="bg-gray-50 p-3 rounded-lg text-center">
+            <div class="text-3xl font-bold text-purple-600">+12</div>
+            <div class="text-xs text-gray-500">NPS スコア</div>
+          </div>
+        </div>
+        
+        <div class="mt-4">
+          <h4 class="text-sm font-medium mb-2">最近のフィードバック</h4>
+          <div class="space-y-2">
+            <div class="bg-gray-50 p-2 rounded">
+              <div class="flex items-center">
+                <div class="text-amber-500 mr-2">
+                  <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="far fa-star"></i>
+                </div>
+                <div class="text-xs text-gray-500">ABC株式会社</div>
+              </div>
+              <div class="text-sm mt-1">「請求書の説明が丁寧で分かりやすい」</div>
+            </div>
+            <div class="bg-gray-50 p-2 rounded">
+              <div class="flex items-center">
+                <div class="text-amber-500 mr-2">
+                  <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i>
+                </div>
+                <div class="text-xs text-gray-500">DEF工業</div>
+              </div>
+              <div class="text-sm mt-1">「問い合わせへの対応が迅速」</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 部門間連携/連絡履歴 -->
+      <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-semibold text-lg flex items-center">
+            <i class="fas fa-exchange-alt text-green-500 mr-2"></i> 部門間連携・連絡履歴
+          </h3>
+          <a href="#" class="text-green-600 hover:text-green-800 text-sm">
+            すべて表示
+          </a>
+        </div>
+        
+        <!-- 部門連携タブ -->
+        <div class="flex border-b mb-4">
+          <button class="px-4 py-2 text-green-600 border-b-2 border-green-600 font-medium">連携状況</button>
+          <button class="px-4 py-2 text-gray-500 hover:text-gray-700">顧客連絡履歴</button>
+        </div>
+        
+        <!-- 部門連携リスト -->
+        <div class="space-y-3">
+          <div class="flex items-center gap-4 p-2 hover:bg-gray-50 rounded">
+            <div class="w-10 h-10 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <div class="flex-grow">
+              <div class="font-medium">経理部門</div>
+              <div class="text-sm text-gray-600">5月分請求データ連携（全158件）</div>
+            </div>
+            <span class="bg-amber-100 text-amber-800 px-2 py-1 rounded text-xs">処理中</span>
+            <button class="text-green-600 hover:text-green-800">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-4 p-2 hover:bg-gray-50 rounded">
+            <div class="w-10 h-10 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-headset"></i>
+            </div>
+            <div class="flex-grow">
+              <div class="font-medium">カスタマー部門</div>
+              <div class="text-sm text-gray-600">GHI商事 問い合わせ対応依頼</div>
+            </div>
+            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">完了</span>
+            <button class="text-green-600 hover:text-green-800">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-4 p-2 hover:bg-gray-50 rounded">
+            <div class="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-file-contract"></i>
+            </div>
+            <div class="flex-grow">
+              <div class="font-medium">法務部門</div>
+              <div class="text-sm text-gray-600">契約書テンプレート改定依頼</div>
+            </div>
+            <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">対応待ち</span>
+            <button class="text-green-600 hover:text-green-800">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+          
+          <div class="flex items-center gap-4 p-2 hover:bg-gray-50 rounded">
+            <div class="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
+              <i class="fas fa-chart-pie"></i>
+            </div>
+            <div class="flex-grow">
+              <div class="font-medium">経営企画部門</div>
+              <div class="text-sm text-gray-600">7月度価格戦略ミーティング</div>
+            </div>
+            <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">予定</span>
+            <button class="text-green-600 hover:text-green-800">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+        
+        <div class="mt-4 text-center">
+          <button class="text-green-600 hover:text-green-800 text-sm font-medium">
+            <i class="fas fa-plus mr-1"></i> 新規連携依頼
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- フッター -->
+  <footer class="bg-gray-800 text-white p-4 text-center text-sm">
+    <div>営業活動支援システム Ver.1.0</div>
+    <div class="mt-2">© 2025 エネルギーサービス企業</div>
+  </footer>
+</body>
+</html>

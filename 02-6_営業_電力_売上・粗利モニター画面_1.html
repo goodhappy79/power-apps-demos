@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>売上・粗利モニターダッシュボード</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-blue-800 text-white p-4 flex justify-between items-center shadow-md">
+    <div class="flex items-center">
+      <h1 class="text-2xl font-bold">売上・粗利モニター</h1>
+      <span class="ml-4 bg-blue-700 px-3 py-1 rounded-full text-sm">2025年5月期</span>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="text-right">
+        <div class="text-sm opacity-75">最終更新: 2025/05/18 08:30</div>
+        <div class="text-sm opacity-75">市況データ連携: 有効</div>
+      </div>
+      <div class="flex items-center gap-2">
+        <span>山田部長</span>
+        <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+          YM
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <main class="p-4">
+    <!-- コントロールセクション -->
+    <div class="bg-white p-4 rounded-lg shadow mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <!-- 表示モード切替 -->
+        <div class="flex bg-gray-200 rounded-lg p-1">
+          <button class="px-4 py-2 rounded-md bg-blue-600 text-white">案件別</button>
+          <button class="px-4 py-2 rounded-md text-gray-700">月別</button>
+        </div>
+        
+        <!-- 表示期間選択 -->
+        <div class="flex items-center gap-2">
+          <span class="text-sm font-medium">表示期間:</span>
+          <div class="flex bg-gray-200 rounded-lg p-1">
+            <button class="px-3 py-1 rounded-md bg-blue-600 text-white text-sm">当月</button>
+            <button class="px-3 py-1 rounded-md text-gray-700 text-sm">前月</button>
+            <button class="px-3 py-1 rounded-md text-gray-700 text-sm">四半期</button>
+            <button class="px-3 py-1 rounded-md text-gray-700 text-sm">年度</button>
+          </div>
+        </div>
+        
+        <!-- 検索・フィルター -->
+        <div class="flex items-center gap-3">
+          <input type="text" placeholder="案件名/顧客名/契約番号で検索" class="border rounded-md px-3 py-2 w-64">
+          <select class="border rounded-md px-3 py-2">
+            <option>全ての部門</option>
+            <option>営業部</option>
+            <option>カスタマー部</option>
+          </select>
+          <button class="flex items-center bg-orange-500 text-white px-3 py-2 rounded-md text-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            低粗利案件のみ表示
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- グリッドレイアウト: 売上・粗利テーブルとグラフ -->
+    <div class="grid grid-cols-3 gap-4">
+      <!-- 売上・粗利一覧テーブル (2/3幅) -->
+      <div class="col-span-2 bg-white rounded-lg shadow overflow-hidden">
+        <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 class="font-bold text-lg">売上・粗利一覧</h2>
+          <div class="flex gap-2">
+            <button class="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-sm flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+              </svg>
+              エクスポート
+            </button>
+            <button class="px-3 py-1 bg-gray-100 text-gray-700 rounded-md text-sm flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+              </svg>
+              フィルター
+            </button>
+          </div>
+        </div>
+        
+        <!-- テーブル本体 -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">案件名</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">顧客名</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">売上金額</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">原価(実績/予測)</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">粗利金額</th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">粗利率</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">予測</th>
+                <th class="px-6 py-3"></th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <!-- 高粗利案件 -->
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">ABC工場 空調更新</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">㈱ABC製鉄</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">8,500,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">5,100,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">3,400,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    40.0%
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-blue-500 text-lg" title="電力相場連動">⚡</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                </td>
+              </tr>
+              
+              <!-- 中粗利案件 -->
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">XYZ倉庫 LED化</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">XYZ物流㈱</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">5,200,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">3,640,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">1,560,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    30.0%
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-gray-400" title="固定価格">×</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                </td>
+              </tr>
+              
+              <!-- 低粗利案件 -->
+              <tr class="hover:bg-blue-50 cursor-pointer bg-red-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-700">DEF工場 省エネ</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">DEF電機㈱</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">12,800,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">10,496,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">2,304,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    18.0%
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-blue-500 text-lg" title="電力相場連動">⚡</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                </td>
+              </tr>
+              
+              <!-- 他の案件行 -->
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">GHI研究所 空調</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">GHI研究㈱</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">7,600,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">4,560,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">3,040,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    40.0%
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-orange-500 text-lg" title="ガス相場連動">🔥</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                </td>
+              </tr>
+              
+              <tr class="hover:bg-blue-50 cursor-pointer">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">JKL物流 冷凍設備</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">JKL物流㈱</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">9,400,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">6,580,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">2,820,000円</td>
+                <td class="px-6 py-4 whitespace-nowrap text-right">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    30.0%
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-center">
+                  <span class="text-blue-500 text-lg" title="電力相場連動">⚡</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button class="text-blue-600 hover:text-blue-900">詳細</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- テーブルフッター（ページネーション） -->
+        <div class="px-4 py-3 border-t border-gray-200 flex items-center justify-between">
+          <div class="text-sm text-gray-700">
+            表示: <span class="font-medium">1</span>～<span class="font-medium">5</span> / <span class="font-medium">25</span>件
+          </div>
+          <div class="flex gap-2">
+            <button class="px-3 py-1 border rounded-md text-sm bg-gray-100 text-gray-700">前へ</button>
+            <button class="px-3 py-1 border rounded-md text-sm bg-blue-600 text-white">1</button>
+            <button class="px-3 py-1 border rounded-md text-sm bg-white text-gray-700">2</button>
+            <button class="px-3 py-1 border rounded-md text-sm bg-white text-gray-700">3</button>
+            <button class="px-3 py-1 border rounded-md text-sm bg-gray-100 text-gray-700">次へ</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- グラフセクション (1/3幅) -->
+      <div class="bg-white rounded-lg shadow">
+        <div class="p-4 border-b border-gray-200">
+          <h2 class="font-bold text-lg">粗利率分析</h2>
+        </div>
+        
+        <!-- 月別粗利率推移グラフ -->
+        <div class="p-4 border-b border-gray-200">
+          <h3 class="font-medium text-sm text-gray-700 mb-2">月別粗利率推移</h3>
+          <div class="h-48 relative">
+            <!-- Chart.jsなどで実装される領域 -->
+            <canvas id="profitTrendChart"></canvas>
+          </div>
+        </div>
+        
+        <!-- 案件別粗利比較グラフ -->
+        <div class="p-4">
+          <h3 class="font-medium text-sm text-gray-700 mb-2">案件別粗利比較</h3>
+          <div class="flex gap-2 mb-3">
+            <button class="px-2 py-1 bg-blue-600 text-white text-xs rounded-md">TOP 5</button>
+            <button class="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-md">WORST 5</button>
+          </div>
+          <div class="h-64 relative">
+            <!-- Chart.jsなどで実装される領域 -->
+            <canvas id="profitComparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 詳細パネル（選択時に展開） -->
+    <div class="mt-4 bg-white rounded-lg shadow p-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold text-lg">選択案件詳細: ABC工場 空調更新</h2>
+        <button class="text-gray-500">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <!-- 詳細情報グリッド -->
+      <div class="grid grid-cols-2 gap-4">
+        <!-- 左側: 売上・原価詳細 -->
+        <div>
+          <h3 class="font-medium text-gray-700 mb-2">売上・原価詳細</h3>
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">項目</th>
+                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">金額</th>
+                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">割合</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr>
+                <td class="px-4 py-2 text-sm">設備費</td>
+                <td class="px-4 py-2 text-sm text-right">4,200,000円</td>
+                <td class="px-4 py-2 text-sm text-right">49.4%</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-sm">工事費</td>
+                <td class="px-4 py-2 text-sm text-right">3,100,000円</td>
+                <td class="px-4 py-2 text-sm text-right">36.5%</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-sm">保守費</td>
+                <td class="px-4 py-2 text-sm text-right">1,200,000円</td>
+                <td class="px-4 py-2 text-sm text-right">14.1%</td>
+              </tr>
+              <tr class="bg-blue-50">
+                <td class="px-4 py-2 text-sm font-medium">売上合計</td>
+                <td class="px-4 py-2 text-sm font-medium text-right">8,500,000円</td>
+                <td class="px-4 py-2 text-sm font-medium text-right">100%</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-sm">仕入原価</td>
+                <td class="px-4 py-2 text-sm text-right">3,600,000円</td>
+                <td class="px-4 py-2 text-sm text-right">70.6%</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 text-sm">外注費</td>
+                <td class="px-4 py-2 text-sm text-right">1,500,000円</td>
+                <td class="px-4 py-2 text-sm text-right">29.4%</td>
+              </tr>
+              <tr class="bg-blue-50">
+                <td class="px-4 py-2 text-sm font-medium">原価合計</td>
+                <td class="px-4 py-2 text-sm font-medium text-right">5,100,000円</td>
+                <td class="px-4 py-2 text-sm font-medium text-right">60.0%</td>
+              </tr>
+              <tr class="bg-green-50">
+                <td class="px-4 py-2 text-sm font-medium">粗利</td>
+                <td class="px-4 py-2 text-sm font-medium text-right">3,400,000円</td>
+                <td class="px-4 py-2 text-sm font-medium text-right">40.0%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <!-- 右側: 市況予測との乖離・コメント -->
+        <div>
+          <h3 class="font-medium text-gray-700 mb-2">市況予測と実績の比較</h3>
+          <div class="border rounded-md p-3 bg-blue-50 mb-4">
+            <div class="text-sm mb-2">
+              <span class="font-medium">予測原価:</span> 5,200,000円
+              <span class="ml-4 font-medium">実績:</span> 5,100,000円
+              <span class="ml-4 font-medium text-green-700">乖離: -100,000円 (-1.9%)</span>
+            </div>
+            <div class="text-sm">
+              <span class="font-medium">市況連動項目:</span> 電力単価
+              <span class="ml-4 font-medium">予測:</span> 22円/kWh
+              <span class="ml-4 font-medium">実績:</span> 21.2円/kWh
+            </div>
+          </div>
+          
+          <h3 class="font-medium text-gray-700 mb-2">コメント・調整履歴</h3>
+          <div class="border rounded-md p-3 h-44 overflow-y-auto">
+            <div class="mb-3">
+              <div class="text-xs text-gray-500">2025/05/15 15:30 - 佐藤 (営業部)</div>
+              <div class="text-sm">電力単価が予測より下回ったため、原価が当初見込みより減少。予測粗利率38%→実績40%に改善。</div>
+            </div>
+            <div class="mb-3">
+              <div class="text-xs text-gray-500">2025/05/10 09:15 - 鈴木 (経理部)</div>
+              <div class="text-sm">外注費の一部を社内リソースで対応することで、さらなる原価低減の余地あり。</div>
+            </div>
+            <div>
+              <div class="text-xs text-gray-500">2025/05/05 11:20 - 山田 (営業部)</div>
+              <div class="text-sm">顧客要望による設備仕様変更に伴い、売上・原価を再計算。</div>
+            </div>
+          </div>
+          
+          <!-- コメント入力欄 -->
+          <div class="mt-4">
+            <input type="text" placeholder="コメントを追加" class="w-full border rounded-md px-3 py-2" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- フッター: 追加機能案内 -->
+  <footer class="bg-gray-800 text-white p-4 mt-4">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex flex-wrap justify-between items-center text-sm">
+        <div class="flex items-center bg-gray-700 rounded-lg p-2">
+          <span class="text-lg mr-2">✨</span>
+          <div>
+            <div class="font-medium">リアルタイム市況API連携</div>
+            <div class="text-xs text-gray-300">粗利予測精度が大幅向上します</div>
+          </div>
+        </div>
+        <div class="flex items-center bg-gray-700 rounded-lg p-2">
+          <span class="text-lg mr-2">📊</span>
+          <div>
+            <div class="font-medium">部門別・営業担当別集計</div>
+            <div class="text-xs text-gray-300">業績分析ツールとして活用の幅が広がります</div>
+          </div>
+        </div>
+        <div class="flex items-center bg-gray-700 rounded-lg p-2">
+          <span class="text-lg mr-2">🔔</span>
+          <div>
+            <div class="font-medium">目標粗利との乖離アラート機能</div>
+            <div class="text-xs text-gray-300">異常値を早期発見し対策を促進します</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- グラフ描画用スクリプト -->
+  <script>
+    // 月別粗利率推移グラフ
+    const trendCtx = document.getElementById('profitTrendChart').getContext('2d');
+    const trendChart = new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+        datasets: [{
+          label: '平均粗利率',
+          data: [32, 35, 38, 36, 33, 35],
+          borderColor: 'rgb(59, 130, 246)',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          tension: 0.3,
+          fill: true
+        }, {
+          label: '予測粗利率',
+          data: [32, 35, 38, 36, 33, 34],
+          borderColor: 'rgb(107, 114, 128)',
+          borderDash: [5, 5],
+          tension: 0.3,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: false,
+            min: 20,
+            max: 50,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        }
+      }
+    });
+    
+    // 案件別粗利比較グラフ
+    const comparisonCtx = document.getElementById('profitComparisonChart').getContext('2d');
+    const comparisonChart = new Chart(comparisonCtx, {
+      type: 'bar',
+      data: {
+        labels: ['ABC工場 空調', 'GHI研究所', 'MNO工場', 'JKL物流', 'XYZ倉庫'],
+        datasets: [{
+          label: '粗利率',
+          data: [40, 40, 35, 30, 30],
+          backgroundColor: [
+            'rgba(16, 185, 129, 0.7)',
+            'rgba(16, 185, 129, 0.7)',
+            'rgba(245, 158, 11, 0.7)',
+            'rgba(245, 158, 11, 0.7)',
+            'rgba(245, 158, 11, 0.7)'
+          ],
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: {
+            display: false
+          }
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: 50,
+            ticks: {
+              callback: function(value) {
+                return value + '%';
+              }
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

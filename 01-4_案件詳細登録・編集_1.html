@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業部門 - 案件詳細登録・編集</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* カスタムスタイル */
+    .form-control:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* タブスタイル */
+    .tab-active {
+      border-bottom: 2px solid #2563eb;
+      color: #2563eb;
+    }
+    
+    /* アバターバッジ */
+    .avatar-badge {
+      position: absolute;
+      bottom: -3px;
+      right: -3px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    
+    /* 受注確度スライダーの色 */
+    .probability-low { background-color: #ef4444; }
+    .probability-medium { background-color: #f59e0b; }
+    .probability-high { background-color: #10b981; }
+    
+    /* ファイルアップロードエリア */
+    .drop-zone {
+      border: 2px dashed #d1d5db;
+      transition: all 0.3s ease;
+    }
+    .drop-zone:hover, .drop-zone.active {
+      border-color: #3b82f6;
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+    
+    /* フェーズバッジ */
+    .phase-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 9999px;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    
+    /* レスポンシブ対応 */
+    @media (max-width: 768px) {
+      .tab-container {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+    
+    /* フォーム入力欄の読み取り専用スタイル */
+    .read-only {
+      background-color: #f3f4f6;
+      cursor: not-allowed;
+    }
+    
+    /* アニメーション */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-blue-800 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center">
+        <h1 class="text-2xl font-bold">営業活動支援システム</h1>
+        <span class="ml-4 bg-blue-700 px-3 py-1 rounded-full text-sm">営業部門</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="relative">
+          <i class="fas fa-bell text-xl"></i>
+          <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">5</span>
+        </button>
+        <span class="hidden md:inline">山田 健太郎</span>
+        <div class="w-10 h-10 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">YK</div>
+      </div>
+    </div>
+  </header>
+  
+  <!-- パンくずナビゲーション -->
+  <div class="container mx-auto px-4 py-2">
+    <div class="flex items-center text-sm text-gray-600">
+      <a href="#" class="hover:text-blue-600">ホーム</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600">案件一覧</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-medium">案件詳細登録・編集</span>
+    </div>
+  </div>
+  
+  <!-- メインコンテンツ -->
+  <main class="container mx-auto px-4 py-6">
+    <!-- タイトルと保存ボタン -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">案件詳細登録・編集</h2>
+        <p class="text-gray-600 mt-1">案件の詳細情報を登録・編集します</p>
+      </div>
+      <div class="flex gap-3 mt-4 md:mt-0">
+        <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg">
+          キャンセル
+        </button>
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+          <i class="fas fa-save mr-2"></i> 保存
+        </button>
+      </div>
+    </div>
+    
+    <!-- タブナビゲーション -->
+    <div class="mb-6 border-b border-gray-200 tab-container">
+      <ul class="flex -mb-px text-sm font-medium">
+        <li class="mr-1">
+          <a href="#" class="inline-flex items-center p-4 tab-active">
+            <i class="fas fa-info-circle mr-2"></i> 基本情報
+          </a>
+        </li>
+        <li class="mr-1">
+          <a href="#" class="inline-flex items-center p-4 text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            <i class="fas fa-calendar-alt mr-2"></i> スケジュール
+          </a>
+        </li>
+        <li class="mr-1">
+          <a href="#" class="inline-flex items-center p-4 text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            <i class="fas fa-file-alt mr-2"></i> 関連ファイル
+          </a>
+        </li>
+        <li class="mr-1">
+          <a href="#" class="inline-flex items-center p-4 text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            <i class="fas fa-users-cog mr-2"></i> 連携部門
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    <!-- 基本情報タブコンテンツ -->
+    <div id="basic-info-tab" class="mb-6">
+      <!-- 案件ステータス表示 -->
+      <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+        <div class="flex flex-wrap gap-4 justify-between items-center">
+          <div>
+            <span class="phase-badge bg-cyan-100 text-cyan-800">
+              <i class="fas fa-file-signature mr-1"></i> フェーズ: 5. 提案活動
+            </span>
+          </div>
+          <div class="flex gap-4 items-center">
+            <span class="text-sm text-gray-600">案件ステータス:</span>
+            <select class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5">
+              <option selected>進行中</option>
+              <option>成約</option>
+              <option>失注</option>
+              <option>保留</option>
+            </select>
+          </div>
+          <div class="flex items-center">
+            <label class="inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer">
+              <div class="relative w-11 h-6 bg-gray-200 rounded-full peer peer-checked:bg-yellow-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+              <span class="ml-2 text-sm font-medium text-gray-700">ターゲット案件</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 案件基本情報カード -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-clipboard-list text-blue-600 mr-2"></i> 案件基本情報
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- 左カラム -->
+          <div class="space-y-4">
+            <!-- 案件ID（自動採番） -->
+            <div>
+              <label for="project-id" class="block text-sm font-medium text-gray-700 mb-1">案件ID</label>
+              <input type="text" id="project-id" value="S-2025-0123" class="bg-gray-100 border border-gray-300 text-gray-500 text-sm rounded-lg block w-full p-2.5 read-only" readonly>
+              <p class="mt-1 text-xs text-gray-500">※ 自動採番されます</p>
+            </div>
+            
+            <!-- 案件名 -->
+            <div>
+              <label for="project-name" class="block text-sm font-medium text-gray-700 mb-1">案件名 <span class="text-red-600">*</span></label>
+              <input type="text" id="project-name" placeholder="案件名を入力してください" value="ABC工場省エネ設備導入" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <!-- 顧客情報連携 -->
+            <div>
+              <label for="customer" class="block text-sm font-medium text-gray-700 mb-1">顧客名 <span class="text-red-600">*</span></label>
+              <div class="flex">
+                <div class="relative flex-grow">
+                  <input type="text" id="customer" placeholder="顧客を検索" value="株式会社ABC工業" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 pr-10">
+                  <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <i class="fas fa-search text-gray-400"></i>
+                  </div>
+                </div>
+                <button class="ml-2 bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium rounded-lg text-sm px-4 py-2.5">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <div class="mt-2 text-xs text-gray-600 flex items-center">
+                <i class="fas fa-user mr-1"></i> 顧客担当者: 鈴木部長（設備管理部）
+              </div>
+            </div>
+            
+            <!-- 案件種別 -->
+            <div>
+              <label for="project-type" class="block text-sm font-medium text-gray-700 mb-1">案件種別 <span class="text-red-600">*</span></label>
+              <select id="project-type" class="form-control bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option>選択してください</option>
+                <option selected>省エネ設備導入</option>
+                <option>空調設備更新</option>
+                <option>電気設備工事</option>
+                <option>太陽光発電(PPA)</option>
+                <option>保守契約更新</option>
+                <option>オンサイト発電</option>
+                <option>電力販売契約</option>
+                <option>その他</option>
+              </select>
+            </div>
+            
+            <!-- 案件責任者選択 -->
+            <div>
+              <label for="project-manager" class="block text-sm font-medium text-gray-700 mb-1">案件責任者 <span class="text-red-600">*</span></label>
+              <select id="project-manager" class="form-control bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option>選択してください</option>
+                <option selected>山田健太郎</option>
+                <option>佐藤一郎</option>
+                <option>鈴木智子</option>
+                <option>田中健太</option>
+              </select>
+            </div>
+          </div>
+          
+          <!-- 右カラム -->
+          <div class="space-y-4">
+            <!-- 金額情報 -->
+            <div>
+              <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">提案金額（万円）</label>
+              <input type="number" id="amount" placeholder="金額を入力" value="8000" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <div>
+              <label for="cost" class="block text-sm font-medium text-gray-700 mb-1">原価（万円）</label>
+              <input type="number" id="cost" placeholder="原価を入力" value="6400" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">粗利率</label>
+              <div class="flex items-center">
+                <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1.5 rounded">20.0%</span>
+                <div class="ml-3 text-xs text-gray-500">※ 提案金額と原価から自動計算</div>
+              </div>
+            </div>
+            
+            <!-- 優先度 -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">優先度</label>
+              <div class="flex gap-4">
+                <div class="flex items-center">
+                  <input type="radio" name="priority" id="priority-a" value="A" checked class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500">
+                  <label for="priority-a" class="ml-2 text-sm font-medium text-gray-900">A（高）</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio" name="priority" id="priority-b" value="B" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500">
+                  <label for="priority-b" class="ml-2 text-sm font-medium text-gray-900">B（中）</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio" name="priority" id="priority-c" value="C" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500">
+                  <label for="priority-c" class="ml-2 text-sm font-medium text-gray-900">C（低）</label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 受注確度 -->
+            <div>
+              <label for="probability" class="block text-sm font-medium text-gray-700 mb-1">受注確度</label>
+              <div class="flex items-center">
+                <select id="probability" class="form-control bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 mr-3 w-32">
+                  <option value="5">5%</option>
+                  <option value="10">10%</option>
+                  <option value="20">20%</option>
+                  <option value="30">30%</option>
+                  <option value="40">40%</option>
+                  <option value="50">50%</option>
+                  <option value="60">60%</option>
+                  <option value="70">70%</option>
+                  <option value="80">80%</option>
+                  <option value="90">90%</option>
+                  <option value="95">95%</option>
+                  <option value="100">100%</option>
+                </select>
+                
+                <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div class="h-full probability-high" style="width: 75%"></div>
+                </div>
+                <span class="ml-3 text-sm font-medium">75%</span>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">※ 提案中・好反応のため高確度</p>
+            </div>
+            
+            <!-- 案件メモ -->
+            <div>
+              <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">案件メモ</label>
+              <textarea id="notes" rows="3" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="案件に関するメモを入力してください">顧客から高効率タイプへの変更を要望されている。予算は10%増まで検討可能とのこと。競合他社も提案している模様。</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- スケジュール情報 -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-calendar-alt text-blue-600 mr-2"></i> スケジュール情報
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- 左カラム -->
+          <div class="space-y-4">
+            <!-- 案件登録日 -->
+            <div>
+              <label for="registration-date" class="block text-sm font-medium text-gray-700 mb-1">案件登録日</label>
+              <input type="date" id="registration-date" value="2025-04-10" class="form-control bg-gray-100 border border-gray-300 text-gray-700 text-sm rounded-lg block w-full p-2.5 read-only" readonly>
+              <p class="mt-1 text-xs text-gray-500">※ 自動設定されます</p>
+            </div>
+            
+            <!-- 概算提出日 -->
+            <div>
+              <label for="estimate-date" class="block text-sm font-medium text-gray-700 mb-1">概算提出日</label>
+              <input type="date" id="estimate-date" value="2025-04-15" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <!-- 提案承認日 -->
+            <div>
+              <label for="approval-date" class="block text-sm font-medium text-gray-700 mb-1">提案承認日</label>
+              <input type="date" id="approval-date" value="2025-04-28" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <!-- 提案提出日 -->
+            <div>
+              <label for="proposal-date" class="block text-sm font-medium text-gray-700 mb-1">提案提出日</label>
+              <input type="date" id="proposal-date" value="2025-05-10" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+          </div>
+          
+          <!-- 右カラム -->
+          <div class="space-y-4">
+            <!-- 成約予定日 -->
+            <div>
+              <label for="close-date" class="block text-sm font-medium text-gray-700 mb-1">成約予定日</label>
+              <input type="date" id="close-date" value="2025-06-30" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <!-- 工事着工予定日 -->
+            <div>
+              <label for="construction-start" class="block text-sm font-medium text-gray-700 mb-1">工事着工予定日</label>
+              <input type="date" id="construction-start" value="2025-08-01" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <!-- 工事完了予定日 -->
+            <div>
+              <label for="construction-end" class="block text-sm font-medium text-gray-700 mb-1">工事完了予定日</label>
+              <input type="date" id="construction-end" value="2025-09-30" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            
+            <!-- サービス開始予定日 -->
+            <div>
+              <label for="service-start" class="block text-sm font-medium text-gray-700 mb-1">サービス開始予定日</label>
+              <input type="date" id="service-start" value="2025-10-15" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+          </div>
+        </div>
+        
+        <!-- 次回アクション -->
+        <div class="mt-6 p-4 bg-blue-50 rounded-lg">
+          <h4 class="font-medium text-blue-800 mb-2">次回アクションの設定</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label for="next-action" class="block text-sm font-medium text-gray-700 mb-1">アクション内容</label>
+              <input type="text" id="next-action" value="見積修正版提出" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            <div>
+              <label for="next-action-date" class="block text-sm font-medium text-gray-700 mb-1">日付</label>
+              <input type="date" id="next-action-date" value="2025-05-20" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+            </div>
+            <div>
+              <label for="next-action-assignee" class="block text-sm font-medium text-gray-700 mb-1">担当者</label>
+              <select id="next-action-assignee" class="form-control bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option>選択してください</option>
+                <option selected>山田健太郎</option>
+                <option>佐藤一郎</option>
+                <option>鈴木智子</option>
+                <option>田中健太</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 詳細情報・オプション -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-cogs text-blue-600 mr-2"></i> 詳細情報・オプション
+        </h3>
+        
+        <!-- チェックボックス項目群 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div>
+            <h4 class="font-medium text-gray-700 mb-3">プロジェクト特性</h4>
+            <div class="space-y-2">
+              <div class="flex items-center">
+                <input id="competitive" type="checkbox" checked class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="competitive" class="ml-2 text-sm text-gray-700">競合あり</label>
+              </div>
+              <div class="flex items-center">
+                <input id="budget-limited" type="checkbox" checked class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="budget-limited" class="ml-2 text-sm text-gray-700">予算制約あり</label>
+              </div>
+              <div class="flex items-center">
+                <input id="technical-complex" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="technical-complex" class="ml-2 text-sm text-gray-700">技術的複雑性あり</label>
+              </div>
+              <div class="flex items-center">
+                <input id="repeat-business" type="checkbox" checked class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="repeat-business" class="ml-2 text-sm text-gray-700">リピート案件</label>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <h4 class="font-medium text-gray-700 mb-3">案件重要事項</h4>
+            <div class="space-y-2">
+              <div class="flex items-center">
+                <input id="strategic" type="checkbox" checked class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="strategic" class="ml-2 text-sm text-gray-700">戦略的重要案件</label>
+              </div>
+              <div class="flex items-center">
+                <input id="subsidy" type="checkbox" checked class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="subsidy" class="ml-2 text-sm text-gray-700">補助金活用案件</label>
+              </div>
+              <div class="flex items-center">
+                <input id="long-term" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="long-term" class="ml-2 text-sm text-gray-700">長期契約</label>
+              </div>
+              <div class="flex items-center">
+                <input id="has-reference" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 rounded border-gray-300 focus:ring-blue-500">
+                <label for="has-reference" class="ml-2 text-sm text-gray-700">リファレンス可能案件</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 追加入力項目 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="contract-type" class="block text-sm font-medium text-gray-700 mb-1">契約形態</label>
+            <select id="contract-type" class="form-control bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+              <option>選択してください</option>
+              <option selected>買取契約</option>
+              <option>リース契約</option>
+              <option>PPA契約</option>
+              <option>ESCO契約</option>
+              <option>保守契約</option>
+              <option>その他</option>
+            </select>
+          </div>
+          
+          <div>
+            <label for="contract-period" class="block text-sm font-medium text-gray-700 mb-1">契約期間（年）</label>
+            <input type="number" id="contract-period" value="3" min="1" max="20" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+          </div>
+          
+          <div>
+            <label for="lead-source" class="block text-sm font-medium text-gray-700 mb-1">リード獲得元</label>
+            <select id="lead-source" class="form-control bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+              <option>選択してください</option>
+              <option>展示会</option>
+              <option>Webサイト</option>
+              <option>紹介</option>
+              <option selected>既存顧客</option>
+              <option>コールドコール</option>
+              <option>メルマガ</option>
+              <option>セミナー</option>
+              <option>その他</option>
+            </select>
+          </div>
+          
+          <div>
+            <label for="tags" class="block text-sm font-medium text-gray-700 mb-1">タグ</label>
+            <input type="text" id="tags" value="省エネ,空調,補助金対象" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="カンマ区切りでタグを入力">
+            <p class="mt-1 text-xs text-gray-500">※ カンマ区切りで入力してください</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ファイル添付セクション -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-paperclip text-blue-600 mr-2"></i> 関連ファイル
+        </h3>
+        
+        <!-- ファイルドロップエリア -->
+        <div class="drop-zone border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-6">
+          <div class="flex flex-col items-center justify-center">
+            <i class="fas fa-cloud-upload-alt text-gray-400 text-4xl mb-3"></i>
+            <p class="mb-2 text-sm text-gray-700">クリックまたはドラッグ＆ドロップでファイルをアップロード</p>
+            <p class="text-xs text-gray-500">最大サイズ: 25MB/ファイル, 合計100MB</p>
+            <p class="text-xs text-gray-500">許可形式: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, JPG, PNG</p>
+            <button type="button" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+              ファイルを選択
+            </button>
+          </div>
+        </div>
+        
+        <!-- 添付済みファイル一覧 -->
+        <h4 class="font-medium text-gray-700 mb-3">添付済みファイル (3件)</h4>
+        <div class="space-y-3">
+          <!-- ファイル1 -->
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center">
+              <div class="p-2 bg-red-100 text-red-600 rounded-lg mr-3">
+                <i class="fas fa-file-pdf"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium">提案書_ABC工場_v1.0.pdf</p>
+                <p class="text-xs text-gray-500">4.2MB • 2025/05/10追加</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button class="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                <i class="fas fa-download"></i>
+              </button>
+              <button class="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- ファイル2 -->
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center">
+              <div class="p-2 bg-green-100 text-green-600 rounded-lg mr-3">
+                <i class="fas fa-file-excel"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium">省エネ効果計算書.xlsx</p>
+                <p class="text-xs text-gray-500">2.3MB • 2025/05/12追加</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button class="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                <i class="fas fa-download"></i>
+              </button>
+              <button class="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- ファイル3 -->
+          <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div class="flex items-center">
+              <div class="p-2 bg-blue-100 text-blue-600 rounded-lg mr-3">
+                <i class="fas fa-file-word"></i>
+              </div>
+              <div>
+                <p class="text-sm font-medium">競合分析レポート.docx</p>
+                <p class="text-xs text-gray-500">1.1MB • 2025/05/15追加</p>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <button class="p-1.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">
+                <i class="fas fa-download"></i>
+              </button>
+              <button class="p-1.5 bg-red-100 text-red-700 rounded hover:bg-red-200">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 部門連携情報 -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-users-cog text-blue-600 mr-2"></i> 部門連携情報
+        </h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <!-- 技術部門連携 -->
+          <div class="p-4 bg-blue-50 rounded-lg">
+            <h4 class="font-medium text-blue-800 mb-3 flex items-center">
+              <i class="fas fa-wrench mr-2"></i> 技術部門
+            </h4>
+            
+            <div class="mb-3">
+              <label for="tech-assignee" class="block text-sm font-medium text-gray-700 mb-1">担当者</label>
+              <select id="tech-assignee" class="form-control bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option>担当者を選択</option>
+                <option selected>田中修一</option>
+                <option>高橋健二</option>
+                <option>渡辺大輔</option>
+                <option>佐々木誠</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">進捗状況</label>
+              <select class="form-control bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option>選択してください</option>
+                <option>未着手</option>
+                <option selected>対応中</option>
+                <option>完了</option>
+                <option>保留</option>
+              </select>
+            </div>
+            
+            <div>
+              <label for="tech-notes" class="block text-sm font-medium text-gray-700 mb-1">連携メモ</label>
+              <textarea id="tech-notes" rows="2" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="連携に関するメモを入力">高効率設備の仕様検討中。省エネ効果計算完了。</textarea>
+            </div>
+          </div>
+          
+          <!-- 経理部門連携 -->
+          <div class="p-4 bg-green-50 rounded-lg">
+            <h4 class="font-medium text-green-800 mb-3 flex items-center">
+              <i class="fas fa-calculator mr-2"></i> 経理部門
+            </h4>
+            
+            <div class="mb-3">
+              <label for="finance-assignee" class="block text-sm font-medium text-gray-700 mb-1">担当者</label>
+              <select id="finance-assignee" class="form-control bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option>担当者を選択</option>
+                <option selected>山本和子</option>
+                <option>井上真理</option>
+                <option>加藤裕子</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">進捗状況</label>
+              <select class="form-control bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option>選択してください</option>
+                <option selected>未着手</option>
+                <option>対応中</option>
+                <option>完了</option>
+                <option>保留</option>
+              </select>
+            </div>
+            
+            <div>
+              <label for="finance-notes" class="block text-sm font-medium text-gray-700 mb-1">連携メモ</label>
+              <textarea id="finance-notes" rows="2" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="連携に関するメモを入力">与信確認済み。粗利率は目標内。</textarea>
+            </div>
+          </div>
+          
+          <!-- カスタマー部門連携 -->
+          <div class="p-4 bg-purple-50 rounded-lg">
+            <h4 class="font-medium text-purple-800 mb-3 flex items-center">
+              <i class="fas fa-headset mr-2"></i> カスタマー部門
+            </h4>
+            
+            <div class="mb-3">
+              <label for="customer-service-assignee" class="block text-sm font-medium text-gray-700 mb-1">担当者</label>
+              <select id="customer-service-assignee" class="form-control bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option selected>担当者を選択</option>
+                <option>鈴木花子</option>
+                <option>中村拓也</option>
+                <option>小林愛</option>
+              </select>
+            </div>
+            
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1">進捗状況</label>
+              <select class="form-control bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5">
+                <option selected>選択してください</option>
+                <option>未着手</option>
+                <option>対応中</option>
+                <option>完了</option>
+                <option>保留</option>
+              </select>
+            </div>
+            
+            <div>
+              <label for="customer-service-notes" class="block text-sm font-medium text-gray-700 mb-1">連携メモ</label>
+              <textarea id="customer-service-notes" rows="2" class="form-control border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="連携に関するメモを入力"></textarea>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 連携履歴 -->
+        <div class="mt-6">
+          <h4 class="font-medium text-gray-700 mb-3">連携履歴</h4>
+          
+          <div class="border border-gray-200 rounded-lg overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日時</th>
+                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">部門</th>
+                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">担当者</th>
+                  <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">内容</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025/05/12 09:30</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">技術部門</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">田中修一</td>
+                  <td class="px-4 py-3 text-sm text-gray-900">省エネ効果計算書を提供</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025/05/08 14:45</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">経理部門</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">山本和子</td>
+                  <td class="px-4 py-3 text-sm text-gray-900">与信確認完了、取引可能</td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2025/05/05 11:20</td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">技術部門</span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">田中修一</td>
+                  <td class="px-4 py-3 text-sm text-gray-900">現地調査実施、設備仕様検討開始</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- フォーム送信ボタン（スケジュールタブ、関連ファイルタブ、連携部門タブでも同じように表示） -->
+    <div class="flex justify-end gap-3">
+      <button class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-3 rounded-lg">
+        キャンセル
+      </button>
+      <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center">
+        <i class="fas fa-save mr-2"></i> 保存
+      </button>
+    </div>
+  </main>
+  
+  <!-- モバイル用フローティングアクションボタン -->
+  <div class="md:hidden fixed bottom-6 right-6">
+    <button class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl">
+      <i class="fas fa-save"></i>
+    </button>
+  </div>
+  
+  <!-- フッター -->
+  <footer class="bg-gray-800 text-white p-4 text-center text-sm mt-12">
+    <div>営業活動支援システム Ver.1.0</div>
+    <div class="mt-2">© 2025 エネルギーサービス企業</div>
+  </footer>
+</body>
+</html>

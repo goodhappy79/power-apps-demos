@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>営業部門 - 顧客管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* カスタムアニメーション */
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    
+    .pulse-animation {
+      animation: pulse 2s infinite;
+    }
+    
+    /* カードホバー効果 */
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    
+    /* タイムライン要素 */
+    .timeline-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+    
+    .timeline-line {
+      position: absolute;
+      top: 20px;
+      bottom: 0;
+      left: 5.5px;
+      width: 1px;
+      background-color: #e5e7eb;
+    }
+    
+    /* ニーズタグスタイル */
+    .need-tag {
+      transition: all 0.2s;
+    }
+    .need-tag:hover {
+      transform: scale(1.05);
+    }
+    
+    /* フォーカス強調 */
+    .focus-highlight:focus {
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* セクションヘッダースタイル */
+    .section-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .section-header h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    
+    .section-header i {
+      margin-right: 0.5rem;
+      font-size: 1.25rem;
+      color: #2563eb;
+    }
+    
+    /* モバイル対応 */
+    @media (max-width: 768px) {
+      .mobile-tabs {
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+      }
+      
+      .mobile-tabs::-webkit-scrollbar {
+        display: none;
+      }
+      
+      .responsive-table {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+      }
+    }
+    
+    /* その他のユーティリティ */
+    .badge-success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+    
+    .badge-warning {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+    
+    .badge-info {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .badge-danger {
+      background-color: #fee2e2;
+      color: #b91c1c;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-blue-800 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex flex-col md:flex-row justify-between items-center">
+      <div class="flex items-center mb-4 md:mb-0">
+        <h1 class="text-xl font-bold">営業活動支援システム</h1>
+        <span class="ml-4 bg-blue-700 px-3 py-1 rounded-full text-sm">営業部門</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="relative">
+          <i class="fas fa-bell text-xl"></i>
+          <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">4</span>
+        </button>
+        <span>山田 健太郎</span>
+        <div class="w-10 h-10 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">YK</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ -->
+  <div class="container mx-auto p-4 pb-20">
+    <!-- パンくずリスト -->
+    <div class="flex items-center text-sm text-gray-600 mb-4">
+      <a href="#" class="hover:text-blue-600">ホーム</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600">営業HUB</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600">顧客一覧</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-medium">株式会社XYZ製造</span>
+    </div>
+    
+    <!-- タイトルと操作ボタン -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">顧客管理</h2>
+        <p class="text-gray-600 text-sm mt-1">顧客に関する情報を集約し、関係強化をサポートします</p>
+      </div>
+      <div class="flex flex-wrap gap-2 mt-4 md:mt-0">
+        <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-edit mr-2"></i> 顧客情報編集
+        </button>
+        <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center">
+          <i class="fas fa-plus mr-2"></i> 活動記録登録
+        </button>
+      </div>
+    </div>
+    
+    <!-- 顧客基本情報カード -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+      <div class="flex flex-col lg:flex-row justify-between mb-4">
+        <div>
+          <div class="flex items-center">
+            <h3 class="text-xl font-bold text-gray-800 mb-1">株式会社XYZ製造</h3>
+            <span class="ml-3 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">優良顧客</span>
+            <span class="ml-2 px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">製造業</span>
+          </div>
+          <div class="flex flex-col md:flex-row md:items-center text-sm text-gray-600 gap-2 md:gap-4 mt-2">
+            <span class="flex items-center"><i class="fas fa-map-marker-alt mr-1"></i> 福岡県福岡市中央区天神1-1-1</span>
+            <span class="flex items-center"><i class="fas fa-phone mr-1"></i> 092-123-4567</span>
+            <span class="flex items-center"><i class="fas fa-globe mr-1"></i> www.xyz-mfg.co.jp</span>
+          </div>
+        </div>
+        <div class="mt-4 lg:mt-0 flex flex-col items-start lg:items-end">
+          <div class="flex items-center mb-2">
+            <span class="text-sm font-medium mr-2">年間取引額:</span>
+            <span class="text-lg font-bold text-blue-700">58,200,000円</span>
+          </div>
+          <div class="flex items-center">
+            <span class="text-sm text-gray-600 mr-2">顧客ランク:</span>
+            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center">
+              <i class="fas fa-crown mr-1"></i> S
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 企業情報詳細 -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+        <!-- 基本情報 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-2 border-b pb-2">基本情報</h4>
+          <ul class="space-y-2 text-sm">
+            <li class="flex justify-between">
+              <span class="text-gray-600">設立年月日:</span>
+              <span>1985年4月1日</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">資本金:</span>
+              <span>5億円</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">従業員数:</span>
+              <span>約320名</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">年商:</span>
+              <span>約75億円</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">エリア:</span>
+              <span>九州・中国地方</span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- 事業内容 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-2 border-b pb-2">事業内容</h4>
+          <ul class="space-y-2 text-sm">
+            <li class="flex justify-between">
+              <span class="text-gray-600">主要事業:</span>
+              <span>精密機械部品製造</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">製品:</span>
+              <span>自動車部品、産業機械部品</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">工場数:</span>
+              <span>3拠点（福岡、北九州、広島）</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">主要取引先:</span>
+              <span>大手自動車メーカー、機械メーカー</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">ISO認証:</span>
+              <span>ISO9001, ISO14001</span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- 取引概要 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-2 border-b pb-2">取引概要</h4>
+          <ul class="space-y-2 text-sm">
+            <li class="flex justify-between">
+              <span class="text-gray-600">取引開始:</span>
+              <span>2010年5月</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">主要取引:</span>
+              <span>空調設備、省エネ機器</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">最終契約日:</span>
+              <span class="font-medium text-green-700">2024年12月5日</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">直近商談:</span>
+              <span class="font-medium text-blue-700">2025年5月10日</span>
+            </li>
+            <li class="flex justify-between">
+              <span class="text-gray-600">顧客満足度:</span>
+              <span class="flex">
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star-half-alt text-yellow-400"></i>
+              </span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 2カラムレイアウト：担当者情報+取引履歴（左） & ニーズ分析+提案機会（右） -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- 左カラム (2/3幅) -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- 担当者情報カード -->
+        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+          <div class="section-header">
+            <i class="fas fa-user-tie"></i>
+            <h3>担当者情報</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 主要担当者 -->
+            <div class="bg-blue-50 rounded-lg p-4">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 mr-4">
+                  <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-xl relative">
+                    ST
+                    <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></span>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-bold text-gray-800">佐藤 拓也</h4>
+                  <p class="text-sm text-blue-700 font-medium">設備管理部 部長</p>
+                  <div class="mt-2 space-y-1">
+                    <p class="text-sm"><i class="fas fa-phone-alt mr-2 text-gray-500"></i>090-1234-5678</p>
+                    <p class="text-sm"><i class="fas fa-envelope mr-2 text-gray-500"></i>t.sato@xyz-mfg.co.jp</p>
+                  </div>
+                  <div class="flex mt-3 text-sm">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full">決裁権あり</span>
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">技術重視</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3 pt-3 border-t border-blue-200">
+                <p class="text-sm text-gray-600">最終接触: <span class="font-medium text-blue-700">2025年5月10日（訪問）</span></p>
+                <p class="text-sm text-gray-600 mt-1">次回アポイント: <span class="font-medium text-green-700">2025年5月25日 14:00〜</span></p>
+              </div>
+            </div>
+            
+            <!-- 副担当者 -->
+            <div>
+              <h4 class="font-medium text-gray-700 mb-3">その他の担当者</h4>
+              <div class="space-y-4">
+                <!-- 担当者2 -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <div class="w-10 h-10 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center font-medium mr-3">YN</div>
+                  <div class="flex-grow">
+                    <p class="font-medium">山本 直樹</p>
+                    <p class="text-sm text-gray-600">設備管理部 課長</p>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                      <i class="fas fa-phone-alt text-sm"></i>
+                    </button>
+                    <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                      <i class="fas fa-envelope text-sm"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- 担当者3 -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <div class="w-10 h-10 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center font-medium mr-3">KT</div>
+                  <div class="flex-grow">
+                    <p class="font-medium">金田 武</p>
+                    <p class="text-sm text-gray-600">総務部 課長</p>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                      <i class="fas fa-phone-alt text-sm"></i>
+                    </button>
+                    <button class="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-100 rounded-full">
+                      <i class="fas fa-envelope text-sm"></i>
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- 担当者追加ボタン -->
+                <button class="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md text-sm flex items-center justify-center">
+                  <i class="fas fa-user-plus mr-1.5"></i> 担当者追加
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 担当者特記事項 -->
+          <div class="mt-4 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+            <h4 class="font-medium text-amber-800">担当者特記事項</h4>
+            <p class="text-sm text-gray-700 mt-1">佐藤部長は技術背景があり、省エネ効果の数値根拠を重視します。資料は具体的なデータを示すことが重要。山本課長は実務担当者で、メンテナンス性や使いやすさに関心があります。</p>
+          </div>
+        </div>
+          
+        <!-- 取引履歴カード -->
+        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+          <div class="section-header">
+            <i class="fas fa-history"></i>
+            <h3>取引履歴</h3>
+            <div class="ml-auto">
+              <button class="bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-sm">全履歴表示</button>
+            </div>
+          </div>
+          
+          <div class="responsive-table">
+            <table class="min-w-full">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">契約日</th>
+                  <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">案件名</th>
+                  <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">内容</th>
+                  <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">金額</th>
+                  <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">期間/状態</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <!-- 取引1 -->
+                <tr class="hover:bg-blue-50">
+                  <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-600">2024/12/05</td>
+                  <td class="px-3 py-3 text-sm font-medium text-blue-600">
+                    <a href="#">XYZ福岡工場空調更新</a>
+                  </td>
+                  <td class="px-3 py-3 text-sm text-gray-700">空調設備一式更新工事</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm font-medium">3,800万円</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">進行中</span>
+                  </td>
+                </tr>
+                
+                <!-- 取引2 -->
+                <tr class="hover:bg-blue-50">
+                  <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-600">2023/08/15</td>
+                  <td class="px-3 py-3 text-sm font-medium text-blue-600">
+                    <a href="#">広島工場LED照明導入</a>
+                  </td>
+                  <td class="px-3 py-3 text-sm text-gray-700">LED照明更新、省エネ制御</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm font-medium">1,250万円</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">完了</span>
+                  </td>
+                </tr>
+                
+                <!-- 取引3 -->
+                <tr class="hover:bg-blue-50">
+                  <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-600">2023/04/10</td>
+                  <td class="px-3 py-3 text-sm font-medium text-blue-600">
+                    <a href="#">全拠点設備保守契約</a>
+                  </td>
+                  <td class="px-3 py-3 text-sm text-gray-700">年間メンテナンス契約</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm font-medium">920万円/年</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">年間契約</span>
+                  </td>
+                </tr>
+                
+                <!-- 取引4 -->
+                <tr class="hover:bg-blue-50">
+                  <td class="px-3 py-3 whitespace-nowrap text-sm text-gray-600">2021/11/20</td>
+                  <td class="px-3 py-3 text-sm font-medium text-blue-600">
+                    <a href="#">北九州工場省エネ改修</a>
+                  </td>
+                  <td class="px-3 py-3 text-sm text-gray-700">空調制御システム刷新</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm font-medium">2,650万円</td>
+                  <td class="px-3 py-3 whitespace-nowrap text-sm">
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">完了</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- 取引概要 -->
+          <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-blue-50 p-3 rounded-lg">
+              <h4 class="text-sm font-medium text-blue-800">累計取引額</h4>
+              <p class="text-lg font-bold mt-1">1億5,820万円</p>
+              <p class="text-xs text-gray-600">2010年からの総取引額</p>
+            </div>
+            <div class="bg-green-50 p-3 rounded-lg">
+              <h4 class="text-sm font-medium text-green-800">今年度予定売上</h4>
+              <p class="text-lg font-bold mt-1">5,820万円</p>
+              <p class="text-xs text-gray-600">前年比 +25%</p>
+            </div>
+            <div class="bg-amber-50 p-3 rounded-lg">
+              <h4 class="text-sm font-medium text-amber-800">契約継続率</h4>
+              <p class="text-lg font-bold mt-1">95%</p>
+              <p class="text-xs text-gray-600">更新率（過去5年間）</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 右カラム (1/3幅) -->
+      <div class="space-y-6">
+        <!-- ニーズ分析カード -->
+        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+          <div class="section-header">
+            <i class="fas fa-lightbulb"></i>
+            <h3>ニーズ分析</h3>
+            <div class="ml-auto">
+              <button class="bg-blue-100 text-blue-800 px-3 py-1 rounded-md text-sm">詳細</button>
+            </div>
+          </div>
+          
+          <!-- ニーズタグ -->
+          <div class="flex flex-wrap gap-2 mb-4">
+            <span class="need-tag bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">省エネ化</span>
+            <span class="need-tag bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">ランニングコスト削減</span>
+            <span class="need-tag bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">IoT連携</span>
+            <span class="need-tag bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm">CO2削減</span>
+            <span class="need-tag bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm">設備老朽化</span>
+            <span class="need-tag bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm">遠隔監視</span>
+          </div>
+          
+          <!-- 要望リスト -->
+          <div class="mb-4">
+            <h4 class="font-medium text-gray-700 mb-2">顧客要望</h4>
+            <ul class="space-y-2 text-sm">
+              <li class="flex items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-green-100 text-green-700 rounded-full flex items-center justify-center mt-0.5 mr-2">
+                  <i class="fas fa-check text-xs"></i>
+                </span>
+                <span>全拠点の空調設備を5年以内に高効率タイプに更新したい</span>
+              </li>
+              <li class="flex items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-green-100 text-green-700 rounded-full flex items-center justify-center mt-0.5 mr-2">
+                  <i class="fas fa-check text-xs"></i>
+                </span>
+                <span>エネルギー使用量の見える化と一元管理システムが欲しい</span>
+              </li>
+              <li class="flex items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-green-100 text-green-700 rounded-full flex items-center justify-center mt-0.5 mr-2">
+                  <i class="fas fa-check text-xs"></i>
+                </span>
+                <span>2030年までにCO2排出量30%削減を目指している</span>
+              </li>
+              <li class="flex items-start">
+                <span class="flex-shrink-0 w-5 h-5 bg-red-100 text-red-700 rounded-full flex items-center justify-center mt-0.5 mr-2">
+                  <i class="fas fa-exclamation-triangle text-xs"></i>
+                </span>
+                <span>設備投資の回収期間は3年以内が条件</span>
+              </li>
+            </ul>
+          </div>
+          
+          <!-- 競合情報 -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-2">競合情報</h4>
+            <div class="bg-gray-50 p-3 rounded-lg text-sm">
+              <p class="mb-2"><span class="font-medium">主要競合：</span> ABCエナジー、環境技研</p>
+              <p><span class="font-medium">状況：</span> ABCエナジーが福岡工場の空調更新で競合提案中。価格よりも省エネ効果・CO2削減効果を重視する方針。</p>
+            </div>
+          </div>
+          
+          <!-- 自由記述 -->
+          <div class="mt-4">
+            <h4 class="font-medium text-gray-700 mb-2">ニーズメモ</h4>
+            <textarea class="w-full p-3 border border-gray-300 rounded-lg focus-highlight text-sm" rows="3" placeholder="ニーズに関するメモを入力...">広島工場は2026年に生産ライン増設予定。それに伴う空調容量増強と省エネ化の両立が課題。金田課長によると「経営層は環境配慮に積極的で、初期投資よりもランニングコストと環境性能を重視」とのこと。</textarea>
+          </div>
+        </div>
+        
+        <!-- 提案機会カード -->
+        <div class="bg-white rounded-lg shadow-md p-6 card-hover">
+          <div class="section-header">
+            <i class="fas fa-bullseye"></i>
+            <h3>提案機会</h3>
+            <div class="ml-auto">
+              <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md text-sm flex items-center">
+                <i class="fas fa-plus mr-1"></i> 追加
+              </button>
+            </div>
+          </div>
+          
+          <!-- 提案機会フィルター -->
+          <div class="flex flex-wrap gap-2 mb-4 mobile-tabs">
+            <button class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm">全て</button>
+            <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm">売上拡大</button>
+            <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm">新サービス</button>
+            <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm">契約更新</button>
+            <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded-md text-sm">追加提案</button>
+          </div>
+          
+          <!-- 提案機会リスト -->
+          <div class="space-y-3">
+            <!-- 提案機会1 -->
+            <div class="border border-green-200 rounded-lg overflow-hidden hover:bg-green-50 transition">
+              <div class="bg-green-50 px-3 py-2 flex justify-between items-center border-b border-green-200">
+                <div class="flex items-center">
+                  <span class="w-6 h-6 rounded-full bg-green-200 text-green-800 flex items-center justify-center mr-2">
+                    <i class="fas fa-chart-line text-xs"></i>
+                  </span>
+                  <span class="font-medium text-green-800">売上拡大案件</span>
+                </div>
+                <span class="text-xs text-green-800">優先度: 高</span>
+              </div>
+              <div class="p-3">
+                <h4 class="font-medium">広島工場 生産ライン増設に伴う空調設備増強</h4>
+                <p class="text-sm text-gray-600 mt-1">予算規模: 約3,000万円 / 時期: 2026年1Q</p>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="text-xs text-gray-500">担当: 山田</span>
+                  <a href="#" class="text-xs text-blue-600 hover:underline">詳細 →</a>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 提案機会2 -->
+            <div class="border border-blue-200 rounded-lg overflow-hidden hover:bg-blue-50 transition">
+              <div class="bg-blue-50 px-3 py-2 flex justify-between items-center border-b border-blue-200">
+                <div class="flex items-center">
+                  <span class="w-6 h-6 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center mr-2">
+                    <i class="fas fa-lightbulb text-xs"></i>
+                  </span>
+                  <span class="font-medium text-blue-800">新サービス提案</span>
+                </div>
+                <span class="text-xs text-blue-800">優先度: 中</span>
+              </div>
+              <div class="p-3">
+                <h4 class="font-medium">エネルギー管理システム導入</h4>
+                <p class="text-sm text-gray-600 mt-1">予算規模: 約800万円 / 時期: 2025年3Q</p>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="text-xs text-gray-500">担当: 佐藤</span>
+                  <a href="#" class="text-xs text-blue-600 hover:underline">詳細 →</a>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 提案機会3 -->
+            <div class="border border-amber-200 rounded-lg overflow-hidden hover:bg-amber-50 transition">
+              <div class="bg-amber-50 px-3 py-2 flex justify-between items-center border-b border-amber-200">
+                <div class="flex items-center">
+                  <span class="w-6 h-6 rounded-full bg-amber-200 text-amber-800 flex items-center justify-center mr-2">
+                    <i class="fas fa-sync-alt text-xs"></i>
+                  </span>
+                  <span class="font-medium text-amber-800">契約更新</span>
+                </div>
+                <span class="text-xs text-amber-800">優先度: 高</span>
+              </div>
+              <div class="p-3">
+                <h4 class="font-medium">全拠点設備保守契約更新</h4>
+                <p class="text-sm text-gray-600 mt-1">予算規模: 約950万円/年 / 期限: 2025年4月</p>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="text-xs text-gray-500">担当: 山田</span>
+                  <a href="#" class="text-xs text-blue-600 hover:underline">詳細 →</a>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 提案機会4 -->
+            <div class="border border-purple-200 rounded-lg overflow-hidden hover:bg-purple-50 transition">
+              <div class="bg-purple-50 px-3 py-2 flex justify-between items-center border-b border-purple-200">
+                <div class="flex items-center">
+                  <span class="w-6 h-6 rounded-full bg-purple-200 text-purple-800 flex items-center justify-center mr-2">
+                    <i class="fas fa-plus text-xs"></i>
+                  </span>
+                  <span class="font-medium text-purple-800">追加提案</span>
+                </div>
+                <span class="text-xs text-purple-800">優先度: 中</span>
+              </div>
+              <div class="p-3">
+                <h4 class="font-medium">太陽光発電システム導入</h4>
+                <p class="text-sm text-gray-600 mt-1">予算規模: 検討中 / 時期: 2025年4Q</p>
+                <div class="flex justify-between items-center mt-2">
+                  <span class="text-xs text-gray-500">担当: 未定</span>
+                  <a href="#" class="text-xs text-blue-600 hover:underline">詳細 →</a>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 部門連携情報 -->
+          <div class="mt-4 bg-gray-50 p-3 rounded-lg">
+            <h4 class="font-medium text-gray-700 mb-2">部門連携状況</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="flex items-center">
+                  <i class="fas fa-wrench text-blue-600 mr-1"></i> 技術部門:
+                </span>
+                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">連携中</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="flex items-center">
+                  <i class="fas fa-headset text-purple-600 mr-1"></i> カスタマー部門:
+                </span>
+                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">連携中</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="flex items-center">
+                  <i class="fas fa-calculator text-gray-600 mr-1"></i> 経理部門:
+                </span>
+                <span class="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-700">未連携</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 接触履歴カード -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-6 card-hover">
+      <div class="section-header">
+        <i class="fas fa-comments"></i>
+        <h3>接触履歴</h3>
+        <div class="ml-auto flex flex-wrap gap-2">
+          <!-- フィルター -->
+          <div class="relative">
+            <select class="bg-gray-100 border border-gray-300 text-gray-700 py-1 pl-3 pr-8 rounded-md text-sm appearance-none focus-highlight">
+              <option>全ての種別</option>
+              <option>訪問</option>
+              <option>電話</option>
+              <option>メール</option>
+              <option>Web会議</option>
+              <option>セミナー</option>
+            </select>
+            <i class="fas fa-chevron-down text-xs absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500"></i>
+          </div>
+          
+          <div class="relative">
+            <select class="bg-gray-100 border border-gray-300 text-gray-700 py-1 pl-3 pr-8 rounded-md text-sm appearance-none focus-highlight">
+              <option>全期間</option>
+              <option>今月</option>
+              <option>3ヶ月以内</option>
+              <option>半年以内</option>
+              <option>1年以内</option>
+            </select>
+            <i class="fas fa-chevron-down text-xs absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500"></i>
+          </div>
+          
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm">
+            <i class="fas fa-plus mr-1"></i> 新規記録
+          </button>
+        </div>
+      </div>
+      
+      <!-- 接触履歴リスト -->
+      <div class="mt-4">
+        <!-- 日付グループ: 今日 -->
+        <div class="mb-6">
+          <h4 class="text-sm font-medium text-gray-500 mb-3 border-l-2 border-blue-500 pl-2">2025年5月18日（今日）</h4>
+          <div class="space-y-4">
+            <!-- 接触記録1 -->
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 relative">
+                <div class="timeline-dot bg-blue-500"></div>
+                <div class="timeline-line"></div>
+              </div>
+              <div class="flex-grow bg-blue-50 p-4 rounded-lg">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 inline-flex items-center">
+                      <i class="fas fa-phone-alt mr-1"></i> 電話
+                    </span>
+                    <span class="text-xs text-gray-500 ml-2">10:30</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="text-gray-500 hover:text-blue-600"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </div>
+                <h4 class="font-medium">佐藤部長との電話</h4>
+                <p class="text-sm text-gray-700 mt-1">5/25の訪問アポイント確定。広島工場の生産ライン増設計画の詳細について情報交換の予定。エネルギー使用量の可視化システムにも関心あり。</p>
+                <div class="flex flex-wrap gap-2 mt-3">
+                  <span class="text-xs text-gray-500">担当: 山田健太郎</span>
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">次回アクション: 5/25訪問</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 日付グループ: 5/10 -->
+        <div class="mb-6">
+          <h4 class="text-sm font-medium text-gray-500 mb-3 border-l-2 border-blue-500 pl-2">2025年5月10日</h4>
+          <div class="space-y-4">
+            <!-- 接触記録2 -->
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 relative">
+                <div class="timeline-dot bg-green-500"></div>
+                <div class="timeline-line"></div>
+              </div>
+              <div class="flex-grow bg-gray-50 p-4 rounded-lg">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 inline-flex items-center">
+                      <i class="fas fa-user mr-1"></i> 訪問
+                    </span>
+                    <span class="text-xs text-gray-500 ml-2">14:00</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="text-gray-500 hover:text-blue-600"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </div>
+                <h4 class="font-medium">本社訪問・佐藤部長・山本課長</h4>
+                <p class="text-sm text-gray-700 mt-1">福岡工場の空調更新進捗確認。6月納入予定通り進行中。広島工場での生産ライン増設計画（2026年1Q）に関する情報をヒアリング。新ラインの空調容量や要件について打ち合わせ。再来週詳細を詰める予定。</p>
+                <div class="flex flex-wrap gap-2 mt-3">
+                  <span class="text-xs text-gray-500">担当: 山田健太郎、田中修一（技術部）</span>
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded">次回アクション: 電話フォロー</span>
+                </div>
+                <!-- 添付ファイル -->
+                <div class="mt-3 pt-3 border-t border-gray-200">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-600">添付:</span>
+                    <a href="#" class="text-xs text-blue-600 flex items-center">
+                      <i class="far fa-file-pdf mr-1"></i> 議事録.pdf
+                    </a>
+                    <a href="#" class="text-xs text-blue-600 flex items-center">
+                      <i class="far fa-file-powerpoint mr-1"></i> 提案資料.pptx
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 日付グループ: 4/25 -->
+        <div class="mb-6">
+          <h4 class="text-sm font-medium text-gray-500 mb-3 border-l-2 border-blue-500 pl-2">2025年4月25日</h4>
+          <div class="space-y-4">
+            <!-- 接触記録3 -->
+            <div class="flex gap-4">
+              <div class="flex-shrink-0 relative">
+                <div class="timeline-dot bg-purple-500"></div>
+                <div class="timeline-line"></div>
+              </div>
+              <div class="flex-grow bg-gray-50 p-4 rounded-lg">
+                <div class="flex justify-between items-start mb-2">
+                  <div>
+                    <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800 inline-flex items-center">
+                      <i class="fas fa-video mr-1"></i> Web会議
+                    </span>
+                    <span class="text-xs text-gray-500 ml-2">13:30</span>
+                  </div>
+                  <div class="flex gap-1">
+                    <button class="text-gray-500 hover:text-blue-600"><i class="fas fa-edit"></i></button>
+                    <button class="text-gray-500 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </div>
+                <h4 class="font-medium">全拠点設備保守契約の進捗レビュー</h4>
+                <p class="text-sm text-gray-700 mt-1">Q1実績とQ2計画のレビュー。北九州工場の設備に異常なし。広島工場は制御系の調整が必要なため、5月中に訪問予定。契約更新（来年4月）に向けたスケジュール確認。</p>
+                <div class="flex flex-wrap gap-2 mt-3">
+                  <span class="text-xs text-gray-500">担当: 佐藤一郎（カスタマー部）</span>
+                  <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">定期レビュー</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- もっと見るボタン -->
+        <div class="text-center mt-6">
+          <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm">
+            過去の履歴をさらに表示
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- アクションボタン -->
+    <div class="fixed bottom-4 right-4 z-10 md:relative md:bottom-auto md:right-auto md:z-auto">
+      <div class="md:flex md:justify-end gap-3">
+        <!-- モバイル用フローティングアクション -->
+        <div class="md:hidden">
+          <button class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+        
+        <!-- デスクトップ用アクションボタン -->
+        <div class="hidden md:flex gap-3">
+          <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md flex items-center">
+            <i class="fas fa-file-export mr-2"></i> エクスポート
+          </button>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center">
+            <i class="fas fa-calendar-alt mr-2"></i> 活動スケジュール
+          </button>
+          <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center">
+            <i class="fas fa-file-contract mr-2"></i> 提案書作成
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- モバイル用フッターナビゲーション -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-10">
+    <div class="flex justify-around">
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-blue-600">
+        <i class="fas fa-home text-lg"></i>
+        <span class="text-xs mt-1">ホーム</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-search text-lg"></i>
+        <span class="text-xs mt-1">検索</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-users text-lg"></i>
+        <span class="text-xs mt-1">顧客</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-calendar text-lg"></i>
+        <span class="text-xs mt-1">活動</span>
+      </a>
+      <a href="#" class="flex flex-col items-center py-2 px-3 text-gray-600">
+        <i class="fas fa-user text-lg"></i>
+        <span class="text-xs mt-1">設定</span>
+      </a>
+    </div>
+  </nav>
+  
+  <!-- フッター -->
+  <footer class="bg-gray-800 text-white p-4 text-center text-sm mt-auto">
+    <div>営業活動支援システム Ver.1.0</div>
+    <div class="mt-2">© 2025 エネルギーサービス企業</div>
+  </footer>
+</body>
+</html>

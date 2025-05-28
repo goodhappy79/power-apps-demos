@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電力契約切替管理画面</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* ステータスバッジスタイル */
+    .status-not-applied { background-color: #9CA3AF; color: white; }
+    .status-in-progress { background-color: #3B82F6; color: white; }
+    .status-completed { background-color: #16A34A; color: white; }
+    .status-delayed { background-color: #DC2626; color: white; }
+    
+    /* 遅延アラートスタイル */
+    .alert-warning { background-color: #FEF3C7; color: #92400E; border-left: 4px solid #F59E0B; }
+    .alert-danger { background-color: #FEE2E2; color: #B91C1C; border-left: 4px solid #DC2626; }
+    
+    /* 期日表示スタイル */
+    .deadline-normal { color: #374151; }
+    .deadline-warning { color: #B45309; background-color: #FEF3C7; }
+    .deadline-danger { color: #B91C1C; background-color: #FEE2E2; }
+    
+    /* グラフ関連 */
+    .graph-bar { height: 20px; transition: width 0.5s; }
+    
+    /* プロセスフロー */
+    .process-flow { display: flex; align-items: center; }
+    .process-step { position: relative; flex: 1; text-align: center; }
+    .process-step::before {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: #E5E7EB;
+      z-index: 1;
+    }
+    .process-step:first-child::before { width: 50%; left: 50%; }
+    .process-step:last-child::before { width: 50%; }
+    .process-marker {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: white;
+      border: 2px solid #9CA3AF;
+      position: relative;
+      z-index: 2;
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .process-step.completed .process-marker {
+      background-color: #16A34A;
+      border-color: #16A34A;
+      color: white;
+    }
+    .process-step.active .process-marker {
+      border-color: #3B82F6;
+      background-color: white;
+      color: #3B82F6;
+      font-weight: bold;
+    }
+    .process-step.completed::before { background-color: #16A34A; }
+    .process-text { font-size: 12px; }
+    .process-date { font-size: 10px; color: #6B7280; }
+  </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+  <!-- ヘッダー：アプリケーション名とユーザー情報 -->
+  <header class="bg-blue-800 text-white p-4 flex justify-between items-center">
+    <h1 class="text-xl font-bold">電力契約切替管理</h1>
+    <div class="flex items-center gap-4">
+      <span>電力販売部門</span>
+      <div class="w-8 h-8 bg-white text-blue-800 rounded-full flex items-center justify-center font-semibold">ES</div>
+    </div>
+  </header>
+
+  <!-- 検索・フィルター領域：複合検索条件と便利なフィルターを配置 -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+      <div>
+        <label class="block text-sm font-medium mb-1">検索</label>
+        <input type="text" placeholder="顧客名または契約番号" class="border p-2 rounded w-full" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">切替予定月</label>
+        <input type="month" class="border p-2 rounded w-full" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">ステータス</label>
+        <select class="border p-2 rounded w-full">
+          <option>すべてのステータス</option>
+          <option>未申請</option>
+          <option>申請中</option>
+          <option>承認済み</option>
+          <option>切替完了</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-sm font-medium mb-1">担当者</label>
+        <select class="border p-2 rounded w-full">
+          <option>すべての担当者</option>
+          <option>山田太郎</option>
+          <option>佐藤一郎</option>
+          <option>鈴木花子</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-4 mb-4">
+      <label class="flex items-center">
+        <input type="checkbox" class="mr-2 h-4 w-4">
+        <span>期日超過のみ</span>
+      </label>
+      <label class="flex items-center">
+        <input type="checkbox" class="mr-2 h-4 w-4">
+        <span>切替遅延のみ</span>
+      </label>
+      <label class="flex items-center">
+        <input type="checkbox" class="mr-2 h-4 w-4">
+        <span>承認待ちのみ</span>
+      </label>
+      <label class="flex items-center">
+        <input type="checkbox" class="mr-2 h-4 w-4">
+        <span>自分の担当のみ</span>
+      </label>
+    </div>
+    <div class="flex gap-2">
+      <button class="bg-blue-600 text-white px-4 py-2 rounded">検索</button>
+      <button class="bg-gray-300 text-gray-700 px-4 py-2 rounded">リセット</button>
+    </div>
+  </section>
+
+  <!-- 切替遅延アラート：緊急対応が必要な契約のサマリー表示 -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl">
+    <h2 class="text-lg font-semibold mb-4 flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      切替遅延アラート（要対応：3件）
+    </h2>
+    
+    <div class="space-y-2">
+      <div class="p-3 rounded alert-danger">
+        <div class="flex justify-between">
+          <div class="font-medium">D-2025-0042: ABC商事福岡ビル</div>
+          <div>期日超過：<span class="font-bold">12日</span></div>
+        </div>
+        <div class="text-sm mt-1">切替予定日：2025/05/06 → 現在ステータス：申請中（電力会社確認待ち）</div>
+        <div class="text-sm">担当：佐藤一郎</div>
+      </div>
+      
+      <div class="p-3 rounded alert-danger">
+        <div class="flex justify-between">
+          <div class="font-medium">D-2025-0036: XYZ物流センター</div>
+          <div>期日超過：<span class="font-bold">5日</span></div>
+        </div>
+        <div class="text-sm mt-1">切替予定日：2025/05/13 → 現在ステータス：申請中（顧客印鑑待ち）</div>
+        <div class="text-sm">担当：山田太郎</div>
+      </div>
+      
+      <div class="p-3 rounded alert-warning">
+        <div class="flex justify-between">
+          <div class="font-medium">D-2025-0058: サンライト第二工場</div>
+          <div>期日間近：<span class="font-bold">残り2日</span></div>
+        </div>
+        <div class="text-sm mt-1">切替予定日：2025/05/20 → 現在ステータス：申請中（一般送配電事業者手続き中）</div>
+        <div class="text-sm">担当：鈴木花子</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 切替フェーズ別集計：全体の進捗状況を視覚的に把握できるグラフ -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl">
+    <h2 class="text-lg font-semibold mb-4">切替フェーズ別集計</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div>
+        <h3 class="font-medium mb-2">ステータス別件数（全42件）</h3>
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>未申請（8件）</span>
+              <span>19%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-gray-500 rounded" style="width: 19%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>申請中（14件）</span>
+              <span>33%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-blue-500 rounded" style="width: 33%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>承認済み（6件）</span>
+              <span>14%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-yellow-500 rounded" style="width: 14%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>切替完了（14件）</span>
+              <span>33%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 33%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <h3 class="font-medium mb-2">今月の切替予定（全16件）</h3>
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>期日超過（3件）</span>
+              <span>19%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-red-500 rounded" style="width: 19%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>残り7日以内（4件）</span>
+              <span>25%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-yellow-500 rounded" style="width: 25%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>余裕あり（5件）</span>
+              <span>31%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-blue-500 rounded" style="width: 31%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>完了済み（4件）</span>
+              <span>25%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 25%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 操作機能：一括操作ボタン配置 -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl">
+    <div class="flex flex-wrap gap-4">
+      <button class="bg-blue-600 text-white px-4 py-2 rounded flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        新規契約切替登録
+      </button>
+      <button class="bg-green-600 text-white px-4 py-2 rounded flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        CSV一括ダウンロード
+      </button>
+      <button class="bg-indigo-600 text-white px-4 py-2 rounded flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        切替依頼書テンプレート
+      </button>
+      <button class="bg-purple-600 text-white px-4 py-2 rounded flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        一覧印刷
+      </button>
+    </div>
+  </section>
+
+  <!-- 自動リマインダー設定：期日に合わせた自動通知設定を管理 -->
+  <!-- 設計意図：切替期日管理を自動化し、期限切れリスクを低減する -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl">
+    <h2 class="text-lg font-semibold mb-4 flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      自動リマインダー設定
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="border rounded-lg p-4 bg-blue-50">
+        <h3 class="font-medium mb-2">7日前通知</h3>
+        <div class="mb-3">
+          <label class="flex items-center text-sm mb-2">
+            <input type="checkbox" class="mr-2 h-4 w-4" checked>
+            <span>メール通知</span>
+          </label>
+          <input type="email" value="team@example.com" class="border p-2 rounded w-full text-sm" placeholder="メールアドレス">
+        </div>
+        <div class="mb-3">
+          <label class="flex items-center text-sm mb-2">
+            <input type="checkbox" class="mr-2 h-4 w-4" checked>
+            <span>Teams通知</span>
+          </label>
+          <select class="border p-2 rounded w-full text-sm">
+            <option>電力契約管理チーム</option>
+            <option>営業部全体</option>
+            <option>担当者のみ</option>
+          </select>
+        </div>
+        <div class="text-xs text-gray-500">「切替期日7日前」に自動通知</div>
+      </div>
+      
+      <div class="border rounded-lg p-4 bg-yellow-50">
+        <h3 class="font-medium mb-2">3日前通知</h3>
+        <div class="mb-3">
+          <label class="flex items-center text-sm mb-2">
+            <input type="checkbox" class="mr-2 h-4 w-4" checked>
+            <span>メール通知</span>
+          </label>
+          <input type="email" value="team@example.com" class="border p-2 rounded w-full text-sm" placeholder="メールアドレス">
+        </div>
+        <div class="mb-3">
+          <label class="flex items-center text-sm mb-2">
+            <input type="checkbox" class="mr-2 h-4 w-4" checked>
+            <span>Teams通知</span>
+          </label>
+          <select class="border p-2 rounded w-full text-sm">
+            <option>電力契約管理チーム</option>
+            <option>営業部全体</option>
+            <option>担当者のみ</option>
+          </select>
+        </div>
+        <div class="text-xs text-gray-500">「切替期日3日前」に自動通知</div>
+      </div>
+      
+      <div class="border rounded-lg p-4 bg-red-50">
+        <h3 class="font-medium mb-2">当日・期日超過通知</h3>
+        <div class="mb-3">
+          <label class="flex items-center text-sm mb-2">
+            <input type="checkbox" class="mr-2 h-4 w-4" checked>
+            <span>メール通知</span>
+          </label>
+          <input type="email" value="team@example.com,manager@example.com" class="border p-2 rounded w-full text-sm" placeholder="メールアドレス">
+        </div>
+        <div class="mb-3">
+          <label class="flex items-center text-sm mb-2">
+            <input type="checkbox" class="mr-2 h-4 w-4" checked>
+            <span>Teams通知</span>
+          </label>
+          <select class="border p-2 rounded w-full text-sm">
+            <option>電力契約管理チーム</option>
+            <option>営業部全体</option>
+            <option>担当者のみ</option>
+          </select>
+        </div>
+        <div class="text-xs text-gray-500">「切替当日」と「期日超過」時に自動通知</div>
+      </div>
+    </div>
+    
+    <div class="mt-4 p-3 bg-blue-100 rounded-lg text-sm">
+      <div class="font-medium mb-1">Teams連携ステータス：有効</div>
+      <div class="flex gap-8">
+        <span>最終同期：2025/05/18 08:30</span>
+        <span>未配信タスク：2件</span>
+        <span>今月配信済：35件</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 契約切替一覧テーブル：主要情報をテーブル形式で一覧表示 -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl overflow-x-auto">
+    <table class="min-w-full">
+      <thead class="bg-gray-100 text-gray-600 text-sm">
+        <tr>
+          <th class="p-3 text-left">契約番号</th>
+          <th class="p-3 text-left">顧客名</th>
+          <th class="p-3 text-left">建物名</th>
+          <th class="p-3 text-left">現供給事業者</th>
+          <th class="p-3 text-left">切替種別</th>
+          <th class="p-3 text-left">申請日</th>
+          <th class="p-3 text-left">切替予定日</th>
+          <th class="p-3 text-left">残日数</th>
+          <th class="p-3 text-left">ステータス</th>
+          <th class="p-3 text-left">担当者</th>
+          <th class="p-3 text-left">アクション</th>
+        </tr>
+      </thead>
+      <tbody class="text-sm divide-y divide-gray-100">
+        <!-- 行1: 期日超過・遅延あり -->
+        <tr class="hover:bg-red-50 cursor-pointer">
+          <td class="p-3">D-2025-0042</td>
+          <td class="p-3">ABC商事</td>
+          <td class="p-3">福岡ビル</td>
+          <td class="p-3">〇〇電力</td>
+          <td class="p-3">新電力→当社</td>
+          <td class="p-3">2025/04/15</td>
+          <td class="p-3 text-red-600 font-medium">2025/05/06</td>
+          <td class="p-3"><span class="px-2 py-1 rounded deadline-danger font-bold">-12日</span></td>
+          <td class="p-3"><span class="status-in-progress px-2 py-1 rounded text-xs">申請中</span></td>
+          <td class="p-3">佐藤一郎</td>
+          <td class="p-3">
+            <button class="text-yellow-600 mr-2 hover:underline">状況確認</button>
+          </td>
+        </tr>
+        
+        <!-- 行2: 期日間近 -->
+        <tr class="hover:bg-yellow-50 cursor-pointer">
+          <td class="p-3">D-2025-0058</td>
+          <td class="p-3">サンライト</td>
+          <td class="p-3">第二工場</td>
+          <td class="p-3">□□エナジー</td>
+          <td class="p-3">当社（契約更新）</td>
+          <td class="p-3">2025/05/10</td>
+          <td class="p-3">2025/05/20</td>
+          <td class="p-3"><span class="px-2 py-1 rounded deadline-warning font-bold">残り2日</span></td>
+          <td class="p-3"><span class="status-in-progress px-2 py-1 rounded text-xs">申請中</span></td>
+          <td class="p-3">鈴木花子</td>
+          <td class="p-3">
+            <button class="text-blue-600 mr-2 hover:underline">進捗更新</button>
+          </td>
+        </tr>
+        
+        <!-- 行3: 通常進行中 -->
+        <tr class="hover:bg-blue-50 cursor-pointer">
+          <td class="p-3">D-2025-0063</td>
+          <td class="p-3">テクノ工業</td>
+          <td class="p-3">本社ビル</td>
+          <td class="p-3">△△パワー</td>
+          <td class="p-3">規制→自由化</td>
+          <td class="p-3">2025/05/12</td>
+          <td class="p-3">2025/06/15</td>
+          <td class="p-3"><span class="px-2 py-1 rounded deadline-normal">残り28日</span></td>
+          <td class="p-3"><span class="status-not-applied px-2 py-1 rounded text-xs">未申請</span></td>
+          <td class="p-3">山田太郎</td>
+          <td class="p-3">
+            <button class="text-blue-600 mr-2 hover:underline">申請書作成</button>
+          </td>
+        </tr>
+        
+        <!-- 行4: 承認済み・切替前 -->
+        <tr class="hover:bg-blue-50 cursor-pointer">
+          <td class="p-3">D-2025-0067</td>
+          <td class="p-3">丸和物産</td>
+          <td class="p-3">物流センター</td>
+          <td class="p-3">▽▽エレクトリック</td>
+          <td class="p-3">新電力→当社</td>
+          <td class="p-3">2025/05/08</td>
+          <td class="p-3">2025/06/01</td>
+          <td class="p-3"><span class="px-2 py-1 rounded deadline-normal">残り14日</span></td>
+          <td class="p-3"><span class="px-2 py-1 rounded text-xs bg-yellow-400 text-white">承認済み</span></td>
+          <td class="p-3">佐藤一郎</td>
+          <td class="p-3">
+            <button class="text-green-600 mr-2 hover:underline">切替手続き</button>
+          </td>
+        </tr>
+        
+        <!-- 行5: 完了済み -->
+        <tr class="hover:bg-green-50 cursor-pointer">
+          <td class="p-3">D-2025-0045</td>
+          <td class="p-3">山本製作所</td>
+          <td class="p-3">東工場</td>
+          <td class="p-3">◇◇パワー</td>
+          <td class="p-3">新電力→当社</td>
+          <td class="p-3">2025/04/20</td>
+          <td class="p-3">2025/05/15</td>
+          <td class="p-3"><span class="px-2 py-1 rounded bg-green-100 text-green-800">完了</span></td>
+          <td class="p-3"><span class="status-completed px-2 py-1 rounded text-xs">切替完了</span></td>
+          <td class="p-3">山田太郎</td>
+          <td class="p-3">
+            <button class="text-blue-600 mr-2 hover:underline">履歴表示</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!-- ページネーション -->
+    <div class="mt-4 flex justify-between items-center">
+      <div class="text-sm text-gray-600">全42件中 1-5件を表示</div>
+      <div class="flex gap-2">
+        <button class="px-3 py-1 border rounded bg-gray-100 text-gray-600">&lt;</button>
+        <button class="px-3 py-1 border rounded bg-blue-600 text-white">1</button>
+        <button class="px-3 py-1 border rounded bg-gray-100 text-gray-600">2</button>
+        <button class="px-3 py-1 border rounded bg-gray-100 text-gray-600">3</button>
+        <button class="px-3 py-1 border rounded bg-gray-100 text-gray-600">&gt;</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 切替プロセスのステップ詳細表示：申請中のステータスを詳細化 -->
+  <!-- 設計意図：切替申請の具体的なボトルネック箇所を可視化し、効率的な対応を可能に -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl">
+    <h2 class="text-lg font-semibold mb-4 flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+      切替プロセスステップ詳細
+    </h2>
+    
+    <div class="mb-4 p-3 bg-yellow-50 rounded-lg">
+      <h3 class="font-medium mb-1">D-2025-0058: サンライト第二工場</h3>
+      <div class="text-sm mb-3">切替予定日: 2025/05/20 | 申請日: 2025/05/10 | 担当: 鈴木花子</div>
+      
+      <div class="process-flow">
+        <div class="process-step completed">
+          <div class="process-marker">✓</div>
+          <div class="process-text">契約内容確認</div>
+          <div class="process-date">2025/05/10</div>
+        </div>
+        <div class="process-step completed">
+          <div class="process-marker">✓</div>
+          <div class="process-text">申請書作成</div>
+          <div class="process-date">2025/05/11</div>
+        </div>
+        <div class="process-step completed">
+          <div class="process-marker">✓</div>
+          <div class="process-text">顧客確認・押印</div>
+          <div class="process-date">2025/05/13</div>
+        </div>
+        <div class="process-step active">
+          <div class="process-marker">4</div>
+          <div class="process-text">一般送配電事業者審査</div>
+          <div class="process-date">実施中</div>
+        </div>
+        <div class="process-step">
+          <div class="process-marker">5</div>
+          <div class="process-text">切替手続き</div>
+          <div class="process-date">-</div>
+        </div>
+        <div class="process-step">
+          <div class="process-marker">6</div>
+          <div class="process-text">切替完了</div>
+          <div class="process-date">-</div>
+        </div>
+      </div>
+      
+      <div class="mt-4 p-3 bg-blue-100 rounded-lg text-sm">
+        <div class="font-medium">現在のステータス: 一般送配電事業者手続き中</div>
+        <div>提出済依頼書番号: TK-2025051401 | 提出日: 2025/05/14 | 標準処理期間: 5営業日</div>
+        <div>備考: 5/17に一般送配電事業者に進捗確認の電話を実施。「通常通り処理中」との回答。</div>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+      <div class="p-3 bg-blue-50 rounded-lg">
+        <h3 class="font-medium mb-2">各ステップの平均処理日数</h3>
+        <table class="w-full text-sm">
+          <tr>
+            <td>契約内容確認</td>
+            <td class="text-right">1.2日</td>
+          </tr>
+          <tr>
+            <td>申請書作成</td>
+            <td class="text-right">1.5日</td>
+          </tr>
+          <tr>
+            <td>顧客確認・押印</td>
+            <td class="text-right font-medium text-red-600">3.8日</td>
+          </tr>
+          <tr>
+            <td>一般送配電事業者審査</td>
+            <td class="text-right font-medium text-red-600">5.3日</td>
+          </tr>
+          <tr>
+            <td>切替手続き</td>
+            <td class="text-right">1.0日</td>
+          </tr>
+        </table>
+        <div class="text-xs text-gray-500 mt-2">※赤字はボトルネックステップ</div>
+      </div>
+      
+      <div class="p-3 bg-blue-50 rounded-lg">
+        <h3 class="font-medium mb-2">切替種別別の平均処理日数</h3>
+        <table class="w-full text-sm">
+          <tr>
+            <td>新電力→当社</td>
+            <td class="text-right">12.5日</td>
+          </tr>
+          <tr>
+            <td>規制→自由化</td>
+            <td class="text-right">10.2日</td>
+          </tr>
+          <tr>
+            <td>当社（契約更新）</td>
+            <td class="text-right">8.4日</td>
+          </tr>
+          <tr>
+            <td>高圧→特高</td>
+            <td class="text-right">15.3日</td>
+          </tr>
+          <tr>
+            <td>低圧→高圧</td>
+            <td class="text-right">14.8日</td>
+          </tr>
+        </table>
+        <div class="text-xs text-gray-500 mt-2">※データ期間：過去12ヶ月</div>
+      </div>
+      
+      <div class="p-3 bg-blue-50 rounded-lg">
+        <h3 class="font-medium mb-2">対策箇所と改善案</h3>
+        <ul class="text-sm list-disc pl-5 space-y-1">
+          <li>顧客確認・押印： 電子契約の推進で2日短縮</li>
+          <li>一般送配電事業者審査： 事前チェックリスト活用で差戻し減少</li>
+          <li>申請書作成： テンプレート改良で0.5日短縮</li>
+        </ul>
+        <div class="mt-3">
+          <button class="w-full bg-blue-600 text-white px-3 py-1 rounded text-sm">改善計画表示</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 契約切替理由の分析ダッシュボード：切替理由の傾向を分析 -->
+  <!-- 設計意図：営業戦略改善のための分析情報を提供し、競合他社からの切替獲得率を向上 -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 rounded-xl">
+    <h2 class="text-lg font-semibold mb-4 flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      切替理由分析ダッシュボード
+    </h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-medium mb-3">主な切替理由の分布</h3>
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>料金プラン変更（32%）</span>
+              <span>38件</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-blue-500 rounded" style="width: 32%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>競合他社からの乗換え（24%）</span>
+              <span>29件</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 24%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>供給区域変更（18%）</span>
+              <span>21件</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-purple-500 rounded" style="width: 18%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>契約容量変更（14%）</span>
+              <span>17件</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-yellow-500 rounded" style="width: 14%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>再エネプラン採用（8%）</span>
+              <span>10件</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-indigo-500 rounded" style="width: 8%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>その他（4%）</span>
+              <span>5件</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-gray-500 rounded" style="width: 4%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-4 p-3 bg-gray-50 rounded-lg text-sm">
+          <p>傾向分析：料金プラン変更と競合他社からの乗換えが全体の56%を占め、料金の適正化と競合対策が重要。再エネプランは前年比3%増加しており、環境配慮型の提案が増加傾向。</p>
+        </div>
+      </div>
+      
+      <div>
+        <h3 class="font-medium mb-3">競合他社からの切替獲得率</h3>
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>〇〇電力</span>
+              <span>35%（12件）</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 35%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>□□エナジー</span>
+              <span>24%（7件）</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 24%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>△△パワー</span>
+              <span>17%（5件）</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 17%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>▽▽エレクトリック</span>
+              <span>14%（4件）</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 14%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between mb-1">
+              <span>◇◇パワー</span>
+              <span>10%（3件）</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded">
+              <div class="graph-bar bg-green-500 rounded" style="width: 10%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-4 grid grid-cols-2 gap-4">
+          <div class="p-3 bg-green-50 rounded-lg">
+            <h4 class="font-medium text-sm mb-1">切替成功要因</h4>
+            <ul class="text-xs list-disc pl-4">
+              <li>料金メニューの柔軟性（45%）</li>
+              <li>カスタマーサポート（28%）</li>
+              <li>請求明細の分かりやすさ（15%）</li>
+              <li>環境対応への取組（12%）</li>
+            </ul>
+          </div>
+          
+          <div class="p-3 bg-red-50 rounded-lg">
+            <h4 class="font-medium text-sm mb-1">当社から他社への切替理由</h4>
+            <ul class="text-xs list-disc pl-4">
+              <li>料金単価（52%）</li>
+              <li>契約条件の柔軟性（23%）</li>
+              <li>営業担当者の対応（18%）</li>
+              <li>その他（7%）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 切替履歴管理機能：顧客ごとの過去切替履歴を表示・分析 -->
+  <!-- 設計意図：顧客の契約履歴パターンを把握し、適切な営業戦略を立案するための情報を提供 -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 mb-8 rounded-xl">
+    <h2 class="text-lg font-semibold mb-4 flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      顧客切替履歴管理
+    </h2>
+    
+    <div class="mb-4">
+      <div class="flex items-center gap-4 mb-3">
+        <h3 class="font-medium">ABC商事 顧客ID: C-10042</h3>
+        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">契約切替回数: 3回</span>
+        <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">顧客ランク: A</span>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full border-collapse bg-gray-50 rounded-lg">
+          <thead class="bg-gray-100">
+            <tr class="text-sm text-gray-600">
+              <th class="p-3 text-left">契約番号</th>
+              <th class="p-3 text-left">契約名</th>
+              <th class="p-3 text-left">契約期間</th>
+              <th class="p-3 text-left">契約種別</th>
+              <th class="p-3 text-left">切替前事業者</th>
+              <th class="p-3 text-left">切替理由</th>
+              <th class="p-3 text-left">担当者</th>
+              <th class="p-3 text-left">詳細</th>
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            <tr class="border-b border-gray-200">
+              <td class="p-3">D-2025-0042</td>
+              <td class="p-3">福岡ビル 高圧電力</td>
+              <td class="p-3">2025/05/06～2027/05/05</td>
+              <td class="p-3">高圧</td>
+              <td class="p-3">〇〇電力</td>
+              <td class="p-3">料金プラン変更</td>
+              <td class="p-3">佐藤一郎</td>
+              <td class="p-3"><button class="text-blue-600 hover:underline">表示</button></td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-3">D-2023-0185</td>
+              <td class="p-3">福岡ビル 高圧電力</td>
+              <td class="p-3">2023/05/06～2025/05/05</td>
+              <td class="p-3">高圧</td>
+              <td class="p-3">当社</td>
+              <td class="p-3">契約更新</td>
+              <td class="p-3">田中次郎</td>
+              <td class="p-3"><button class="text-blue-600 hover:underline">表示</button></td>
+            </tr>
+            <tr class="border-b border-gray-200">
+              <td class="p-3">D-2021-0123</td>
+              <td class="p-3">福岡ビル 高圧電力</td>
+              <td class="p-3">2021/05/06～2023/05/05</td>
+              <td class="p-3">高圧</td>
+              <td class="p-3">□□エナジー</td>
+              <td class="p-3">競合他社からの乗換え</td>
+              <td class="p-3">田中次郎</td>
+              <td class="p-3"><button class="text-blue-600 hover:underline">表示</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-3 bg-blue-50 rounded-lg">
+          <h4 class="font-medium text-sm mb-2">契約パターン分析</h4>
+          <ul class="text-sm space-y-1">
+            <li>・契約更新周期: <span class="font-medium">2年</span></li>
+            <li>・料金単価: <span class="font-medium">前回比 -3%</span></li>
+            <li>・契約満了率: <span class="font-medium">100%</span></li>
+            <li>・顧客ロイヤルティ: <span class="font-medium">高（4.3/5.0）</span></li>
+          </ul>
+        </div>
+        
+        <div class="p-3 bg-green-50 rounded-lg">
+          <h4 class="font-medium text-sm mb-2">次回更新予測</h4>
+          <ul class="text-sm space-y-1">
+            <li>・次回切替予定: <span class="font-medium">2027/05/06</span></li>
+            <li>・更新確度: <span class="font-medium">85%</span></li>
+            <li>・再設定リマインダー: <span class="font-medium">2027/02/06</span></li>
+            <li>・特記事項: <span class="font-medium">環境配慮型プラン提案</span></li>
+          </ul>
+        </div>
+        
+        <div class="p-3 bg-yellow-50 rounded-lg">
+          <h4 class="font-medium text-sm mb-2">サポート履歴</h4>
+          <ul class="text-sm space-y-1">
+            <li>・問合せ頻度: <span class="font-medium">年4回</span></li>
+            <li>・主要問合せ: <span class="font-medium">請求内容確認</span></li>
+            <li>・満足度調査: <span class="font-medium">4.2/5.0</span></li>
+            <li>・最終接触: <span class="font-medium">2025/05/13</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-6">
+      <h3 class="font-medium mb-3">顧客グループ切替傾向</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="p-4 border rounded-lg">
+          <h4 class="text-sm font-medium mb-2">業種別リピート率（過去2年間）</h4>
+          <div class="space-y-2">
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>製造業（35社）</span>
+                <span>87%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-blue-500 rounded" style="width: 87%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>物流業（28社）</span>
+                <span>76%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-blue-500 rounded" style="width: 76%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>小売業（42社）</span>
+                <span>68%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-blue-500 rounded" style="width: 68%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>サービス業（51社）</span>
+                <span>65%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-blue-500 rounded" style="width: 65%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="p-4 border rounded-lg">
+          <h4 class="text-sm font-medium mb-2">契約容量別平均更新期間</h4>
+          <div class="space-y-2">
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>50kW未満</span>
+                <span>1.8年</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-green-500 rounded" style="width: 60%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>50-200kW</span>
+                <span>2.2年</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-green-500 rounded" style="width: 73%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>200-500kW</span>
+                <span>2.7年</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-green-500 rounded" style="width: 90%"></div>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between text-sm mb-1">
+                <span>500kW以上</span>
+                <span>3.0年</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded">
+                <div class="graph-bar bg-green-500 rounded" style="width: 100%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 契約切替トレンド：月別の切替状況を把握するグラフ -->
+  <section class="bg-white p-4 shadow mt-4 mx-4 mb-8 rounded-xl">
+    <h2 class="text-lg font-semibold mb-4">契約切替トレンド（直近6ヶ月）</h2>
+    
+    <div class="h-60 w-full bg-gray-50 p-4 rounded">
+      <!-- ここには実際にはPower BIの埋め込みまたはCanvas Appでのグラフ表示が入りますが、HTMLサンプルでは省略 -->
+      <div class="flex justify-center items-center h-full text-gray-400">
+        ※実際の画面では、切替目標と実績の比較グラフが表示されます
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+      <div class="p-3 bg-blue-50 rounded">
+        <div class="text-sm text-gray-600">今月の切替件数</div>
+        <div class="text-2xl font-semibold text-blue-600">16件</div>
+        <div class="text-sm text-gray-500">目標達成率: 80%</div>
+      </div>
+      
+      <div class="p-3 bg-green-50 rounded">
+        <div class="text-sm text-gray-600">今月の新規契約数</div>
+        <div class="text-2xl font-semibold text-green-600">8件</div>
+        <div class="text-sm text-gray-500">前月比: +2件</div>
+      </div>
+      
+      <div class="p-3 bg-purple-50 rounded">
+        <div class="text-sm text-gray-600">切替待ち平均所要日数</div>
+        <div class="text-2xl font-semibold text-purple-600">12.5日</div>
+        <div class="text-sm text-gray-500">前月比: -0.8日</div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
