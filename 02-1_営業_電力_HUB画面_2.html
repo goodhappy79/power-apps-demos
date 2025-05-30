@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電力販売HUB - 管理職</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.15), 0 6px 8px -2px rgba(0, 0, 0, 0.08);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .alert-pulse {
+      animation: alertPulse 2s infinite;
+    }
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+    .phase-indicator {
+      width: 100%;
+      height: 6px;
+      background: #e5e7eb;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .phase-progress {
+      height: 100%;
+      background: linear-gradient(90deg, #059669, #047857);
+      transition: width 0.3s ease;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring circle {
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.35s;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-gray-200 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-green-800 to-green-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-bolt text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">電力販売管理システム</h1>
+              <p class="text-green-200 text-sm">Power Sales Management Platform</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-green-700 px-3 py-1 rounded-full text-sm font-medium">電力販売部門</span>
+            <span class="bg-orange-600 px-3 py-1 rounded-full text-sm font-medium">管理職</span>
+            <div class="text-center">
+              <div class="text-xs text-green-200">部門システム活用度</div>
+              <div class="text-lg font-bold text-white">84%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-green-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center alert-pulse">12</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">佐々木 誠</div>
+              <div class="text-sm text-green-200">電力販売部長</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-green-800 rounded-full flex items-center justify-center font-bold text-lg">
+              SM
+            </div>
+          </div>
+          <button class="text-green-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- クイックナビゲーション -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div class="relative w-full md:w-1/2">
+        <input type="text" placeholder="顧客・契約・部下活動・イレギュラー請求を統合検索..." class="w-full px-4 py-3 pl-12 pr-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent shadow-sm">
+        <div class="absolute left-4 top-3.5 text-gray-400">
+          <i class="fas fa-search text-lg"></i>
+        </div>
+        <div class="absolute right-4 top-3.5 text-gray-400 text-sm">
+          <i class="fas fa-microphone"></i>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="glass-effect px-4 py-2 rounded-lg">
+          <div class="flex items-center text-gray-700 font-medium">
+            <i class="far fa-calendar-alt mr-2 text-green-600"></i>
+            <span>2025年5月18日（日）</span>
+          </div>
+        </div>
+        <button class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg transition-all">
+          <i class="fas fa-plus"></i>
+          <span>新規契約登録</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 管理職よく使う機能 -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center">
+          <i class="fas fa-star text-yellow-500 mr-2"></i>
+          管理職よく使う機能
+        </h3>
+        <button class="text-green-600 hover:text-green-800 text-sm">カスタマイズ</button>
+      </div>
+      <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <button class="bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">緊急承認</div>
+          <div class="text-xs text-red-600">3件</div>
+        </button>
+        <button class="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-users text-purple-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">部下管理</div>
+          <div class="text-xs text-purple-600">8名</div>
+        </button>
+        <button class="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-chart-line text-green-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">売上分析</div>
+          <div class="text-xs text-green-600">88%</div>
+        </button>
+        <button class="bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-file-invoice text-amber-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">請求管理</div>
+          <div class="text-xs text-amber-600">152件</div>
+        </button>
+        <button class="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-gas-pump text-blue-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">燃調管理</div>
+          <div class="text-xs text-blue-600">6月改定</div>
+        </button>
+        <button class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-chart-pie text-indigo-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">収益分析</div>
+          <div class="text-xs text-indigo-600">月次</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 上部ダッシュボード：緊急対応と部門KPI -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+      <!-- 緊急アクション・承認待ち（拡張版） -->
+      <div class="xl:col-span-2">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center mr-3">
+                <i class="fas fa-bolt text-white"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-800">緊急アクション・部門課題</h2>
+                <p class="text-sm text-gray-600">要対応・緊急度順</p>
+              </div>
+              <span class="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm px-3 py-1 rounded-full font-semibold">8</span>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-green-600 hover:text-green-800 text-sm font-medium flex items-center">
+                <i class="fas fa-filter mr-1"></i> フィルター
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- 緊急請求承認 -->
+            <div class="border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-red-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">イレギュラー請求承認（3件）</span>
+                    <span class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">緊急</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">節電キャンペーン割引×2件、契約変更調整×1件 | 総額85万円</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-2">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>申請期限: 2025/05/20 17:00（残り1.5日）</span>
+                  </div>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-user mr-1"></i>
+                    <span>申請者: 田中(高圧)、山田(低圧×2)</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    今すぐ承認
+                  </button>
+                  <button class="bg-white border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    詳細確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 部下パフォーマンス課題 -->
+            <div class="border-l-4 border-amber-500 bg-gradient-to-r from-amber-50 to-amber-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-user-clock text-amber-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">部下パフォーマンス課題（鈴木担当）</span>
+                    <span class="ml-2 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">要支援</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">契約切替遅延率25%（部門平均8%） | 顧客満足度3.2（部門平均4.1）</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-chart-line mr-1"></i>
+                    <span>前月比: 遅延+3件、満足度-0.6 | 個別指導要</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    個別面談
+                  </button>
+                  <button class="bg-white border border-amber-300 text-amber-600 hover:bg-amber-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    改善計画
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 燃料費調整対応 -->
+            <div class="border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-blue-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-gas-pump text-blue-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">6月燃調単価改定対応（152件）</span>
+                    <span class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">計画的</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">+3.38円/kWh（当月比+0.14円） | 顧客通知期限: 5/25</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-calendar mr-1"></i>
+                    <span>進捗: 通知済み98件、未対応54件（期限まで7日）</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    一括処理
+                  </button>
+                  <button class="bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    進捗確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 経理連携遅延 -->
+            <div class="border-l-4 border-purple-500 bg-gradient-to-r from-purple-50 to-purple-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-calculator text-purple-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">経理部連携確認（4月請求データ）</span>
+                    <span class="ml-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">部門連携</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">4月分請求データ158件の経理システム連携確認待ち</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-users mr-1"></i>
+                    <span>経理部 高橋課長 | データ送信から3日経過</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    部門長連絡
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 部門管理KPI（詳細版） -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-chart-pie text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">部門管理KPI</h3>
+            <p class="text-sm text-gray-600">リアルタイム状況</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 今月売上達成率 -->
+          <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm text-gray-600">今月売上達成率</div>
+                <div class="text-2xl font-bold text-gray-800">88%</div>
+                <div class="text-xs text-amber-600 flex items-center">
+                  <i class="fas fa-arrow-down mr-1"></i>
+                  <span>目標まで12% | 3,890万円</span>
+                </div>
+              </div>
+              <div class="relative w-16 h-16">
+                <svg class="progress-ring w-16 h-16">
+                  <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                  <circle cx="32" cy="32" r="28" stroke="#059669" stroke-width="4" fill="none" 
+                          stroke-dasharray="175.93" stroke-dashoffset="21.11"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-green-600">
+                  88%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 部下パフォーマンス詳細 -->
+          <div>
+            <div class="text-sm text-gray-600 mb-3">部下パフォーマンス状況（8名）</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">目標達成者</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-green-600">5名</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 62.5%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">要支援者</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-amber-600">2名</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-amber-500 h-2 rounded-full" style="width: 25%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">要注意者</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-red-600">1名</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-red-500 h-2 rounded-full" style="width: 12.5%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- システム活用度 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-2">部門システム活用度</div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-lg font-bold text-indigo-600">84%</span>
+              <span class="text-xs text-indigo-600">目標: 90%</span>
+            </div>
+            <div class="phase-indicator mb-2">
+              <div class="phase-progress bg-gradient-to-r from-indigo-500 to-indigo-600" style="width: 84%"></div>
+            </div>
+            <div class="text-xs text-gray-600">前月比: +2% | 全社平均: 83%</div>
+          </div>
+
+          <!-- 電力販売特有指標 -->
+          <div>
+            <div class="text-sm text-gray-600 mb-2">電力販売特有KPI</div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div class="text-center bg-blue-50 rounded-lg p-2">
+                <div class="text-xs text-gray-600">契約継続率</div>
+                <div class="text-sm font-semibold text-blue-600">96.8%</div>
+              </div>
+              <div class="text-center bg-purple-50 rounded-lg p-2">
+                <div class="text-xs text-gray-600">平均粗利率</div>
+                <div class="text-sm font-semibold text-purple-600">12.3%</div>
+              </div>
+              <div class="text-center bg-amber-50 rounded-lg p-2">
+                <div class="text-xs text-gray-600">切替成功率</div>
+                <div class="text-sm font-semibold text-amber-600">85.2%</div>
+              </div>
+              <div class="text-center bg-green-50 rounded-lg p-2">
+                <div class="text-xs text-gray-600">顧客満足度</div>
+                <div class="text-sm font-semibold text-green-600">4.1/5.0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- リスク管理と部門実績 -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+      <!-- 部門リスク・課題管理 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-exclamation-triangle text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">部門リスク・課題管理</h3>
+              <p class="text-sm text-gray-600">要対応事項・部下指導</p>
+            </div>
+            <span class="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm px-3 py-1 rounded-full font-semibold">6</span>
+          </div>
+          <button class="text-green-600 hover:text-green-800 text-sm font-medium">すべて表示</button>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 契約切替遅延リスク -->
+          <div class="bg-gradient-to-r from-red-50 to-red-25 border border-red-200 rounded-xl p-4">
+            <div class="flex items-start">
+              <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-clock text-red-600"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-gray-800">契約切替遅延（鈴木担当）</h4>
+                  <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">高リスク</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">3件が標準期間15日超過 | 最大遅延25日</p>
+                <p class="text-xs text-red-600 mb-3">⚠️ 顧客満足度低下・競合流出リスク</p>
+                <div class="flex gap-2">
+                  <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">緊急指導</button>
+                  <button class="bg-white border border-red-300 text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg text-xs">顧客対応</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 燃調対応遅れ -->
+          <div class="bg-gradient-to-r from-amber-50 to-amber-25 border border-amber-200 rounded-xl p-4">
+            <div class="flex items-start">
+              <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-gas-pump text-amber-600"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-gray-800">燃調改定通知遅れ 54件</h4>
+                  <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">中リスク</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">6月改定の顧客通知（期限5/25まで7日）</p>
+                <p class="text-xs text-amber-600 mb-3">山田・田中担当エリアで集中発生</p>
+                <div class="flex gap-2">
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-lg text-xs">一括処理指示</button>
+                  <button class="bg-white border border-amber-300 text-amber-600 hover:bg-amber-50 px-3 py-1 rounded-lg text-xs">工数支援</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 請求精度課題 -->
+          <div class="bg-gradient-to-r from-blue-50 to-blue-25 border border-blue-200 rounded-xl p-4">
+            <div class="flex items-start">
+              <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-file-invoice text-blue-600"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-gray-800">イレギュラー請求増加</h4>
+                  <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">要注意</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">今月12件（前月5件）| 節電キャンペーン関連が多発</p>
+                <p class="text-xs text-blue-600 mb-3">承認プロセス理解不足が要因</p>
+                <div class="flex gap-2">
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs">研修実施</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今月の電力販売実績 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-chart-line text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">今月の電力販売実績</h3>
+            <p class="text-sm text-gray-600">部門全体 目標vs実績</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+            <div class="text-sm text-gray-600 mb-1">売上実績</div>
+            <div class="text-2xl font-bold text-green-600">3,890万円</div>
+            <div class="text-xs text-amber-600 flex items-center justify-center mt-1">
+              <i class="fas fa-arrow-down mr-1"></i>
+              <span>前月比 -2%</span>
+            </div>
+          </div>
+          <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+            <div class="text-sm text-gray-600 mb-1">契約件数</div>
+            <div class="text-2xl font-bold text-blue-600">158件</div>
+            <div class="text-xs text-green-600 flex items-center justify-center mt-1">
+              <i class="fas fa-arrow-up mr-1"></i>
+              <span>前月比 +3件</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 部下別パフォーマンス詳細 -->
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-800 mb-3">部下別実績（全8名）</h4>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <span class="text-sm text-gray-800">田中博之</span>
+                <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">高圧担当</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 95%"></div>
+                </div>
+                <span class="text-sm font-semibold text-green-600">95%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <span class="text-sm text-gray-800">山田花子</span>
+                <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">低圧担当</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 88%"></div>
+                </div>
+                <span class="text-sm font-semibold text-green-600">88%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <span class="text-sm text-gray-800">高橋一郎</span>
+                <span class="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">新規開拓</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 82%"></div>
+                </div>
+                <span class="text-sm font-semibold text-blue-600">82%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <span class="text-sm text-gray-800">鈴木二郎</span>
+                <span class="ml-2 text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">要支援</span>
+              </div>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-red-500 h-2 rounded-full" style="width: 68%"></div>
+                </div>
+                <span class="text-sm font-semibold text-red-600">68%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 電力販売特有実績 -->
+        <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div class="text-gray-600">平均粗利率</div>
+              <div class="text-lg font-bold text-purple-600">12.3%</div>
+              <div class="text-xs text-red-600">目標比 -0.7%</div>
+            </div>
+            <div>
+              <div class="text-gray-600">燃調影響</div>
+              <div class="text-lg font-bold text-blue-600">+0.14円</div>
+              <div class="text-xs text-gray-500">6月改定分</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 重要契約・イレギュラー請求状況 -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center">
+          <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-clipboard-list text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">重要契約・イレギュラー請求状況</h3>
+            <p class="text-sm text-gray-600">高額契約と特殊請求の管理職監視</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex border border-gray-300 rounded-lg overflow-hidden">
+            <button class="px-4 py-2 bg-green-600 text-white text-sm font-medium">全て</button>
+            <button class="px-4 py-2 hover:bg-gray-100 text-sm font-medium">高額</button>
+            <button class="px-4 py-2 hover:bg-gray-100 text-sm font-medium">イレギュラー</button>
+            <button class="px-4 py-2 hover:bg-gray-100 text-sm font-medium">満了予定</button>
+          </div>
+          <button class="text-green-600 hover:text-green-800 text-sm font-medium">全契約表示</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead>
+            <tr class="bg-gradient-to-r from-gray-50 to-gray-100">
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">契約・担当者</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">顧客・種別</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">契約・請求状況</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">次回アクション</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">管理ポイント</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr class="hover:bg-green-50 transition-colors">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="font-semibold text-gray-800">ER-2025-0135</div>
+                  <div class="text-sm text-gray-600">ABC製造業向け高圧電力</div>
+                  <div class="text-xs text-green-600 mt-1">担当：田中博之（高圧専門）</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm font-medium text-gray-800">株式会社ABC製造</div>
+                <span class="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-medium">高圧</span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-800">月額480万円</div>
+                <div class="text-xs text-gray-500">契約期間: 3年</div>
+                <div class="text-xs text-green-600">正常稼働中</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-gray-800">2025/08/31</div>
+                <div class="text-xs text-gray-500">契約更新提案開始</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex flex-col gap-1">
+                  <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">継続有力</span>
+                  <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">大口顧客</span>
+                  <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">満足度高</span>
+                </div>
+              </td>
+            </tr>
+            
+            <tr class="hover:bg-amber-50 transition-colors">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="font-semibold text-gray-800">ER-2025-0142</div>
+                  <div class="text-sm text-gray-600">DEF商事向け低圧電力</div>
+                  <div class="text-xs text-blue-600 mt-1">担当：山田花子（低圧担当）</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm font-medium text-gray-800">DEF商事株式会社</div>
+                <span class="px-3 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">低圧</span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-800">月額58万円</div>
+                <div class="text-xs text-gray-500">契約期間: 2年</div>
+                <div class="text-xs text-amber-600">イレギュラー請求発生</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-gray-800">2025/05/20</div>
+                <div class="text-xs text-gray-500">節電キャンペーン割引承認</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex flex-col gap-1">
+                  <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">承認要</span>
+                  <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">イレギュラー</span>
+                  <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">25万円割引</span>
+                </div>
+              </td>
+            </tr>
+
+            <tr class="hover:bg-red-50 transition-colors">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="font-semibold text-gray-800">ER-2025-0118</div>
+                  <div class="text-sm text-gray-600">GHI工業向け高圧電力</div>
+                  <div class="text-xs text-red-600 mt-1">担当：鈴木二郎（要支援）</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm font-medium text-gray-800">GHI工業株式会社</div>
+                <span class="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-medium">高圧</span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="font-semibold text-gray-800">月額320万円</div>
+                <div class="text-xs text-gray-500">契約期間: 3年</div>
+                <div class="text-xs text-red-600">切替遅延25日</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="text-sm text-gray-800">緊急対応要</div>
+                <div class="text-xs text-gray-500">顧客謝罪・工程修正</div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex flex-col gap-1">
+                  <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">高リスク</span>
+                  <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-800">担当支援要</span>
+                  <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">顧客対応要</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 管理職機能メニュー -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center mr-3">
+          <i class="fas fa-th-large text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">電力販売管理職業務メニュー</h2>
+          <p class="text-sm text-gray-600">部門管理と電力事業特化機能</p>
+        </div>
+      </div>
+
+      <!-- 緊急対応・承認機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-red-800 border-b-2 border-red-200 pb-2">
+          <i class="fas fa-exclamation-triangle mr-2"></i>緊急対応・承認
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-red-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-red-100">
+            <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">イレギュラー請求承認</h4>
+                <i class="fas fa-file-invoice text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">節電キャンペーン・契約変更・緊急対応費用等の特殊請求承認</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">緊急: 3件</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">期限今日: 2件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                緊急承認処理
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-amber-100">
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">部下支援・指導</h4>
+                <i class="fas fa-users text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">切替遅延・顧客満足度課題の部下指導。個別面談と改善計画</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">要支援: 1名</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">面談予定: 3名</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                部下管理を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-blue-100">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">燃調・単価管理</h4>
+                <i class="fas fa-gas-pump text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">燃料費調整額改定・顧客通知・単価戦略の統合管理</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">6月改定: 152件</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">未通知: 54件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                燃調管理を開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分析・戦略機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-green-800 border-b-2 border-green-200 pb-2">
+          <i class="fas fa-chart-line mr-2"></i>電力事業分析・戦略
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-green-100">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">収益・粗利分析</h4>
+                <i class="fas fa-chart-bar text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">契約別・顧客別の収益分析。粗利率改善と価格戦略立案</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">粗利率: 12.3%</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">目標未達</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                収益分析を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-purple-100">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">市場価格分析</h4>
+                <i class="fas fa-chart-line text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">JEPX価格動向・競合価格・将来予測による戦略的価格設定</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-medium">JEPX: 17.8円</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">前月比: +2.1%</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                市場分析を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-indigo-100">
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">顧客満足度管理</h4>
+                <i class="fas fa-smile text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">契約継続率・満足度調査・改善アクションの統合管理</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">満足度: 4.1/5.0</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">継続率: 96.8%</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                顧客分析を開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 部門間連携・システム管理 -->
+      <div>
+        <h3 class="text-lg font-semibold mb-4 text-gray-800 border-b-2 border-gray-200 pb-2">
+          <i class="fas fa-network-wired mr-2"></i>部門間連携・システム管理
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100">
+            <div class="bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">経理部門連携</h4>
+                <i class="fas fa-calculator text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">請求データ連携・入金確認・会計システム統合管理</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">4月分: 完了</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">5月分: 処理中</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                経理連携を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-teal-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-teal-100">
+            <div class="bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">カスタマー連携</h4>
+                <i class="fas fa-headset text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">顧客問い合わせ対応・契約変更・満足度向上施策の連携</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-teal-100 text-teal-800 text-xs px-3 py-1 rounded-full font-medium">対応中: 3件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">完了: 15件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                CS連携を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-cyan-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-cyan-100">
+            <div class="bg-gradient-to-r from-cyan-600 to-cyan-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">システム活用度管理</h4>
+                <i class="fas fa-chart-area text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">部門システム活用状況・TI機能利用率・改善指導</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-cyan-100 text-cyan-800 text-xs px-3 py-1 rounded-full font-medium">活用度: 84%</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">目標未達</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                活用度管理を開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 市場価格トレンドと競合分析 -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+      <!-- 電力市場価格トレンド -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-chart-line text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">電力市場価格トレンド</h3>
+              <p class="text-sm text-gray-600">JEPX・燃調・価格戦略</p>
+            </div>
+          </div>
+          <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">詳細分析</button>
+        </div>
+        
+        <div class="w-full h-48 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl flex items-center justify-center mb-4">
+          <div class="text-center text-blue-600">
+            <i class="fas fa-chart-line text-4xl mb-2"></i>
+            <div class="font-semibold">電力市場価格推移グラフ</div>
+            <div class="text-sm">JEPX: 17.8円/kWh (前月比 +2.1%)</div>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4">
+          <div class="bg-green-50 p-3 rounded-xl text-center">
+            <div class="text-xs text-gray-600 mb-1">JEPX平均</div>
+            <div class="text-lg font-bold text-green-700">17.8円</div>
+            <div class="text-xs text-red-600 flex items-center justify-center">
+              <i class="fas fa-arrow-up mr-1"></i> +2.1%
+            </div>
+          </div>
+          <div class="bg-blue-50 p-3 rounded-xl text-center">
+            <div class="text-xs text-gray-600 mb-1">当社平均販売</div>
+            <div class="text-lg font-bold text-blue-700">24.5円</div>
+            <div class="text-xs text-red-600 flex items-center justify-center">
+              <i class="fas fa-arrow-up mr-1"></i> +0.8%
+            </div>
+          </div>
+          <div class="bg-purple-50 p-3 rounded-xl text-center">
+            <div class="text-xs text-gray-600 mb-1">6月予測</div>
+            <div class="text-lg font-bold text-purple-700">18.2円</div>
+            <div class="text-xs text-red-600 flex items-center justify-center">
+              <i class="fas fa-arrow-up mr-1"></i> +2.2%
+            </div>
+          </div>
+        </div>
+
+        <!-- 燃調情報 -->
+        <div class="mt-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-4">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-semibold text-gray-800">燃料費調整額動向</h4>
+            <i class="fas fa-gas-pump text-amber-600"></i>
+          </div>
+          <div class="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <div class="text-gray-600">6月改定単価</div>
+              <div class="text-lg font-bold text-amber-700">+3.38円/kWh</div>
+              <div class="text-xs text-red-600">当月比 +0.14円</div>
+            </div>
+            <div>
+              <div class="text-gray-600">顧客通知状況</div>
+              <div class="text-lg font-bold text-blue-700">98/152件</div>
+              <div class="text-xs text-amber-600">残り54件（期限7日）</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 競合・顧客満足度分析 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-smile text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">顧客満足度・競合分析</h3>
+              <p class="text-sm text-gray-600">継続率・満足度・競合対策</p>
+            </div>
+          </div>
+          <button class="text-purple-600 hover:text-purple-800 text-sm font-medium">詳細分析</button>
+        </div>
+
+        <!-- 満足度指標 -->
+        <div class="grid grid-cols-3 gap-4 mb-6">
+          <div class="bg-green-50 p-3 rounded-xl text-center">
+            <div class="text-xs text-gray-600 mb-1">総合評価</div>
+            <div class="text-2xl font-bold text-green-600">4.1</div>
+            <div class="text-xs text-gray-500">(5点満点)</div>
+          </div>
+          <div class="bg-blue-50 p-3 rounded-xl text-center">
+            <div class="text-xs text-gray-600 mb-1">契約継続率</div>
+            <div class="text-2xl font-bold text-blue-600">96.8%</div>
+            <div class="text-xs text-green-600">+0.5%</div>
+          </div>
+          <div class="bg-purple-50 p-3 rounded-xl text-center">
+            <div class="text-xs text-gray-600 mb-1">NPS</div>
+            <div class="text-2xl font-bold text-purple-600">+15</div>
+            <div class="text-xs text-green-600">良好</div>
+          </div>
+        </div>
+
+        <!-- 満足度詳細 -->
+        <div class="mb-4">
+          <h4 class="text-sm font-semibold text-gray-800 mb-3">満足度項目別評価</h4>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">料金の明確性</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 88%"></div>
+                </div>
+                <span class="text-sm font-semibold text-green-600">4.4</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">対応速度</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 82%"></div>
+                </div>
+                <span class="text-sm font-semibold text-blue-600">4.1</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">切替手続き</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-amber-500 h-2 rounded-full" style="width: 74%"></div>
+                </div>
+                <span class="text-sm font-semibold text-amber-600">3.7</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">価格競争力</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 78%"></div>
+                </div>
+                <span class="text-sm font-semibold text-purple-600">3.9</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 最近のフィードバック -->
+        <div class="bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-4">
+          <h4 class="text-sm font-semibold text-gray-800 mb-2">最近の顧客フィードバック</h4>
+          <div class="space-y-2">
+            <div class="bg-white p-2 rounded-lg">
+              <div class="flex items-center mb-1">
+                <div class="text-yellow-500 mr-2 text-sm">★★★★★</div>
+                <div class="text-xs text-gray-500">ABC製造業 (高圧)</div>
+              </div>
+              <div class="text-sm text-gray-700">「燃調改定の事前通知が丁寧で助かる」</div>
+            </div>
+            <div class="bg-white p-2 rounded-lg">
+              <div class="flex items-center mb-1">
+                <div class="text-yellow-500 mr-2 text-sm">★★★☆☆</div>
+                <div class="text-xs text-gray-500">GHI工業 (高圧)</div>
+              </div>
+              <div class="text-sm text-gray-700">「切替手続きに時間がかかりすぎる」</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- システム活用度と改善提案 -->
+    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl shadow-lg p-6 border border-blue-200">
+      <div class="flex items-center mb-4">
+        <i class="fas fa-lightbulb text-blue-600 mr-2 text-xl"></i>
+        <span class="text-xl font-semibold text-gray-800">電力販売部門 システム活用度向上施策</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-white rounded-xl p-4">
+          <div class="font-semibold text-blue-600 mb-2">イレギュラー請求理解促進</div>
+          <div class="text-gray-600 mb-2">承認プロセス・適用条件の研修実施</div>
+          <div class="text-xs text-blue-600">効果: 承認遅延50%削減見込み</div>
+        </div>
+        <div class="bg-white rounded-xl p-4">
+          <div class="font-semibold text-green-600 mb-2">燃調改定業務効率化</div>
+          <div class="text-gray-600 mb-2">一括通知機能・テンプレート活用推進</div>
+          <div class="text-xs text-green-600">効果: 作業時間70%短縮</div>
+        </div>
+        <div class="bg-white rounded-xl p-4">
+          <div class="font-semibold text-purple-600 mb-2">顧客満足度向上</div>
+          <div class="text-gray-600 mb-2">切替進捗の可視化・自動通知機能活用</div>
+          <div class="text-xs text-purple-600">効果: 満足度0.3ポイント向上見込み</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フッター -->
+  <footer class="bg-gradient-to-r from-gray-800 to-gray-900 text-white mt-12">
+    <div class="container mx-auto px-4 py-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <h4 class="text-lg font-bold mb-2">電力販売システム</h4>
+          <ul class="space-y-1 text-sm text-gray-300">
+            <li>バージョン: v2.1.0</li>
+            <li>最終更新: 2025/05/18</li>
+            <li>サポート: 内線4001</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-2">新機能情報</h4>
+          <ul class="space-y-1 text-sm text-gray-300">
+            <li>• イレギュラー請求承認機能強化</li>
+            <li>• 燃調改定一括処理機能追加</li>
+            <li>• 顧客満足度分析機能拡張</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-2">管理職専用機能</h4>
+          <ul class="space-y-1 text-sm text-gray-300">
+            <li>部下パフォーマンス分析</li>
+            <li>リスク・遅延早期発見</li>
+            <li>市場価格・競合分析</li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 mt-4 pt-4 text-center text-sm text-gray-400">
+        <p>© 2025 エネルギーサービス企業 電力販売管理システム | 設計仕様書v24準拠</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // インタラクション機能
+    document.addEventListener('DOMContentLoaded', function() {
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-4px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // プログレスバーのアニメーション
+      const progressBars = document.querySelectorAll('.phase-progress');
+      progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+          bar.style.width = width;
+          bar.style.transition = 'width 1.5s ease-in-out';
+        }, 500);
+      });
+
+      // 通知カウントのアニメーション
+      const notificationBadge = document.querySelector('.alert-pulse');
+      if (notificationBadge) {
+        setInterval(() => {
+          notificationBadge.style.transform = 'scale(1.1)';
+          setTimeout(() => {
+            notificationBadge.style.transform = 'scale(1)';
+          }, 200);
+        }, 3000);
+      }
+
+      // リアルタイム時計機能
+      function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ja-JP');
+        const dateElements = document.querySelectorAll('.current-time');
+        dateElements.forEach(element => {
+          if (element) element.textContent = timeString;
+        });
+      }
+      setInterval(updateTime, 1000);
+
+      // 緊急承認ボタンの処理
+      const emergencyButtons = document.querySelectorAll('button');
+      emergencyButtons.forEach(button => {
+        if (button.textContent.includes('今すぐ承認')) {
+          button.addEventListener('click', function() {
+            this.textContent = '承認処理中...';
+            this.disabled = true;
+            setTimeout(() => {
+              this.textContent = '承認完了';
+              this.classList.remove('bg-red-500', 'hover:bg-red-600');
+              this.classList.add('bg-green-500', 'hover:bg-green-600');
+            }, 2000);
+          });
+        }
+      });
+
+      // 動的なKPI更新
+      function updateKPI() {
+        const achievementRate = Math.floor(Math.random() * 5) + 86; // 86-91%の範囲
+        const usageRate = Math.floor(Math.random() * 3) + 83; // 83-86%の範囲
+        
+        const achievementElements = document.querySelectorAll('.achievement-rate');
+        const usageElements = document.querySelectorAll('.usage-rate');
+        
+        achievementElements.forEach(element => {
+          if (element) element.textContent = achievementRate + '%';
+        });
+        
+        usageElements.forEach(element => {
+          if (element) element.textContent = usageRate + '%';
+        });
+      }
+      setInterval(updateKPI, 30000); // 30秒ごとに更新
+    });
+  </script>
+</body>
+</html>
