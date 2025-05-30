@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>営業部門 承認・申請システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tango, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #0078d4, #106ebe);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .header-info {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .notification-badge {
+            background: #ff4444;
+            color: white;
+            border-radius: 50%;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        /* パンくずナビゲーション */
+        .breadcrumb {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .breadcrumb-list {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            list-style: none;
+            font-size: 14px;
+        }
+        
+        .breadcrumb-item {
+            color: #666;
+        }
+        
+        .breadcrumb-item.active {
+            color: #0078d4;
+            font-weight: 600;
+        }
+        
+        .breadcrumb-separator {
+            color: #999;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .nav-tab {
+            padding: 12px 20px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            background: #0078d4;
+            color: white;
+            border-color: #0078d4;
+        }
+        
+        .nav-tab:hover:not(.active) {
+            background: #f0f0f0;
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+        }
+        
+        /* 改良されたダッシュボード */
+        .approval-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .dashboard-card h4 {
+            color: #0078d4;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .metric-large {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0078d4;
+            margin: 10px 0;
+        }
+        
+        .metric-small {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .metric-label {
+            color: #666;
+        }
+        
+        .metric-value {
+            font-weight: bold;
+        }
+        
+        .urgent-count {
+            color: #dc3545;
+        }
+        
+        .warning-count {
+            color: #ffc107;
+        }
+        
+        /* 申請中案件の詳細表示 */
+        .pending-applications {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .pending-item {
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        .pending-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .pending-title {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .pending-amount {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0078d4;
+        }
+        
+        .progress-flow {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .progress-step {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        
+        .progress-step.completed {
+            background: #28a745;
+            color: white;
+        }
+        
+        .progress-step.current {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .progress-step.pending {
+            background: #e9ecef;
+            color: #666;
+        }
+        
+        .progress-arrow {
+            width: 0;
+            height: 0;
+            border-left: 6px solid #ddd;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+        
+        /* Copilot強化版 */
+        .copilot-assistant {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            border: 2px solid #ffc107;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            position: relative;
+            animation: copilotPulse 3s infinite;
+        }
+        
+        @keyframes copilotPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 193, 7, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(255, 193, 7, 0.6); }
+        }
+        
+        .copilot-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .copilot-icon {
+            width: 24px;
+            height: 24px;
+            background: #ffc107;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #856404;
+        }
+        
+        .copilot-title {
+            color: #856404;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .copilot-insights {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .insight-card {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .insight-type {
+            font-weight: bold;
+            color: #856404;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .insight-content {
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        
+        .insight-alert {
+            border-left-color: #dc3545;
+        }
+        
+        .insight-alert .insight-type,
+        .insight-alert .insight-content {
+            color: #721c24;
+        }
+        
+        /* 差分表示の強化 */
+        .diff-comparison {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .diff-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .diff-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .diff-table th,
+        .diff-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .diff-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .diff-changed {
+            background-color: #fff3cd !important;
+            position: relative;
+        }
+        
+        .diff-changed::after {
+            content: "変更";
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #ffc107;
+            color: #856404;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .diff-added {
+            background-color: #d4edda !important;
+        }
+        
+        .diff-added::after {
+            content: "追加";
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #28a745;
+            color: white;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        
+        .diff-removed {
+            background-color: #f8d7da !important;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+        
+        .diff-amount-old {
+            color: #666;
+            text-decoration: line-through;
+        }
+        
+        .diff-amount-new {
+            color: #0078d4;
+            font-weight: bold;
+        }
+        
+        .priority-actions {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        
+        .priority-actions h3 {
+            color: #0078d4;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .action-item {
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9ff;
+            border-left: 4px solid #0078d4;
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s;
+        }
+        
+        .action-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .action-item.urgent {
+            background: #fff5f5;
+            border-left-color: #dc3545;
+        }
+        
+        .action-item.warning {
+            background: #fffbf0;
+            border-left-color: #ffc107;
+        }
+        
+        .form-container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .form-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .form-section h4 {
+            color: #0078d4;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row.full-width {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .approval-flow {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        .approval-step {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #28a745;
+            transition: all 0.3s;
+        }
+        
+        .approval-step:hover {
+            transform: translateX(3px);
+        }
+        
+        .approval-step.pending {
+            border-left-color: #ffc107;
+            background: #fffbf0;
+        }
+        
+        .approval-step.not-reached {
+            border-left-color: #6c757d;
+            opacity: 0.6;
+        }
+        
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .status-approved {
+            background-color: #28a745;
+        }
+        
+        .status-pending {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .status-not-reached {
+            background-color: #6c757d;
+        }
+        
+        .status-urgent {
+            background-color: #dc3545;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .btn-primary {
+            background: #0078d4;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #106ebe;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .amount-highlight {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0078d4;
+        }
+        
+        .file-attachment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin: 8px 0;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .comment-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .comment {
+            padding: 12px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 6px;
+            border-left: 3px solid #0078d4;
+        }
+        
+        .comment-author {
+            font-weight: bold;
+            color: #0078d4;
+            font-size: 14px;
+        }
+        
+        .comment-date {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        @media (max-width: 1200px) {
+            .approval-dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .approval-dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .copilot-insights {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                📋 営業部門 承認・申請システム
+            </h1>
+            <div class="header-info">
+                <span class="notification-badge">8</span>
+                <span>👤 山田健太郎（営業部）</span>
+                <span>⚙️設定</span>
+            </div>
+        </div>
+        
+        <!-- パンくずナビゲーション -->
+        <nav class="breadcrumb">
+            <ul class="breadcrumb-list">
+                <li class="breadcrumb-item">🏠 ホーム</li>
+                <li class="breadcrumb-separator">></li>
+                <li class="breadcrumb-item">営業部門</li>
+                <li class="breadcrumb-separator">></li>
+                <li class="breadcrumb-item active" id="breadcrumb-current">承認・申請ダッシュボード</li>
+            </ul>
+        </nav>
+        
+        <div class="nav-tabs">
+            <div class="nav-tab active" onclick="showTab('dashboard', '承認・申請ダッシュボード')">📊 ダッシュボード</div>
+            <div class="nav-tab" onclick="showTab('proposal', '提案・見積承認')">📝 提案・見積承認</div>
+            <div class="nav-tab" onclick="showTab('contract', '契約承認')">📋 契約承認</div>
+            <div class="nav-tab" onclick="showTab('expense', '経費申請')">💰 経費申請</div>
+            <div class="nav-tab" onclick="showTab('history', '承認履歴')">📈 承認履歴</div>
+        </div>
+        
+        <!-- ダッシュボード -->
+        <div id="dashboard" class="content-section active">
+            <!-- KPIダッシュボード -->
+            <div class="approval-dashboard">
+                <div class="dashboard-card">
+                    <h4>📊 承認状況サマリー</h4>
+                    <div class="metric-large">8<span style="font-size: 16px; color: #666;">件</span></div>
+                    <div class="metric-small">
+                        <span class="metric-label">緊急:</span>
+                        <span class="metric-value urgent-count">3件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">警告:</span>
+                        <span class="metric-value warning-count">2件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">標準:</span>
+                        <span class="metric-value">3件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">平均承認時間:</span>
+                        <span class="metric-value">1.2日</span>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h4>📋 申請中案件</h4>
+                    <div class="metric-large">12<span style="font-size: 16px; color: #666;">件</span></div>
+                    <div class="metric-small">
+                        <span class="metric-label">見積承認待ち:</span>
+                        <span class="metric-value">5件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">契約承認待ち:</span>
+                        <span class="metric-value">3件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">経費承認待ち:</span>
+                        <span class="metric-value">4件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">総申請金額:</span>
+                        <span class="metric-value">2.8億円</span>
+                    </div>
+                </div>
+                
+                <div class="dashboard-card">
+                    <h4>📈 承認効率</h4>
+                    <div class="metric-large">92<span style="font-size: 16px; color: #666;">%</span></div>
+                    <div class="metric-small">
+                        <span class="metric-label">今月承認数:</span>
+                        <span class="metric-value">45件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">差戻し率:</span>
+                        <span class="metric-value">5%</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">期限超過:</span>
+                        <span class="metric-value urgent-count">1件</span>
+                    </div>
+                    <div class="metric-small">
+                        <span class="metric-label">前月比:</span>
+                        <span class="metric-value" style="color: #28a745;">+15%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 申請中案件の詳細 -->
+            <div class="pending-applications">
+                <h3>📋 申請中案件の承認進捗 (12件)</h3>
+                
+                <div class="pending-item">
+                    <div class="pending-header">
+                        <div class="pending-title">ABC工場省エネ設備導入 (FKO25ES001)</div>
+                        <div class="pending-amount">8,500万円</div>
+                    </div>
+                    <div class="progress-flow">
+                        <div class="progress-step completed">申請済</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step current">部長承認待ち</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step pending">常務承認</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step pending">契約締結</div>
+                    </div>
+                    <div style="font-size: 12px; color: #666;">申請者: 山田健太郎 | 承認期限: 5/22 | 残り1日</div>
+                </div>
+                
+                <div class="pending-item">
+                    <div class="pending-header">
+                        <div class="pending-title">DEF産業PPA契約 (FKO25PP002)</div>
+                        <div class="pending-amount">月額320万円</div>
+                    </div>
+                    <div class="progress-flow">
+                        <div class="progress-step completed">申請済</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step completed">部長承認済</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step current">常務承認待ち</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step pending">契約締結</div>
+                    </div>
+                    <div style="font-size: 12px; color: #666;">申請者: 佐藤一郎 | 承認期限: 5/24 | 残り3日</div>
+                </div>
+                
+                <div class="pending-item">
+                    <div class="pending-header">
+                        <div class="pending-title">GHI商事エネルギー診断 (FKO25ES003)</div>
+                        <div class="pending-amount">1,200万円</div>
+                    </div>
+                    <div class="progress-flow">
+                        <div class="progress-step completed">申請済</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step current">技術部確認待ち</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step pending">部長承認</div>
+                        <div class="progress-arrow"></div>
+                        <div class="progress-step pending">契約締結</div>
+                    </div>
+                    <div style="font-size: 12px; color: #666;">申請者: 鈴木花子 | 技術部回答期限: 5/23 | 残り2日</div>
+                </div>
+            </div>
+            
+            <!-- 優先アクション -->
+            <div class="priority-actions">
+                <h3>⚡ 今すぐ対応が必要な案件 (3件)</h3>
+                <div class="action-item urgent">
+                    <div>
+                        <strong>ABC工場見積書 v2.0承認</strong><br>
+                        <small>金額変更: 8,000万円 → 8,500万円 (+500万円) | 期限: 明日</small>
+                    </div>
+                    <span class="status-badge status-urgent">緊急</span>
+                </div>
+                <div class="action-item urgent">
+                    <div>
+                        <strong>JKL工場契約期限超過</strong><br>
+                        <small>契約承認が期限を1日超過 | 顧客への連絡必要</small>
+                    </div>
+                    <span class="status-badge status-urgent">期限超過</span>
+                </div>
+                <div class="action-item warning">
+                    <div>
+                        <strong>MNO産業技術部確認遅延</strong><br>
+                        <small>技術部からの回答が2日遅延 | フォローアップ必要</small>
+                    </div>
+                    <span class="status-badge status-pending">要フォロー</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 提案・見積承認 -->
+        <div id="proposal" class="content-section">
+            <div class="form-container">
+                <h3>📝 提案・見積承認 - FKO25ES001</h3>
+                
+                <div class="form-section">
+                    <h4>基本情報</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>案件番号</label>
+                            <input type="text" value="FKO25ES001" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>案件名</label>
+                            <input type="text" value="ABC工場省エネ設備導入" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>顧客名</label>
+                            <input type="text" value="株式会社ABC製作所" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>案件種別</label>
+                            <input type="text" value="エネルギーサービス" readonly>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 強化されたCopilot分析 -->
+                <div class="copilot-assistant">
+                    <div class="copilot-header">
+                        <div class="copilot-icon">🤖</div>
+                        <div class="copilot-title">Copilot 総合分析</div>
+                    </div>
+                    <div class="copilot-insights">
+                        <div class="insight-card">
+                            <div class="insight-type">💰 価格妥当性分析</div>
+                            <div class="insight-content">
+                                類似案件10件との比較で±3%以内の適正価格。業界平均より12%安価で競争力あり。
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">📊 顧客予算適合性</div>
+                            <div class="insight-content">
+                                顧客予算上限9,000万円に対し94%の使用率。追加要望への対応余地あり。
+                            </div>
+                        </div>
+                        <div class="insight-card insight-alert">
+                            <div class="insight-type">⚠️ リスク検知</div>
+                            <div class="insight-content">
+                                IoT機器の納期が3週間延長の可能性。代替機器の検討を推奨。
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">🎯 成約確率予測</div>
+                            <div class="insight-content">
+                                過去データ分析により成約確率78%。同業他社5社との競合状況良好。
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">💡 最適化提案</div>
+                            <div class="insight-content">
+                                制御システムの分割発注により初期費用を15%削減可能。顧客提案を推奨。
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">📈 収益性分析</div>
+                            <div class="insight-content">
+                                粗利率28.5%で部門目標を2.5%上回る。優良案件として評価。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 詳細差分比較表 -->
+                <div class="diff-comparison">
+                    <div class="diff-header">📊 前回見積との詳細比較 (v1.5 → v2.0)</div>
+                    <table class="diff-table">
+                        <thead>
+                            <tr>
+                                <th>項目</th>
+                                <th>前回金額 (v1.5)</th>
+                                <th>今回金額 (v2.0)</th>
+                                <th>差異</th>
+                                <th>変更理由</th>
+                                <th>承認者コメント</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>空調設備工事</td>
+                                <td>60,000,000円</td>
+                                <td>60,000,000円</td>
+                                <td style="color: #28a745;">変更なし</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr class="diff-changed">
+                                <td>制御システム</td>
+                                <td><span class="diff-amount-old">15,000,000円</span></td>
+                                <td><span class="diff-amount-new">20,000,000円</span></td>
+                                <td style="color: #dc3545; font-weight: bold;">+5,000,000円</td>
+                                <td>顧客要望によるIoT機能追加</td>
+                                <td>技術部確認済み</td>
+                            </tr>
+                            <tr>
+                                <td>施工費</td>
+                                <td>5,000,000円</td>
+                                <td>5,000,000円</td>
+                                <td style="color: #28a745;">変更なし</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr class="diff-added">
+                                <td>データ分析プラットフォーム</td>
+                                <td>-</td>
+                                <td><span class="diff-amount-new">3,000,000円</span></td>
+                                <td style="color: #0078d4; font-weight: bold;">新規追加</td>
+                                <td>3年間の運用データ分析</td>
+                                <td>ROI改善効果あり</td>
+                            </tr>
+                            <tr class="diff-changed">
+                                <td>諸経費</td>
+                                <td><span class="diff-amount-old">3,000,000円</span></td>
+                                <td><span class="diff-amount-new">2,000,000円</span></td>
+                                <td style="color: #28a745; font-weight: bold;">-1,000,000円</td>
+                                <td>作業効率化により削減</td>
+                                <td>コスト最適化</td>
+                            </tr>
+                            <tr style="background: #e3f2fd; font-weight: bold;">
+                                <td><strong>合計</strong></td>
+                                <td><strong>83,000,000円</strong></td>
+                                <td><strong>90,000,000円</strong></td>
+                                <td style="color: #0078d4; font-weight: bold;"><strong>+7,000,000円</strong></td>
+                                <td><strong>機能追加とコスト最適化</strong></td>
+                                <td><strong>投資効果向上</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 追加のCopilot詳細分析 -->
+                <div class="copilot-assistant" style="margin-top: 20px;">
+                    <div class="copilot-header">
+                        <div class="copilot-icon">📊</div>
+                        <div class="copilot-title">変更影響分析</div>
+                    </div>
+                    <div class="copilot-insights">
+                        <div class="insight-card">
+                            <div class="insight-type">⏱️ 投資回収期間</div>
+                            <div class="insight-content">
+                                変更後: 2.8年 (変更前: 3.1年)<br>
+                                データ分析による運用最適化で0.3年短縮
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">💡 省エネ効果</div>
+                            <div class="insight-content">
+                                年間削減額: 3,200万円 → 3,600万円<br>
+                                IoT導入により効果12.5%向上
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">🏆 競合優位性</div>
+                            <div class="insight-content">
+                                競合A社より500万円安価<br>
+                                データ分析機能で差別化
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">📋 契約条件</div>
+                            <div class="insight-content">
+                                10年ES契約で月額300万円<br>
+                                機器更新時の優先交渉権含む
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h4>📎 添付ファイル</h4>
+                    <div class="file-attachment">
+                        <span>📄</span>
+                        <span>FKO25ES001_提案書_20250520_v2_山田.pptx (差分あり)</span>
+                        <button class="btn btn-secondary" style="margin-left: auto; padding: 4px 8px; font-size: 12px;">差分表示</button>
+                    </div>
+                    <div class="file-attachment">
+                        <span>📊</span>
+                        <span>FKO25ES001_見積書_20250520_v2_山田.xlsx (金額変更)</span>
+                        <button class="btn btn-secondary" style="margin-left: auto; padding: 4px 8px; font-size: 12px;">比較表示</button>
+                    </div>
+                    <div class="file-attachment">
+                        <span>📋</span>
+                        <span>省エネ効果算定書_20250520.pdf (新規)</span>
+                        <span style="margin-left: auto; background: #28a745; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">NEW</span>
+                    </div>
+                    <div class="file-attachment">
+                        <span>🤖</span>
+                        <span>Copilot分析レポート_20250520.pdf (自動生成)</span>
+                        <span style="margin-left: auto; background: #ffc107; color: #333; padding: 2px 6px; border-radius: 4px; font-size: 10px;">AI生成</span>
+                    </div>
+                </div>
+                
+                <div class="approval-flow">
+                    <h4>🔄 承認フロー進捗</h4>
+                    <div class="approval-step">
+                        <div style="flex-grow: 1;">
+                            <strong>申請者:</strong> 山田健太郎 (営業部)
+                            <br><small>2025/5/20 14:30 申請 | Copilot事前チェック完了</small>
+                        </div>
+                        <span class="status-badge status-approved">申請済</span>
+                    </div>
+                    <div class="approval-step pending">
+                        <div style="flex-grow: 1;">
+                            <strong>第1承認者:</strong> 田中部長 (営業部長)
+                            <br><small>承認期限: 2025/5/22 17:00 (残り18時間)</small>
+                        </div>
+                        <span class="status-badge status-pending">承認待ち</span>
+                    </div>
+                    <div class="approval-step not-reached">
+                        <div style="flex-grow: 1;">
+                            <strong>最終承認者:</strong> 鈴木常務
+                            <br><small>高額案件につき常務承認必要</small>
+                        </div>
+                        <span class="status-badge status-not-reached">未到達</span>
+                    </div>
+                </div>
+                
+                <div class="comment-section">
+                    <h4>💬 承認コメント・履歴</h4>
+                    <div class="comment">
+                        <div class="comment-author">山田健太郎 <span class="comment-date">2025/5/20 14:30</span></div>
+                        <p>顧客からIoT機能とデータ分析プラットフォームの追加要望がありました。投資回収期間は短縮され、競合優位性も向上します。Copilot分析では成約確率78%と高評価です。</p>
+                    </div>
+                    <div class="comment">
+                        <div class="comment-author">🤖 Copilot <span class="comment-date">2025/5/20 14:31</span></div>
+                        <p style="background: #f0f8ff; padding: 8px; border-radius: 4px;"><strong>自動分析結果:</strong> 価格妥当性✅、予算適合性✅、技術的実現性✅、収益性✅。リスク要因: IoT機器納期遅延の可能性（対策案提示済み）</p>
+                    </div>
+                    
+                    <div style="margin-top: 15px;">
+                        <label for="approval-comment" style="font-weight: bold; display: block; margin-bottom: 5px;">承認コメント:</label>
+                        <textarea id="approval-comment" placeholder="承認理由、条件、フィードバックを入力してください..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; min-height: 80px;"></textarea>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd;">
+                    <button class="btn btn-success" onclick="approveApplication()">✅ 承認する</button>
+                    <button class="btn btn-warning" onclick="conditionalApprove()">⚠️ 条件付承認</button>
+                    <button class="btn btn-danger" onclick="rejectApplication()">❌ 差戻し</button>
+                    <button class="btn btn-secondary">💾 下書き保存</button>
+                    <button class="btn btn-primary" onclick="requestCopilotAdvice()">🤖 Copilot相談</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 契約承認 -->
+        <div id="contract" class="content-section">
+            <div class="form-container">
+                <h3>📋 契約承認申請 - 2025-ME0123</h3>
+                
+                <div class="copilot-assistant">
+                    <div class="copilot-header">
+                        <div class="copilot-icon">⚖️</div>
+                        <div class="copilot-title">契約条件リスク分析</div>
+                    </div>
+                    <div class="copilot-insights">
+                        <div class="insight-card">
+                            <div class="insight-type">✅ 標準条項適合性</div>
+                            <div class="insight-content">社内標準契約書との整合率95%。重要な逸脱なし。</div>
+                        </div>
+                        <div class="insight-card insight-alert">
+                            <div class="insight-type">⚠️ 注意条項</div>
+                            <div class="insight-content">設備更新費用の負担区分が曖昧。明確化を推奨。</div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">💰 収益予測</div>
+                            <div class="insight-content">10年間総収益3.0億円、IRR 18.5%で投資基準クリア。</div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">📋 解約条件</div>
+                            <div class="insight-content">中途解約時の残存簿価回収条項あり。リスク軽減済み。</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h4>契約基本情報</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>プロジェクト番号</label>
+                            <input type="text" value="2025-ME0123" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>契約種別</label>
+                            <input type="text" value="エネルギーサービス契約" readonly>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>契約期間</label>
+                            <input type="text" value="10年間 (2025/8/1～2035/7/31)" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>月額定額</label>
+                            <input type="text" value="2,500,000円/月" class="amount-highlight" readonly>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn btn-success">✅ 承認申請</button>
+                    <button class="btn btn-secondary">📄 契約書プレビュー</button>
+                    <button class="btn btn-primary">🤖 Copilot詳細分析</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 経費申請 -->
+        <div id="expense" class="content-section">
+            <div class="form-container">
+                <h3>💰 経費申請</h3>
+                
+                <div class="copilot-assistant">
+                    <div class="copilot-header">
+                        <div class="copilot-icon">💳</div>
+                        <div class="copilot-title">経費適正性チェック</div>
+                    </div>
+                    <div class="copilot-insights">
+                        <div class="insight-card">
+                            <div class="insight-type">✅ 規程適合性</div>
+                            <div class="insight-content">接待費上限5万円以内。社内規程に適合。</div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">📊 支出パターン</div>
+                            <div class="insight-content">同種接待費の月平均3.2万円。標準的な支出額。</div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">📋 必要書類</div>
+                            <div class="insight-content">領収書✅、参加者リスト❌。参加者情報の追加を推奨。</div>
+                        </div>
+                        <div class="insight-card">
+                            <div class="insight-type">🎯 事業関連性</div>
+                            <div class="insight-content">8,500万円案件の商談。費用対効果は十分に見込める。</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h4>申請情報</h4>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>申請種別</label>
+                            <select>
+                                <option selected>接待交際費</option>
+                                <option>交通費</option>
+                                <option>会議費</option>
+                                <option>宿泊費</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>申請金額</label>
+                            <input type="number" value="35000" class="amount-highlight">
+                        </div>
+                    </div>
+                    <div class="form-row full-width">
+                        <div class="form-group">
+                            <label>使用目的</label>
+                            <textarea>ABC工場様との最終契約条件確認および工事説明会での接待費用。8,500万円案件の成約に向けた重要商談。</textarea>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="btn btn-primary">📤 申請する</button>
+                    <button class="btn btn-secondary">💾 下書き保存</button>
+                    <button class="btn btn-primary">🤖 Copilot最適化提案</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 承認履歴 -->
+        <div id="history" class="content-section">
+            <div class="form-container">
+                <h3>📈 承認履歴・分析</h3>
+                
+                <div style="margin-bottom: 20px; display: flex; gap: 15px; align-items: center;">
+                    <input type="text" id="searchInput" placeholder="案件名、金額、承認者で検索..." style="flex-grow: 1; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <button class="btn btn-primary" onclick="searchApprovals()">🔍 検索</button>
+                    <button class="btn btn-secondary" onclick="exportApprovalData()">📊 CSVエクスポート</button>
+                </div>
+                
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>申請日</th>
+                            <th>種別</th>
+                            <th>案件名</th>
+                            <th>金額</th>
+                            <th>承認者</th>
+                            <th>ステータス</th>
+                            <th>処理時間</th>
+                            <th>Copilot評価</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2025/5/20</td>
+                            <td>見積承認</td>
+                            <td>ABC工場省エネ設備</td>
+                            <td class="amount-highlight">8,500万円</td>
+                            <td>田中部長</td>
+                            <td><span class="status-badge status-pending">承認待ち</span></td>
+                            <td>1日</td>
+                            <td>⭐⭐⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td>2025/5/19</td>
+                            <td>契約承認</td>
+                            <td>DEF産業ES契約</td>
+                            <td class="amount-highlight">月額250万円</td>
+                            <td>鈴木常務</td>
+                            <td><span class="status-badge status-approved">承認済</span></td>
+                            <td>0.5日</td>
+                            <td>⭐⭐⭐⭐</td>
+                        </tr>
+                        <tr>
+                            <td>2025/5/18</td>
+                            <td>経費申請</td>
+                            <td>顧客接待費</td>
+                            <td>3.5万円</td>
+                            <td>田中部長</td>
+                            <td><span class="status-badge status-approved">承認済</span></td>
+                            <td>0.2日</td>
+                            <td>⭐⭐⭐</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showTab(tabName, breadcrumbText) {
+            // パンくず更新
+            document.getElementById('breadcrumb-current').textContent = breadcrumbText;
+            
+            // タブの切り替え
+            const tabs = document.querySelectorAll('.nav-tab');
+            const contents = document.querySelectorAll('.content-section');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+        }
+        
+        function approveApplication() {
+            const comment = document.getElementById('approval-comment').value;
+            if (!comment.trim()) {
+                alert('承認コメントを入力してください。');
+                return;
+            }
+            
+            if (confirm('この申請を承認しますか？\n\nコメント: ' + comment)) {
+                // 承認処理のシミュレーション
+                addApprovalComment('田中部長', '承認', comment);
+                updateApprovalStatus('approved');
+                showNotification('承認処理が完了しました。申請者と次承認者に通知されます。');
+            }
+        }
+        
+        function conditionalApprove() {
+            const comment = document.getElementById('approval-comment').value;
+            const condition = prompt('承認条件を具体的に入力してください：');
+            
+            if (condition) {
+                const fullComment = comment + (comment ? '\n\n' : '') + '【承認条件】' + condition;
+                addApprovalComment('田中部長', '条件付承認', fullComment);
+                showNotification('条件付承認が完了しました。');
+            }
+        }
+        
+        function rejectApplication() {
+            const reason = prompt('差戻し理由を詳しく入力してください：');
+            if (reason) {
+                addApprovalComment('田中部長', '差戻し', reason);
+                updateApprovalStatus('rejected');
+                showNotification('差戻し処理が完了しました。申請者に通知されます。');
+            }
+        }
+        
+        function requestCopilotAdvice() {
+            const advice = `
+🤖 Copilot追加アドバイス:
+
+✅ 承認推奨理由:
+• 投資回収期間2.8年で社内基準をクリア
+• 粗利率28.5%で部門目標を上回る
+• 顧客の中長期的な省エネニーズに合致
+
+⚠️ 注意点:
+• IoT機器の納期遅延リスクあり（対策: 代替機器確保済み）
+• データ分析機能の運用体制確認が必要
+
+💡 提案:
+• 契約時に機器更新時の優先交渉権を明記
+• 3年後の効果検証とサービス拡張を提案
+            `;
+            alert(advice);
+        }
+        
+        function addApprovalComment(author, type, content) {
+            const commentSection = document.querySelector('.comment-section');
+            const newComment = document.createElement('div');
+            newComment.className = 'comment';
+            
+            const typeColor = {
+                '承認': '#28a745',
+                '条件付承認': '#ffc107', 
+                '差戻し': '#dc3545'
+            };
+            
+            newComment.innerHTML = `
+                <div class="comment-author">${author} <span class="comment-date">${new Date().toLocaleString('ja-JP')}</span></div>
+                <p><span style="color: ${typeColor[type]}; font-weight: bold;">【${type}】</span> ${content}</p>
+            `;
+            commentSection.appendChild(newComment);
+        }
+        
+        function updateApprovalStatus(status) {
+            const statusBadges = document.querySelectorAll('.status-pending');
+            statusBadges.forEach(badge => {
+                if (status === 'approved') {
+                    badge.textContent = '承認済';
+                    badge.className = 'status-badge status-approved';
+                } else if (status === 'rejected') {
+                    badge.textContent = '差戻し';
+                    badge.className = 'status-badge status-urgent';
+                }
+            });
+            
+            // 通知バッジ更新
+            const notificationBadge = document.querySelector('.notification-badge');
+            const currentCount = parseInt(notificationBadge.textContent);
+            notificationBadge.textContent = Math.max(0, currentCount - 1);
+        }
+        
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #0078d4;
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                z-index: 1000;
+                max-width: 350px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>🔔</span>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: auto;">×</button>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        function searchApprovals() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('.table tbody tr');
+            
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+        
+        function exportApprovalData() {
+            const data = [
+                ['申請日', '種別', '案件名', '金額', '承認者', 'ステータス', '処理時間', 'Copilot評価'],
+                ['2025/5/20', '見積承認', 'ABC工場省エネ設備', '8,500万円', '田中部長', '承認待ち', '1日', '⭐⭐⭐⭐⭐'],
+                ['2025/5/19', '契約承認', 'DEF産業ES契約', '月額250万円', '鈴木常務', '承認済', '0.5日', '⭐⭐⭐⭐'],
+                ['2025/5/18', '経費申請', '顧客接待費', '3.5万円', '田中部長', '承認済', '0.2日', '⭐⭐⭐']
+            ];
+            
+            let csvContent = data.map(row => row.join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = '承認履歴_' + new Date().toISOString().slice(0, 10) + '.csv';
+            link.click();
+        }
+        
+        // リアルタイム更新のシミュレーション
+        setInterval(() => {
+            const randomUpdates = [
+                '新規見積申請が追加されました (JKL工場)',
+                '承認期限が近づいている案件があります (MNO産業)', 
+                '緊急対応案件が発生しました (PQR商事)',
+                'Copilotが新しい最適化提案を作成しました',
+                '技術部からの回答が届きました'
+            ];
+            
+            // 5%の確率で更新通知
+            if (Math.random() < 0.05) {
+                const message = randomUpdates[Math.floor(Math.random() * randomUpdates.length)];
+                showNotification(message);
+                
+                // 通知バッジ更新
+                const badge = document.querySelector('.notification-badge');
+                const current = parseInt(badge.textContent);
+                badge.textContent = current + 1;
+            }
+        }, 30000); // 30秒ごとにチェック
+        
+        // ページ読み込み時の初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            // CSS アニメーションの追加
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                
+                @keyframes fadeInUp {
+                    from {
+                        transform: translateY(20px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateY(0);
+                        opacity: 1;
+                    }
+                }
+                
+                .table tbody tr:hover {
+                    background-color: #f8f9ff;
+                    transform: translateX(3px);
+                    transition: all 0.2s;
+                }
+                
+                .action-item:hover {
+                    transform: translateX(5px);
+                    transition: all 0.2s;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }
+                
+                .btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                }
+                
+                .pending-item:hover {
+                    transform: translateY(-2px);
+                    transition: all 0.3s;
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                }
+                
+                .dashboard-card:hover {
+                    transform: translateY(-5px);
+                    transition: all 0.3s;
+                    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+                }
+                
+                .content-section {
+                    animation: fadeInUp 0.5s ease-out;
+                }
+                
+                .copilot-assistant:hover {
+                    transform: scale(1.02);
+                    transition: all 0.3s;
+                }
+                
+                .insight-card:hover {
+                    transform: translateY(-3px);
+                    transition: all 0.3s;
+                    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+                }
+                
+                .progress-step {
+                    transition: all 0.3s;
+                }
+                
+                .progress-step:hover {
+                    transform: scale(1.1);
+                }
+                
+                .file-attachment:hover {
+                    background-color: #e8f4fd;
+                    transition: all 0.2s;
+                }
+                
+                .approval-step:hover {
+                    background-color: #f0f8ff;
+                }
+                
+                /* モバイル対応の改善 */
+                @media (max-width: 480px) {
+                    .copilot-insights {
+                        grid-template-columns: 1fr;
+                    }
+                    
+                    .pending-item {
+                        padding: 10px;
+                    }
+                    
+                    .progress-flow {
+                        flex-wrap: wrap;
+                        gap: 5px;
+                    }
+                    
+                    .progress-step {
+                        font-size: 10px;
+                        padding: 4px 8px;
+                    }
+                    
+                    .breadcrumb-list {
+                        flex-wrap: wrap;
+                    }
+                }
+                
+                /* ダークモード対応 */
+                @media (prefers-color-scheme: dark) {
+                    .form-container,
+                    .dashboard-card,
+                    .pending-applications {
+                        background-color: #2d3748;
+                        color: #e2e8f0;
+                    }
+                    
+                    .table th {
+                        background-color: #4a5568;
+                        color: #e2e8f0;
+                    }
+                    
+                    .breadcrumb {
+                        background-color: #2d3748;
+                        color: #e2e8f0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // 初期データの設定
+            updateDashboardMetrics();
+        });
+        
+        function updateDashboardMetrics() {
+            // ダッシュボードメトリクスの動的更新
+            const metrics = {
+                approvalsPending: 8,
+                urgent: 3,
+                warning: 2,
+                standard: 3,
+                avgTime: 1.2,
+                applicationsInProgress: 12,
+                estimateApprovals: 5,
+                contractApprovals: 3,
+                expenseApprovals: 4,
+                totalAmount: '2.8億円',
+                efficiency: 92,
+                monthlyApprovals: 45,
+                rejectionRate: 5,
+                overdue: 1,
+                improvement: '+15%'
+            };
+            
+            // 各メトリクスの更新（実際の実装では API から取得）
+            console.log('Dashboard metrics updated:', metrics);
+        }
+        
+        // Copilot連携機能の強化
+        function getCopilotAnalysis(type, data) {
+            const analyses = {
+                price: {
+                    icon: '💰',
+                    title: '価格妥当性分析',
+                    content: '類似案件との比較で適正価格範囲内です。'
+                },
+                risk: {
+                    icon: '⚠️', 
+                    title: 'リスク検知',
+                    content: 'IoT機器の納期遅延リスクを検出しました。'
+                },
+                optimization: {
+                    icon: '💡',
+                    title: '最適化提案',
+                    content: 'コスト削減と効果向上の両立が可能です。'
+                }
+            };
+            
+            return analyses[type] || analyses.price;
+        }
+        
+        // 差分表示機能の強化
+        function showDifferenceDetails(field, oldValue, newValue) {
+            const diffModal = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 600px; width: 90%;" onclick="event.stopPropagation()">
+                        <h3>📊 詳細差分分析: ${field}</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;">
+                            <div>
+                                <h4>変更前 (v1.5)</h4>
+                                <div style="padding: 15px; background: #f8d7da; border-radius: 4px;">
+                                    ${oldValue}
+                                </div>
+                            </div>
+                            <div>
+                                <h4>変更後 (v2.0)</h4>
+                                <div style="padding: 15px; background: #d4edda; border-radius: 4px;">
+                                    ${newValue}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="background: #fff3cd; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                            <strong>🤖 Copilot分析:</strong><br>
+                            この変更により投資効果が向上し、競合優位性が強化されます。
+                        </div>
+                        <button onclick="this.parentElement.parentElement.remove()" style="background: #0078d4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; float: right;">閉じる</button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', diffModal);
+        }
+        
+        // 差分表示ボタンのイベント処理
+        document.addEventListener('click', function(e) {
+            if (e.target.textContent === '差分表示') {
+                showDifferenceDetails(
+                    '提案書',
+                    '基本省エネ設備提案',
+                    'IoT連携型スマート省エネシステム提案'
+                );
+            } else if (e.target.textContent === '比較表示') {
+                showDifferenceDetails(
+                    '見積書',
+                    '総額 83,000,000円',
+                    '総額 90,000,000円 (+7,000,000円)'
+                );
+            }
+        });
+        
+        // エンターキーでの検索対応
+        document.addEventListener('keypress', function(e) {
+            if (e.target.id === 'searchInput' && e.key === 'Enter') {
+                searchApprovals();
+            }
+        });
+        
+        // 承認処理の詳細ログ
+        function logApprovalAction(action, details) {
+            const timestamp = new Date().toISOString();
+            const logEntry = {
+                timestamp,
+                action,
+                user: '田中部長',
+                details,
+                session: 'session_' + Math.random().toString(36).substr(2, 9)
+            };
+            
+            // 実際の実装では API に送信
+            console.log('Approval action logged:', logEntry);
+        }
+    </script>
+    
+    <!-- フローティングヘルプボタン -->
+    <div style="position: fixed; bottom: 80px; right: 20px;">
+        <button class="btn btn-primary" onclick="showHelp()" title="使い方ガイド" style="border-radius: 50%; width: 50px; height: 50px; font-size: 18px;">
+            💡
+        </button>
+    </div>
+    
+    <!-- データエクスポートボタン -->
+    <div style="position: fixed; bottom: 20px; right: 20px;">
+        <button class="btn btn-secondary" onclick="exportApprovalData()" title="承認履歴をCSVでエクスポート" style="border-radius: 50%; width: 50px; height: 50px; font-size: 16px;">
+            📊
+        </button>
+    </div>
+    
+    <script>
+        function showHelp() {
+            const helpContent = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+                    <div style="background: white; padding: 30px; border-radius: 8px; max-width: 700px; width: 90%; max-height: 80vh; overflow-y: auto;" onclick="event.stopPropagation()">
+                        <h3>💡 営業承認システム 使い方ガイド</h3>
+                        
+                        <h4>🤖 Copilot機能</h4>
+                        <ul>
+                            <li><strong>価格妥当性分析:</strong> 類似案件との比較で適正価格をチェック</li>
+                            <li><strong>リスク検知:</strong> 納期、予算、技術的なリスクを自動検出</li>
+                            <li><strong>最適化提案:</strong> コスト削減と効果向上の提案</li>
+                            <li><strong>成約確率予測:</strong> 過去データに基づく成約可能性</li>
+                        </ul>
+                        
+                        <h4>📊 差分表示機能</h4>
+                        <ul>
+                            <li><strong>変更箇所:</strong> 黄色ハイライトで変更項目を表示</li>
+                            <li><strong>追加項目:</strong> 緑色ハイライトで新規追加を表示</li>
+                            <li><strong>削除項目:</strong> 赤色ハイライトで削除項目を表示</li>
+                            <li><strong>詳細比較:</strong> 「差分表示」ボタンで詳細分析</li>
+                        </ul>
+                        
+                        <h4>🔄 承認フロー</h4>
+                        <ul>
+                            <li><strong>申請済:</strong> 緑色 - 申請が完了済み</li>
+                            <li><strong>承認待ち:</strong> 黄色 - 現在の承認待ち段階</li>
+                            <li><strong>未到達:</strong> 灰色 - まだ到達していない段階</li>
+                        </ul>
+                        
+                        <h4>📱 ショートカット</h4>
+                        <ul>
+                            <li><strong>Enter:</strong> 検索実行</li>
+                            <li><strong>Ctrl+S:</strong> 下書き保存</li>
+                            <li><strong>Ctrl+Enter:</strong> 承認実行</li>
+                        </ul>
+                        
+                        <button onclick="this.parentElement.parentElement.remove()" style="background: #0078d4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; float: right; margin-top: 20px;">閉じる</button>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', helpContent);
+        }
+        
+        // キーボードショートカット
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        // 下書き保存処理
+                        showNotification('下書きを保存しました');
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        // 承認処理
+                        if (document.getElementById('proposal').classList.contains('active')) {
+                            approveApplication();
+                        }
+                        break;
+                }
+            }
+        });
+    </script>
+    
+    </body>
+</html>
