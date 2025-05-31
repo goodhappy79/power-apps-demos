@@ -96,6 +96,19 @@
   </header>
 
   <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-1 text-sm text-gray-500 mb-4">
+      <a href="#" class="hover:text-green-600 transition-colors">
+        <i class="fas fa-home"></i>
+      </a>
+      <i class="fas fa-chevron-right text-xs"></i>
+      <a href="#" class="hover:text-green-600 transition-colors">全社ポータル</a>
+      <i class="fas fa-chevron-right text-xs"></i>
+      <a href="#" class="hover:text-green-600 transition-colors">営業部門</a>
+      <i class="fas fa-chevron-right text-xs"></i>
+      <span class="text-gray-800 font-medium">電力販売HUB（管理職）</span>
+    </nav>
+
     <!-- クイックナビゲーション -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
       <div class="relative w-full md:w-1/2">
@@ -128,7 +141,10 @@
           <i class="fas fa-star text-yellow-500 mr-2"></i>
           管理職よく使う機能
         </h3>
-        <button class="text-green-600 hover:text-green-800 text-sm">カスタマイズ</button>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500">最終ログイン: 09:15</span>
+          <button class="text-green-600 hover:text-green-800 text-sm">カスタマイズ</button>
+        </div>
       </div>
       <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
         <button class="bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg p-3 text-center transition-all card-hover">
@@ -180,8 +196,8 @@
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
       <!-- 緊急アクション・承認待ち（拡張版） -->
       <div class="xl:col-span-2">
-        <div class="bg-white rounded-2xl shadow-lg p-6">
-          <div class="flex justify-between items-center mb-6">
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+          <div class="flex items-center justify-between mb-4">
             <div class="flex items-center">
               <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center mr-3">
                 <i class="fas fa-bolt text-white"></i>
@@ -193,8 +209,15 @@
               <span class="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm px-3 py-1 rounded-full font-semibold">8</span>
             </div>
             <div class="flex gap-2">
+              <div class="text-xs text-gray-500 mr-2">
+                <div>最終更新: 10:30</div>
+                <div>自動更新: 5分毎</div>
+              </div>
               <button class="text-green-600 hover:text-green-800 text-sm font-medium flex items-center">
                 <i class="fas fa-filter mr-1"></i> フィルター
+              </button>
+              <button class="text-green-600 hover:text-green-800 text-sm font-medium flex items-center">
+                <i class="fas fa-sync-alt mr-1"></i> 更新
               </button>
             </div>
           </div>
@@ -317,6 +340,10 @@
           <div>
             <h3 class="text-xl font-bold text-gray-800">部門管理KPI</h3>
             <p class="text-sm text-gray-600">リアルタイム状況</p>
+          </div>
+          <div class="ml-auto text-xs text-gray-500 text-right">
+            <div>データ更新: 10:25</div>
+            <div>次回更新: 10:30</div>
           </div>
         </div>
 
