@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>システム管理 - エネルギーサービス統合管理システム</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .status-online { background-color: #10b981; }
+    .status-offline { background-color: #ef4444; }
+    .status-idle { background-color: #f59e0b; }
+    .admin-section {
+      border-left: 4px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .admin-section:hover {
+      border-left-color: #dc2626;
+      background-color: #fef2f2;
+    }
+    .permission-grid {
+      display: grid;
+      grid-template-columns: 200px repeat(auto-fit, minmax(100px, 1fr));
+      gap: 8px;
+      align-items: center;
+    }
+    .log-entry {
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .log-entry:hover {
+      border-left-color: #3b82f6;
+      background-color: #eff6ff;
+    }
+    .system-metric {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .critical-alert {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      background-color: #cbd5e1;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .toggle-switch.active {
+      background-color: #10b981;
+    }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background-color: white;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .toggle-switch.active::after {
+      transform: translateX(20px);
+    }
+    .data-table {
+      font-size: 14px;
+    }
+    .data-table th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: #374151;
+      padding: 12px 8px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .data-table td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .data-table tr:hover {
+      background-color: #f8fafc;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-red-800 to-red-900 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fas fa-cogs text-2xl mr-3"></i>
+          <div>
+            <h1 class="text-xl font-bold">システム管理</h1>
+            <p class="text-red-200 text-sm">System Administration Console</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <button class="p-2 hover:bg-red-700 rounded-full transition-colors">
+              <i class="fas fa-shield-alt text-lg"></i>
+              <span class="absolute -top-1 -right-1 bg-yellow-500 text-black text-xs rounded-full w-5 h-5 flex items-center justify-center">!</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-right">
+              <div class="font-semibold text-sm">システム管理者</div>
+              <div class="text-xs text-red-200">Administrator</div>
+            </div>
+            <div class="w-8 h-8 bg-white text-red-800 rounded-full flex items-center justify-center font-bold text-sm">
+              AD
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>
+          ホーム
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">
+          全社共通機能
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-600 font-medium">システム管理</span>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-800 font-semibold">管理コンソール</span>
+      </div>
+      
+      <!-- 緊急アラート -->
+      <div class="mt-3 pt-3 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-red-600 font-medium critical-alert">
+            <i class="fas fa-exclamation-triangle mr-1"></i>
+            システムアラート: バックアップ容量が85%に達しています
+          </span>
+          <a href="#backup-section" class="text-xs text-blue-600 hover:text-blue-800 hover:underline">
+            詳細確認
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- システム状況サマリー -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+        <div class="flex items-center">
+          <div class="w-12 h-12 system-metric rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-users text-white text-xl"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800">127</div>
+            <div class="text-sm text-gray-600">アクティブユーザー</div>
+            <div class="text-xs text-green-600">+5 (今日)</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-server text-green-600 text-xl"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800">99.9%</div>
+            <div class="text-sm text-gray-600">システム稼働率</div>
+            <div class="text-xs text-green-600">正常稼働中</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-hdd text-orange-600 text-xl"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800">85%</div>
+            <div class="text-sm text-gray-600">ストレージ使用率</div>
+            <div class="text-xs text-orange-600">容量注意</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+            <i class="fas fa-shield-alt text-red-600 text-xl"></i>
+          </div>
+          <div>
+            <div class="text-2xl font-bold text-gray-800">3</div>
+            <div class="text-sm text-gray-600">セキュリティアラート</div>
+            <div class="text-xs text-red-600">要確認</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- メイン管理エリア -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- 左カラム：ユーザー・権限管理 -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- ユーザー管理 -->
+        <div class="bg-white rounded-lg shadow-md admin-section">
+          <div class="p-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-gray-800 flex items-center">
+                <i class="fas fa-users text-blue-600 mr-2"></i>
+                ユーザー管理
+              </h3>
+              <div class="flex space-x-2">
+                <button class="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                  <i class="fas fa-user-plus mr-1"></i>新規追加
+                </button>
+                <button class="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                  <i class="fas fa-download mr-1"></i>エクスポート
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-4">
+            <!-- ユーザー検索・フィルター -->
+            <div class="flex space-x-4 mb-4">
+              <div class="flex-1">
+                <input type="text" placeholder="ユーザー検索..." 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+              </div>
+              <select class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                <option>全部門</option>
+                <option>営業部門</option>
+                <option>技術部門</option>
+                <option>カスタマー部門</option>
+                <option>管理部門</option>
+              </select>
+              <select class="px-3 py-2 border border-gray-300 rounded-md text-sm">
+                <option>全ステータス</option>
+                <option>アクティブ</option>
+                <option>非アクティブ</option>
+                <option>一時停止</option>
+              </select>
+            </div>
+
+            <!-- ユーザー一覧テーブル -->
+            <div class="overflow-x-auto">
+              <table class="w-full data-table">
+                <thead>
+                  <tr>
+                    <th class="text-left">ユーザー</th>
+                    <th class="text-left">部門</th>
+                    <th class="text-left">権限グループ</th>
+                    <th class="text-left">最終ログイン</th>
+                    <th class="text-left">ステータス</th>
+                    <th class="text-center">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>
+                      <div class="flex items-center">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                          YK
+                        </div>
+                        <div>
+                          <div class="font-medium text-sm">山田健太郎</div>
+                          <div class="text-xs text-gray-500">y.yamada@company.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="text-sm">営業部門</span>
+                      <div class="text-xs text-gray-500">営業部長</div>
+                    </td>
+                    <td>
+                      <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">営業管理者</span>
+                    </td>
+                    <td>
+                      <div class="text-sm">2025/05/20</div>
+                      <div class="text-xs text-gray-500">14:35</div>
+                    </td>
+                    <td>
+                      <div class="flex items-center">
+                        <span class="status-indicator status-online"></span>
+                        <span class="text-sm text-green-600">オンライン</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <div class="flex justify-center space-x-1">
+                        <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                          <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                          <i class="fas fa-key text-xs"></i>
+                        </button>
+                        <button class="p-1 text-red-600 hover:bg-red-100 rounded">
+                          <i class="fas fa-ban text-xs"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="flex items-center">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                          TS
+                        </div>
+                        <div>
+                          <div class="font-medium text-sm">田中修一</div>
+                          <div class="text-xs text-gray-500">t.tanaka@company.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="text-sm">技術部門</span>
+                      <div class="text-xs text-gray-500">技術課長</div>
+                    </td>
+                    <td>
+                      <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">技術管理者</span>
+                    </td>
+                    <td>
+                      <div class="text-sm">2025/05/20</div>
+                      <div class="text-xs text-gray-500">13:22</div>
+                    </td>
+                    <td>
+                      <div class="flex items-center">
+                        <span class="status-indicator status-idle"></span>
+                        <span class="text-sm text-yellow-600">退席中</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <div class="flex justify-center space-x-1">
+                        <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                          <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                          <i class="fas fa-key text-xs"></i>
+                        </button>
+                        <button class="p-1 text-red-600 hover:bg-red-100 rounded">
+                          <i class="fas fa-ban text-xs"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div class="flex items-center">
+                        <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                          SH
+                        </div>
+                        <div>
+                          <div class="font-medium text-sm">佐藤浩二</div>
+                          <div class="text-xs text-gray-500">s.sato@company.com</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="text-sm">カスタマー部門</span>
+                      <div class="text-xs text-gray-500">カスタマー主任</div>
+                    </td>
+                    <td>
+                      <span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">一般ユーザー</span>
+                    </td>
+                    <td>
+                      <div class="text-sm">2025/05/19</div>
+                      <div class="text-xs text-gray-500">17:45</div>
+                    </td>
+                    <td>
+                      <div class="flex items-center">
+                        <span class="status-indicator status-offline"></span>
+                        <span class="text-sm text-gray-600">オフライン</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <div class="flex justify-center space-x-1">
+                        <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                          <i class="fas fa-edit text-xs"></i>
+                        </button>
+                        <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                          <i class="fas fa-key text-xs"></i>
+                        </button>
+                        <button class="p-1 text-red-600 hover:bg-red-100 rounded">
+                          <i class="fas fa-ban text-xs"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 権限グループ設定 -->
+        <div class="bg-white rounded-lg shadow-md admin-section">
+          <div class="p-4 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+              <h3 class="font-bold text-gray-800 flex items-center">
+                <i class="fas fa-shield-alt text-green-600 mr-2"></i>
+                権限グループ設定
+              </h3>
+              <button class="px-3 py-1.5 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                <i class="fas fa-plus mr-1"></i>グループ追加
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-4">
+            <!-- 権限マトリクス -->
+            <div class="permission-grid text-sm mb-4">
+              <div class="font-semibold">機能</div>
+              <div class="text-center font-semibold">システム管理者</div>
+              <div class="text-center font-semibold">営業管理者</div>
+              <div class="text-center font-semibold">技術管理者</div>
+              <div class="text-center font-semibold">一般ユーザー</div>
+              
+              <div class="py-2 border-t">案件管理</div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-blue-600"></i></div>
+              
+              <div class="py-2">ファイル管理</div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-blue-600"></i></div>
+              
+              <div class="py-2">承認管理</div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-check text-blue-600"></i></div>
+              <div class="text-center"><i class="fas fa-times text-red-600"></i></div>
+              
+              <div class="py-2">システム設定</div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-times text-red-600"></i></div>
+              <div class="text-center"><i class="fas fa-times text-red-600"></i></div>
+              <div class="text-center"><i class="fas fa-times text-red-600"></i></div>
+              
+              <div class="py-2">ユーザー管理</div>
+              <div class="text-center"><i class="fas fa-check text-green-600"></i></div>
+              <div class="text-center"><i class="fas fa-times text-red-600"></i></div>
+              <div class="text-center"><i class="fas fa-times text-red-600"></i></div>
+              <div class="text-center"><i class="fas fa-times text-red-600"></i></div>
+            </div>
+            
+            <div class="text-xs text-gray-500 mt-2">
+              <i class="fas fa-check text-green-600 mr-1"></i>フル権限
+              <i class="fas fa-check text-blue-600 mr-1 ml-4"></i>読み取り専用
+              <i class="fas fa-times text-red-600 mr-1 ml-4"></i>アクセス不可
+            </div>
+          </div>
+        </div>
+
+        <!-- マスタデータ管理 -->
+        <div class="bg-white rounded-lg shadow-md admin-section">
+          <div class="p-4 border-b border-gray-200">
+            <h3 class="font-bold text-gray-800 flex items-center">
+              <i class="fas fa-database text-purple-600 mr-2"></i>
+              マスタデータ管理
+            </h3>
+          </div>
+          
+          <div class="p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="p-3 border border-gray-200 rounded">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="font-medium text-sm">顧客マスタ</h4>
+                  <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">1,247件</span>
+                </div>
+                <div class="text-xs text-gray-600 mb-2">最終更新: 2025/05/20 16:30</div>
+                <div class="flex space-x-2">
+                  <button class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                    <i class="fas fa-edit mr-1"></i>編集
+                  </button>
+                  <button class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                    <i class="fas fa-download mr-1"></i>出力
+                  </button>
+                </div>
+              </div>
+              
+              <div class="p-3 border border-gray-200 rounded">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="font-medium text-sm">プロジェクトマスタ</h4>
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">342件</span>
+                </div>
+                <div class="text-xs text-gray-600 mb-2">最終更新: 2025/05/20 14:15</div>
+                <div class="flex space-x-2">
+                  <button class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                    <i class="fas fa-edit mr-1"></i>編集
+                  </button>
+                  <button class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                    <i class="fas fa-download mr-1"></i>出力
+                  </button>
+                </div>
+              </div>
+              
+              <div class="p-3 border border-gray-200 rounded">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="font-medium text-sm">部門・組織マスタ</h4>
+                  <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">23件</span>
+                </div>
+                <div class="text-xs text-gray-600 mb-2">最終更新: 2025/05/15 09:20</div>
+                <div class="flex space-x-2">
+                  <button class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                    <i class="fas fa-edit mr-1"></i>編集
+                  </button>
+                  <button class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                    <i class="fas fa-download mr-1"></i>出力
+                  </button>
+                </div>
+              </div>
+              
+              <div class="p-3 border border-gray-200 rounded">
+                <div class="flex justify-between items-center mb-2">
+                  <h4 class="font-medium text-sm">承認フローマスタ</h4>
+                  <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">15件</span>
+                </div>
+                <div class="text-xs text-gray-600 mb-2">最終更新: 2025/05/18 11:45</div>
+                <div class="flex space-x-2">
+                  <button class="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                    <i class="fas fa-edit mr-1"></i>編集
+                  </button>
+                  <button class="px-2 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                    <i class="fas fa-download mr-1"></i>出力
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右カラム：監視・設定 -->
+      <div class="space-y-6">
+        <!-- システム設定 -->
+        <div class="bg-white rounded-lg shadow-md card-hover">
+          <div class="p-4 border-b border-gray-200">
+            <h3 class="font-bold text-gray-800 flex items-center">
+              <i class="fas fa-cog text-gray-600 mr-2"></i>
+              システム設定
+            </h3>
+          </div>
+          
+          <div class="p-4 space-y-4">
+            <div class="flex justify-between items-center">
+              <div>
+                <div class="font-medium text-sm">自動バックアップ</div>
+                <div class="text-xs text-gray-500">日次データバックアップ</div
