@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ユーザープロファイル管理</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .profile-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .profile-header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(45deg);
+      transition: all 0.3s ease;
+    }
+    .setting-card {
+      border: 2px solid #e5e7eb;
+      transition: all 0.3s ease;
+    }
+    .setting-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 15px -3px rgba(59, 130, 246, 0.2);
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #3b82f6;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    .activity-timeline {
+      position: relative;
+    }
+    .activity-timeline::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e5e7eb;
+    }
+    .activity-item {
+      position: relative;
+      padding-left: 50px;
+      margin-bottom: 20px;
+    }
+    .activity-dot {
+      position: absolute;
+      left: 12px;
+      top: 8px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid white;
+      z-index: 10;
+    }
+    .tab-active {
+      background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+      color: white;
+    }
+    .gradient-text {
+      background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .security-level {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .security-high {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .security-medium {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .security-low {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .permission-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .permission-item {
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f9fafb;
+      transition: all 0.2s ease;
+    }
+    .permission-item:hover {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+    }
+    .notification-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+    }
+    .notification-item:hover {
+      background: #f8fafc;
+      border-color: #d1d5db;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fas fa-user-cog text-2xl mr-3"></i>
+          <div>
+            <h1 class="text-xl font-bold">ユーザープロファイル管理</h1>
+            <p class="text-blue-200 text-sm">User Profile Management</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-lg"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-right">
+              <div class="font-semibold text-sm">山田 健太郎</div>
+              <div class="text-xs text-blue-200">営業部長</div>
+            </div>
+            <div class="w-8 h-8 bg-white text-blue-800 rounded-full flex items-center justify-center font-bold text-sm">
+              YK
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>
+          ホーム
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">
+          システム管理・監視
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-800 font-semibold">ユーザープロファイル</span>
+      </div>
+      
+      <!-- 関連画面への素早いアクセス -->
+      <div class="mt-3 pt-3 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-gray-500 font-medium">関連画面:</span>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-users-cog mr-1"></i>ユーザー管理
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-shield-alt mr-1"></i>セキュリティ設定
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-chart-line mr-1"></i>利用状況モニター
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- プロファイルヘッダー -->
+    <div class="profile-header text-white p-6 mb-6 card-hover">
+      <div class="relative z-10">
+        <div class="flex items-center space-x-6">
+          <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+            <span class="text-4xl font-bold">YK</span>
+          </div>
+          <div class="flex-1">
+            <h2 class="text-2xl font-bold mb-2">山田 健太郎</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <div class="opacity-80">部署</div>
+                <div class="font-semibold">営業部門</div>
+              </div>
+              <div>
+                <div class="opacity-80">役職</div>
+                <div class="font-semibold">部長</div>
+              </div>
+              <div>
+                <div class="opacity-80">入社年</div>
+                <div class="font-semibold">2015年4月</div>
+              </div>
+              <div>
+                <div class="opacity-80">最終ログイン</div>
+                <div class="font-semibold">2025/05/20 15:30</div>
+              </div>
+              <div>
+                <div class="opacity-80">セキュリティレベル</div>
+                <div class="font-semibold">
+                  <span class="security-level security-high">高</span>
+                </div>
+              </div>
+              <div>
+                <div class="opacity-80">認証状態</div>
+                <div class="font-semibold flex items-center">
+                  <i class="fas fa-check-circle text-green-300 mr-1"></i>
+                  MFA有効
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="text-right">
+            <button class="px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition-colors">
+              <i class="fas fa-edit mr-2"></i>プロファイル編集
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- タブナビゲーション -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+      <div class="flex border-b border-gray-200">
+        <button class="tab-button px-6 py-3 tab-active" data-tab="personal">
+          <i class="fas fa-user mr-2"></i>個人情報
+        </button>
+        <button class="tab-button px-6 py-3 text-gray-500 hover:text-gray-700" data-tab="permissions">
+          <i class="fas fa-key mr-2"></i>権限設定
+        </button>
+        <button class="tab-button px-6 py-3 text-gray-500 hover:text-gray-700" data-tab="notifications">
+          <i class="fas fa-bell mr-2"></i>通知設定
+        </button>
+        <button class="tab-button px-6 py-3 text-gray-500 hover:text-gray-700" data-tab="ui">
+          <i class="fas fa-palette mr-2"></i>UI設定
+        </button>
+        <button class="tab-button px-6 py-3 text-gray-500 hover:text-gray-700" data-tab="security">
+          <i class="fas fa-shield-alt mr-2"></i>セキュリティ
+        </button>
+        <button class="tab-button px-6 py-3 text-gray-500 hover:text-gray-700" data-tab="activity">
+          <i class="fas fa-history mr-2"></i>活動ログ
+        </button>
+      </div>
+    </div>
+
+    <!-- タブコンテンツ -->
+    <div class="tab-content">
+      <!-- 個人情報タブ -->
+      <div id="personal" class="tab-panel">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 基本情報 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">基本情報</h3>
+            <form class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">姓</label>
+                  <input type="text" value="山田" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">名</label>
+                  <input type="text" value="健太郎" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                <input type="email" value="yamada.kentaro@energy-service.co.jp" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">内線番号</label>
+                  <input type="text" value="2101" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">携帯電話</label>
+                  <input type="text" value="090-1234-5678" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">所属部署</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option selected>営業部門</option>
+                  <option>技術部門</option>
+                  <option>カスタマー部門</option>
+                  <option>電力販売部門</option>
+                  <option>総務・人事部門</option>
+                  <option>経営企画</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">役職</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option selected>部長</option>
+                  <option>課長</option>
+                  <option>主任</option>
+                  <option>係長</option>
+                  <option>担当者</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">自己紹介</label>
+                <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="自己紹介を入力してください">営業部門で16年間、自動制御システムの営業に従事。計装士1級、電気施工管理1級、管工事施工管理1級の資格を保有し、エネルギーサービス事業の拡大に注力しています。</textarea>
+              </div>
+            </form>
+          </div>
+          
+          <!-- プロファイル画像・資格情報 -->
+          <div class="space-y-6">
+            <!-- プロファイル画像 -->
+            <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">プロファイル画像</h3>
+              <div class="flex items-center space-x-4">
+                <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span class="text-2xl font-bold text-blue-600">YK</span>
+                </div>
+                <div class="flex-1">
+                  <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-upload mr-2"></i>画像をアップロード
+                  </button>
+                  <button class="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                    削除
+                  </button>
+                  <div class="text-xs text-gray-500 mt-2">
+                    推奨サイズ: 400x400px、ファイル形式: JPG, PNG
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 保有資格 -->
+            <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+              <h3 class="text-lg font-bold text-gray-800 mb-4">保有資格</h3>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200">
+                  <div>
+                    <div class="font-medium text-green-800">計装士1級</div>
+                    <div class="text-sm text-green-600">取得日: 2018年3月</div>
+                  </div>
+                  <i class="fas fa-certificate text-green-600"></i>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div>
+                    <div class="font-medium text-blue-800">電気施工管理1級</div>
+                    <div class="text-sm text-blue-600">取得日: 2019年5月</div>
+                  </div>
+                  <i class="fas fa-certificate text-blue-600"></i>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <div>
+                    <div class="font-medium text-purple-800">管工事施工管理1級</div>
+                    <div class="text-sm text-purple-600">取得日: 2020年8月</div>
+                  </div>
+                  <i class="fas fa-certificate text-purple-600"></i>
+                </div>
+              </div>
+              <button class="w-full mt-4 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-plus mr-2"></i>資格を追加
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end space-x-4">
+          <button class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+            キャンセル
+          </button>
+          <button class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <i class="fas fa-save mr-2"></i>保存
+          </button>
+        </div>
+      </div>
+
+      <!-- 権限設定タブ -->
+      <div id="permissions" class="tab-panel hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- システム権限 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">システム権限</h3>
+            <div class="permission-grid">
+              <div class="permission-item">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-sm">営業案件管理</div>
+                    <div class="text-xs text-gray-500">案件の作成・編集・削除</div>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mr-2">フル権限</span>
+                    <i class="fas fa-check-circle text-green-600"></i>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="permission-item">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-sm">統合ファイル管理</div>
+                    <div class="text-xs text-gray-500">ファイル操作・共有</div>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mr-2">フル権限</span>
+                    <i class="fas fa-check-circle text-green-600"></i>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="permission-item">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-sm">統合承認ダッシュボード</div>
+                    <div class="text-xs text-gray-500">承認・決裁業務</div>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mr-2">承認者</span>
+                    <i class="fas fa-check-circle text-blue-600"></i>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="permission-item">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-sm">活動履歴管理</div>
+                    <div class="text-xs text-gray-500">活動記録・参照</div>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded mr-2">読み書き</span>
+                    <i class="fas fa-check-circle text-yellow-600"></i>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="permission-item">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-sm">システム管理</div>
+                    <div class="text-xs text-gray-500">ユーザー・権限管理</div>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded mr-2">権限なし</span>
+                    <i class="fas fa-times-circle text-red-600"></i>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="permission-item">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-sm">全社検索</div>
+                    <div class="text-xs text-gray-500">全社データ検索</div>
+                  </div>
+                  <div class="flex items-center">
+                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded mr-2">フル権限</span>
+                    <i class="fas fa-check-circle text-green-600"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- データアクセス権限 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">データアクセス権限</h3>
+            <div class="space-y-4">
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium">営業部門データ</h4>
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">フル権限</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div class="flex items-center">
+                    <i class="fas fa-check text-green-600 mr-2"></i>
+                    <span>売上実績</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-times text-red-600 mr-2"></i>
+                    <span>給与情報</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-check text-green-600 mr-2"></i>
+                    <span>粗利情報</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-times text-red-600 mr-2"></i>
+                    <span>決算情報</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600 mr-3"></i>
+            <div>
+              <div class="font-medium text-yellow-800">権限変更について</div>
+              <div class="text-sm text-yellow-700 mt-1">
+                権限の変更にはシステム管理者の承認が必要です。変更申請は総務部または直属の上司を通じて行ってください。
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 通知設定タブ -->
+      <div id="notifications" class="tab-panel hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 基本通知設定 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">基本通知設定</h3>
+            <div class="space-y-4">
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">メール通知</div>
+                  <div class="text-sm text-gray-600">システムからのメール通知を受け取る</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">デスクトップ通知</div>
+                  <div class="text-sm text-gray-600">ブラウザのデスクトップ通知</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">モバイルプッシュ通知</div>
+                  <div class="text-sm text-gray-600">スマートフォンへのプッシュ通知</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">SMS通知</div>
+                  <div class="text-sm text-gray-600">緊急時のSMS通知</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 通知カテゴリ設定 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">通知カテゴリ設定</h3>
+            <div class="space-y-4">
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-medium text-blue-800">営業・案件関連</h4>
+                  <label class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="space-y-2 text-sm">
+                  <label class="flex items-center">
+                    <input type="checkbox" checked class="mr-2">
+                    <span>新規案件登録通知</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" checked class="mr-2">
+                    <span>案件ステータス変更</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="mr-2">
+                    <span>期限間近の案件</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" checked class="mr-2">
+                    <span>契約締結通知</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-medium text-green-800">承認・決裁関連</h4>
+                  <label class="switch">
+                    <input type="checkbox" checked>
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="space-y-2 text-sm">
+                  <label class="flex items-center">
+                    <input type="checkbox" checked class="mr-2">
+                    <span>承認依頼受信</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" checked class="mr-2">
+                    <span>承認完了通知</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="mr-2">
+                    <span>差戻し通知</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" checked class="mr-2">
+                    <span>期限超過アラート</span>
+                  </label>
+                </div>
+              </div>
+              
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-medium text-purple-800">システム・メンテナンス</h4>
+                  <label class="switch">
+                    <input type="checkbox">
+                    <span class="slider"></span>
+                  </label>
+                </div>
+                <div class="space-y-2 text-sm">
+                  <label class="flex items-center">
+                    <input type="checkbox" class="mr-2">
+                    <span>メンテナンス予告</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="mr-2">
+                    <span>システム障害通知</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="mr-2">
+                    <span>セキュリティアラート</span>
+                  </label>
+                  <label class="flex items-center">
+                    <input type="checkbox" class="mr-2">
+                    <span>バックアップ完了通知</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 bg-white rounded-lg shadow-md p-6 setting-card">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">通知スケジュール設定</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">平日の通知時間</label>
+              <div class="flex items-center space-x-2">
+                <input type="time" value="08:00" class="px-3 py-2 border border-gray-300 rounded-md">
+                <span class="text-gray-500">〜</span>
+                <input type="time" value="18:00" class="px-3 py-2 border border-gray-300 rounded-md">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">休日の通知</label>
+              <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <option>緊急時のみ</option>
+                <option>すべて</option>
+                <option>無効</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UI設定タブ -->
+      <div id="ui" class="tab-panel hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 表示設定 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">表示設定</h3>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">テーマ</label>
+                <div class="grid grid-cols-3 gap-3">
+                  <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="theme" value="light" checked class="mr-2">
+                    <div>
+                      <div class="font-medium">ライト</div>
+                      <div class="text-xs text-gray-500">明るいテーマ</div>
+                    </div>
+                  </label>
+                  <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="theme" value="dark" class="mr-2">
+                    <div>
+                      <div class="font-medium">ダーク</div>
+                      <div class="text-xs text-gray-500">暗いテーマ</div>
+                    </div>
+                  </label>
+                  <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="theme" value="auto" class="mr-2">
+                    <div>
+                      <div class="font-medium">自動</div>
+                      <div class="text-xs text-gray-500">システム設定</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">フォントサイズ</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option>小（12px）</option>
+                  <option selected>標準（14px）</option>
+                  <option>大（16px）</option>
+                  <option>特大（18px）</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">言語設定</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option selected>日本語</option>
+                  <option>English</option>
+                  <option>中文（简体）</option>
+                  <option>한국어</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">タイムゾーン</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option selected>Asia/Tokyo (UTC+9)</option>
+                  <option>Asia/Seoul (UTC+9)</option>
+                  <option>Asia/Shanghai (UTC+8)</option>
+                  <option>America/New_York (UTC-5)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 機能設定 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">機能設定</h3>
+            <div class="space-y-4">
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">ダッシュボード自動更新</div>
+                  <div class="text-sm text-gray-600">30秒間隔でデータを自動更新</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">キーボードショートカット</div>
+                  <div class="text-sm text-gray-600">キーボードショートカットを有効化</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">自動保存</div>
+                  <div class="text-sm text-gray-600">フォーム入力内容の自動保存</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">アニメーション効果</div>
+                  <div class="text-sm text-gray-600">画面遷移時のアニメーション</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">音効果</div>
+                  <div class="text-sm text-gray-600">通知音やクリック音</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">セッションタイムアウト</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                  <option>30分</option>
+                  <option>1時間</option>
+                  <option selected>4時間</option>
+                  <option>8時間</option>
+                  <option>無効</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 bg-white rounded-lg shadow-md p-6 setting-card">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">ダッシュボードレイアウト</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <label class="cursor-pointer">
+              <input type="radio" name="layout" value="standard" checked class="sr-only">
+              <div class="border-2 border-blue-500 rounded-lg p-4 bg-blue-50">
+                <div class="text-center mb-2">
+                  <i class="fas fa-th-large text-2xl text-blue-600"></i>
+                </div>
+                <div class="font-medium text-center">標準レイアウト</div>
+                <div class="text-xs text-center text-gray-600">4列グリッド</div>
+              </div>
+            </label>
+            
+            <label class="cursor-pointer">
+              <input type="radio" name="layout" value="compact" class="sr-only">
+              <div class="border-2 border-gray-300 rounded-lg p-4 hover:border-gray-400">
+                <div class="text-center mb-2">
+                  <i class="fas fa-th text-2xl text-gray-600"></i>
+                </div>
+                <div class="font-medium text-center">コンパクト</div>
+                <div class="text-xs text-center text-gray-600">6列グリッド</div>
+              </div>
+            </label>
+            
+            <label class="cursor-pointer">
+              <input type="radio" name="layout" value="wide" class="sr-only">
+              <div class="border-2 border-gray-300 rounded-lg p-4 hover:border-gray-400">
+                <div class="text-center mb-2">
+                  <i class="fas fa-grip-horizontal text-2xl text-gray-600"></i>
+                </div>
+                <div class="font-medium text-center">ワイド</div>
+                <div class="text-xs text-center text-gray-600">2列グリッド</div>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- セキュリティタブ -->
+      <div id="security" class="tab-panel hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- パスワード設定 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">パスワード変更</h3>
+            <form class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">現在のパスワード</label>
+                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード</label>
+                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div class="mt-1 text-xs text-gray-500">
+                  8文字以上、大文字・小文字・数字・記号を含む
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">新しいパスワード（確認）</label>
+                <input type="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+              </div>
+              
+              <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-key mr-2"></i>パスワードを更新
+              </button>
+            </form>
+            
+            <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div class="text-sm text-yellow-800">
+                <i class="fas fa-info-circle mr-2"></i>
+                パスワード変更後は、全デバイスで再ログインが必要になります。
+              </div>
+            </div>
+          </div>
+          
+          <!-- 二要素認証 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">二要素認証（MFA）</h3>
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-shield-alt text-green-600 text-xl mr-3"></i>
+                  <div>
+                    <div class="font-medium text-green-800">MFA有効</div>
+                    <div class="text-sm text-green-600">認証アプリによる認証</div>
+                  </div>
+                </div>
+                <button class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                  設定変更
+                </button>
+              </div>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div>
+                    <div class="font-medium">認証アプリ</div>
+                    <div class="text-sm text-gray-600">Google Authenticator</div>
+                  </div>
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">有効</span>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div>
+                    <div class="font-medium">SMS認証</div>
+                    <div class="text-sm text-gray-600">090-****-5678</div>
+                  </div>
+                  <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">バックアップ</span>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div>
+                    <div class="font-medium">ハードウェアキー</div>
+                    <div class="text-sm text-gray-600">FIDO2対応キー</div>
+                  </div>
+                  <button class="text-blue-600 hover:text-blue-800 text-sm">
+                    追加
+                  </button>
+                </div>
+              </div>
+              
+              <button class="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <i class="fas fa-download mr-2"></i>リカバリーコードをダウンロード
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- セッション管理 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">アクティブセッション</h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-desktop text-blue-600 mr-3"></i>
+                  <div>
+                    <div class="font-medium">Windows Chrome</div>
+                    <div class="text-sm text-gray-600">現在のセッション - 福岡市</div>
+                    <div class="text-xs text-gray-500">最終アクセス: 2分前</div>
+                  </div>
+                </div>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">現在</span>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-mobile-alt text-gray-600 mr-3"></i>
+                  <div>
+                    <div class="font-medium">iPhone Safari</div>
+                    <div class="text-sm text-gray-600">東京都</div>
+                    <div class="text-xs text-gray-500">最終アクセス: 3時間前</div>
+                  </div>
+                </div>
+                <button class="text-red-600 hover:text-red-800 text-sm">
+                  終了
+                </button>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div class="flex items-center">
+                  <i class="fas fa-tablet-alt text-gray-600 mr-3"></i>
+                  <div>
+                    <div class="font-medium">iPad Safari</div>
+                    <div class="text-sm text-gray-600">大阪府</div>
+                    <div class="text-xs text-gray-500">最終アクセス: 1日前</div>
+                  </div>
+                </div>
+                <button class="text-red-600 hover:text-red-800 text-sm">
+                  終了
+                </button>
+              </div>
+            </div>
+            
+            <button class="w-full mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+              <i class="fas fa-sign-out-alt mr-2"></i>すべてのセッションを終了
+            </button>
+          </div>
+          
+          <!-- セキュリティ設定 -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">セキュリティ設定</h3>
+            <div class="space-y-4">
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">ログイン通知</div>
+                  <div class="text-sm text-gray-600">新しいデバイスからのログイン時に通知</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">自動ログアウト</div>
+                  <div class="text-sm text-gray-600">非アクティブ時の自動ログアウト</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div class="notification-item">
+                <div>
+                  <div class="font-medium">IPアドレス制限</div>
+                  <div class="text-sm text-gray-600">指定されたIPアドレスからのみアクセス許可</div>
+                </div>
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">許可IPアドレス</label>
+                <textarea rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="192.168.1.0/24&#10;203.0.113.0/24">192.168.1.0/24
+203.0.113.0/24</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 活動ログタブ -->
+      <div id="activity" class="tab-panel hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- 活動サマリー -->
+          <div class="bg-white rounded-lg shadow-md p-6 setting-card">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 gradient-text">活動サマリー</h3>
+            <div class="space-y-4">
+              <div class="text-center p-4 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">247</div>
+                <div class="text-sm text-gray-600">今月のログイン回数</div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div class="text-center p-3 bg-green-50 rounded-lg">
+                  <div class="text-lg font-bold text-green-600">85.3h</div>
+                  <div class="text-xs text-gray-600">月間利用時間</div>
+                </div>
+                <div class="text-center p-3 bg-purple-50 rounded-lg">
+                  <div class="text-lg font-bold text-purple-600">1,456</div>
+                  <div class="text-xs text-gray-600">アクション回数-2 text-sm">
+                  <div class="flex items-center">
+                    <i class="fas fa-check text-green-600 mr-2"></i>
+                    <span>案件情報</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-check text-green-600 mr-2"></i>
+                    <span>顧客情報</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-check text-green-600 mr-2"></i>
+                    <span>見積・提案</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-check text-green-600 mr-2"></i>
+                    <span>契約情報</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium">技術部門データ</h4>
+                  <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">読み取り専用</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div class="flex items-center">
+                    <i class="fas fa-eye text-yellow-600 mr-2"></i>
+                    <span>設計資料</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-eye text-yellow-600 mr-2"></i>
+                    <span>技術仕様</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-times text-red-600 mr-2"></i>
+                    <span>原価情報</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-eye text-yellow-600 mr-2"></i>
+                    <span>工程管理</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="font-medium">財務情報</h4>
+                  <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">部分権限</span>
+                </div>
+                <div class="grid grid-cols-2 gap
