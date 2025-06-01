@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>技術部門HUB - 一般職版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .alert-pulse {
+      animation: alertPulse 2s infinite;
+    }
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+    .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #e5e7eb;
+    }
+    .progress-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .skill-badge {
+      background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .deadline-indicator {
+      position: relative;
+      overflow: hidden;
+    }
+    .deadline-indicator::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transition: left 0.5s;
+    }
+    .deadline-indicator:hover::before {
+      left: 100%;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-blue-700 to-blue-800 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-wrench text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">技術者ワークスペース</h1>
+              <p class="text-blue-200 text-sm">Technical Workspace</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium">技術部門</span>
+            <span class="bg-green-600 px-3 py-1 rounded-full text-sm font-medium">一般職</span>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">個人効率</div>
+              <div class="text-lg font-bold text-white">85%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-600 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center alert-pulse">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">鈴木 一郎</div>
+              <div class="text-sm text-blue-200">制御設計担当（計装士1級）</div>
+            </div>
+            <div class="w-10 h-10 bg-gradient-to-br from-white to-gray-200 text-blue-800 rounded-full flex items-center justify-center font-bold text-sm">
+              SI
+            </div>
+          </div>
+          <button class="text-blue-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>
+          ホーム
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">
+          部門別機能
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-800 font-semibold">技術部門HUB（一般職）</span>
+      </div>
+      
+      <!-- 関連画面への素早いアクセス -->
+      <div class="mt-3 pt-3 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-gray-500 font-medium">関連画面:</span>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-folder-open mr-1"></i>統合ファイル管理
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-history mr-1"></i>活動履歴管理
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-check-circle mr-1"></i>統合承認ダッシュボード
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-users mr-1"></i>技術者アサイン管理
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- クイックナビゲーション -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+      <div class="relative w-full md:w-1/2">
+        <input type="text" placeholder="担当プロジェクト・図面・技術資料を検索..." class="w-full px-4 py-3 pl-12 pr-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm">
+        <div class="absolute left-4 top-3.5 text-gray-400">
+          <i class="fas fa-search text-lg"></i>
+        </div>
+        <div class="absolute right-4 top-3.5 text-gray-400 text-sm">
+          <i class="fas fa-microphone"></i>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="glass-effect px-4 py-2 rounded-lg">
+          <div class="flex items-center text-gray-700 font-medium">
+            <i class="far fa-calendar-alt mr-2 text-blue-600"></i>
+            <span>2025年5月19日（月）</span>
+          </div>
+        </div>
+        <button class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg transition-all">
+          <i class="fas fa-plus"></i>
+          <span>作業記録登録</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- よく使う機能（一般職特化版） -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center">
+          <i class="fas fa-star text-yellow-500 mr-2"></i>
+          よく使う技術業務
+        </h3>
+        <button class="text-blue-600 hover:text-blue-800 text-sm">カスタマイズ</button>
+      </div>
+      <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <button class="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-drafting-compass text-blue-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">図面作成</div>
+          <div class="text-xs text-blue-600">CAD</div>
+        </button>
+        <button class="bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-calculator text-green-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">計算書</div>
+          <div class="text-xs text-green-600">設計</div>
+        </button>
+        <button class="bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-file-alt text-purple-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">仕様書</div>
+          <div class="text-xs text-purple-600">承認依頼</div>
+        </button>
+        <button class="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-clipboard-check text-orange-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">検査記録</div>
+          <div class="text-xs text-orange-600">品質</div>
+        </button>
+        <button class="bg-red-50 hover:bg-red-100 border border-red-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">緊急対応</div>
+          <div class="text-xs text-red-600">技術サポート</div>
+        </button>
+        <button class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg p-3 text-center transition-all card-hover">
+          <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mx-auto mb-1">
+            <i class="fas fa-clock text-indigo-600 text-sm"></i>
+          </div>
+          <div class="text-xs font-medium text-gray-800">工数記録</div>
+          <div class="text-xs text-indigo-600">実績</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- 上部ダッシュボード：今日のタスクと個人KPI -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+      <!-- 今日のタスク・緊急対応（詳細版） -->
+      <div class="xl:col-span-2">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-3">
+                <i class="fas fa-tasks text-white"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-800">今日のタスク・優先作業</h2>
+                <p class="text-sm text-gray-600">期限・重要度順</p>
+              </div>
+              <span class="ml-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm px-3 py-1 rounded-full font-semibold">5</span>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                <i class="fas fa-filter mr-1"></i> 担当分野
+              </button>
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                <i class="fas fa-plus mr-2"></i> タスク追加
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- 緊急図面作成 -->
+            <div class="border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-red-25 rounded-r-xl p-4 card-hover deadline-indicator">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-drafting-compass text-red-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">P-2025-0123 制御系統図v3.2作成</span>
+                    <span class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">緊急</span>
+                    <span class="skill-badge ml-2">DCS制御</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">ABC工場省エネ設備 | 制御盤発注図面作成</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-2">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>期限: 本日17:00（残り3時間）</span>
+                    <span class="mx-2">•</span>
+                    <span>進捗: 80%完了</span>
+                  </div>
+                  <div class="progress-bar mb-2">
+                    <div class="progress-fill bg-gradient-to-r from-red-500 to-red-600" style="width: 80%"></div>
+                  </div>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-user mr-1"></i>
+                    <span>依頼者：田中部長 | 計装士1級知識活用</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    図面完成
+                  </button>
+                  <button class="bg-white border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    進捗報告
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 計算書作成 -->
+            <div class="border-l-4 border-amber-500 bg-gradient-to-r from-amber-50 to-amber-25 rounded-r-xl p-4 card-hover deadline-indicator">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-calculator text-amber-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">負荷計算書・省エネ効果算定</span>
+                    <span class="ml-2 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">今日中</span>
+                    <span class="skill-badge ml-2 bg-green-500">省エネ</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">DEF産業空調設備更新 | エネルギー管理士知識活用</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-2">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>期限: 本日18:00</span>
+                    <span class="mx-2">•</span>
+                    <span>進捗: 45%完了</span>
+                  </div>
+                  <div class="progress-bar mb-2">
+                    <div class="progress-fill bg-gradient-to-r from-amber-500 to-amber-600" style="width: 45%"></div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    計算開始
+                  </button>
+                  <button class="bg-white border border-amber-300 text-amber-600 hover:bg-amber-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    下書き保存
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 現地調査 -->
+            <div class="border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-blue-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">GHI商事 現地調査・測定</span>
+                    <span class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">現地作業</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">14:00-16:00 | 受変電設備確認・電気計測</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-tools mr-1"></i>
+                    <span>準備：計測器・図面・安全具 | 同行：佐藤健太</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    準備確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 技術質問対応 -->
+            <div class="border-l-4 border-green-500 bg-gradient-to-r from-green-50 to-green-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-question-circle text-green-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">営業部からの技術質問回答（2件）</span>
+                    <span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">部門連携</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">制御システム仕様・コスト概算に関する質問</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>営業：山田部長 | 明日の提案会議で使用予定</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    回答作成
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 個人KPI・スキル情報 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-user-cog text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">個人パフォーマンス</h3>
+            <p class="text-sm text-gray-600">今月の実績・スキル</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 今月の作業効率 -->
+          <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm text-gray-600">今月の作業効率</div>
+                <div class="text-2xl font-bold text-gray-800">85%</div>
+                <div class="text-xs text-green-600 flex items-center">
+                  <i class="fas fa-arrow-up mr-1"></i>
+                  <span>前月比 +8%</span>
+                </div>
+              </div>
+              <div class="relative w-16 h-16">
+                <svg class="w-16 h-16 transform -rotate-90">
+                  <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                  <circle cx="32" cy="32" r="28" stroke="#3b82f6" stroke-width="4" fill="none" 
+                          stroke-dasharray="175.93" stroke-dashoffset="26.39"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-blue-600">
+                  85%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 個人タスク完了率 -->
+          <div>
+            <div class="text-sm text-gray-600 mb-3">タスク完了状況</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">完了</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-green-600">18件</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 72%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">進行中</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-blue-600">5件</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 20%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">期限超過</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-red-600">2件</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-red-500 h-2 rounded-full" style="width: 8%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 技術スキル評価 -->
+          <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-3">技術スキル評価</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs">制御設計</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: 95%"></div>
+                  </div>
+                  <span class="text-xs font-semibold text-purple-600">95%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs">AutoCAD</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 88%"></div>
+                  </div>
+                  <span class="text-xs font-semibold text-blue-600">88%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs">計装技術</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                  </div>
+                  <span class="text-xs font-semibold text-green-600">92%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 今月の学習・向上 -->
+          <div>
+            <div class="text-sm text-gray-600 mb-2">今月の学習・向上</div>
+            <div class="flex justify-between text-sm">
+              <div class="text-center">
+                <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <i class="fas fa-book text-green-600 text-sm"></i>
+                </div>
+                <div class="text-xs text-gray-600">技術研修</div>
+                <div class="text-xs font-semibold text-green-600">2回</div>
+              </div>
+              <div class="text-center">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <i class="fas fa-certificate text-blue-600 text-sm"></i>
+                </div>
+                <div class="text-xs text-gray-600">資格取得</div>
+                <div class="text-xs font-semibold text-blue-600">準備中</div>
+              </div>
+              <div class="text-center">
+                <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-1">
+                  <i class="fas fa-share text-orange-600 text-sm"></i>
+                </div>
+                <div class="text-xs text-gray-600">知識共有</div>
+                <div class="text-xs font-semibold text-orange-600">3件</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 担当プロジェクト詳細ステータス -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center">
+          <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-project-diagram text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">担当プロジェクト詳細</h3>
+            <p class="text-sm text-gray-600">自分の作業・進捗・次のアクション</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex border border-gray-300 rounded-lg overflow-hidden">
+            <button class="px-4 py-2 bg-indigo-600 text-white text-sm font-medium">進行中</button>
+            <button class="px-4 py-2 hover:bg-gray-100 text-sm font-medium">完了済</button>
+            <button class="px-4 py-2 hover:bg-gray-100 text-sm font-medium">承認待ち</button>
+          </div>
+          <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">工数記録</button>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <!-- プロジェクト1：ABC工場省エネ設備導入 -->
+        <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <h4 class="font-bold text-gray-800">P-2025-0123 ABC工場省エネ設備導入</h4>
+                <span class="ml-3 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">主担当</span>
+                <span class="skill-badge ml-2">制御システム</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-2">DCS制御システム設計・制御盤仕様策定</p>
+              <div class="flex items-center text-xs text-gray-500 mb-3">
+                <i class="fas fa-calendar mr-1"></i>
+                <span>期間: 2025/04/15 - 2025/06/30</span>
+                <span class="mx-2">•</span>
+                <span>役割: 制御設計リーダー</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-blue-600">75%</div>
+              <div class="text-xs text-gray-500">進捗</div>
+            </div>
+          </div>
+
+          <!-- 個人タスク詳細 -->
+          <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <h5 class="text-sm font-semibold text-gray-800 mb-2">個人担当タスク</h5>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                  <span class="text-sm">制御フロー図作成</span>
+                </div>
+                <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">完了</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                  <span class="text-sm">制御系統図v3.2作成</span>
+                </div>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">80%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                  <span class="text-sm">制御盤仕様書作成</span>
+                </div>
+                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">未着手</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 次のアクション -->
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium text-gray-800">次のアクション</div>
+              <div class="text-xs text-gray-600">制御系統図完成 → 部長承認 → 制御盤仕様書着手</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">作業継続</button>
+              <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm">進捗報告</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- プロジェクト2：DEF産業空調設備更新 -->
+        <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <h4 class="font-bold text-gray-800">P-2025-0118 DEF産業空調設備更新</h4>
+                <span class="ml-3 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">サポート</span>
+                <span class="skill-badge ml-2 bg-green-500">省エネ計算</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-2">省エネ効果算定・負荷計算支援</p>
+              <div class="flex items-center text-xs text-gray-500 mb-3">
+                <i class="fas fa-calendar mr-1"></i>
+                <span>期間: 2025/05/01 - 2025/07/15</span>
+                <span class="mx-2">•</span>
+                <span>主担当: 高橋浩二</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-green-600">45%</div>
+              <div class="text-xs text-gray-500">進捗</div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <h5 class="text-sm font-semibold text-gray-800 mb-2">個人担当タスク</h5>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                  <span class="text-sm">負荷計算書作成</span>
+                </div>
+                <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded">45%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                  <span class="text-sm">省エネ効果算定</span>
+                </div>
+                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">待機</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium text-gray-800">次のアクション</div>
+              <div class="text-xs text-gray-600">負荷計算完了 → 高橋さんと効果算定検討</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">計算開始</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- プロジェクト3：GHI商事受変電設備 -->
+        <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <h4 class="font-bold text-gray-800">P-2025-0115 GHI商事受変電設備</h4>
+                <span class="ml-3 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">技術支援</span>
+                <span class="skill-badge ml-2 bg-yellow-500">電気制御</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-2">電気制御部分の技術支援・制御盤連携</p>
+              <div class="flex items-center text-xs text-gray-500 mb-3">
+                <i class="fas fa-calendar mr-1"></i>
+                <span>期間: 2025/05/10 - 2025/08/31</span>
+                <span class="mx-2">•</span>
+                <span>主担当: 佐藤健太</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-amber-600">25%</div>
+              <div class="text-xs text-gray-500">進捗</div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <h5 class="text-sm font-semibold text-gray-800 mb-2">個人担当タスク</h5>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                  <span class="text-sm">現地調査・測定</span>
+                </div>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">本日予定</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                  <span class="text-sm">制御連携図作成</span>
+                </div>
+                <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">調査後</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium text-gray-800">次のアクション</div>
+              <div class="text-xs text-gray-600">14:00現地調査 → 測定データ整理 → 制御方式検討</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">調査準備</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 技術業務機能メニュー -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center mr-3">
+          <i class="fas fa-tools text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">技術業務メニュー</h2>
+          <p class="text-sm text-gray-600">日常の技術作業と連携機能</p>
+        </div>
+      </div>
+
+      <!-- 設計・図面作成機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-blue-800 border-b-2 border-blue-200 pb-2">
+          <i class="fas fa-drafting-compass mr-2"></i>設計・図面作成
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-blue-100">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">CAD図面作成</h4>
+                <i class="fas fa-drafting-compass text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">AutoCAD・制御系統図・配管図面・電気図面の作成と編集</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">進行中: 3件</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">期限今日: 1件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                CAD図面作成を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-green-100">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">計算書・仕様書</h4>
+                <i class="fas fa-calculator text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">負荷計算・省エネ効果算定・制御仕様書の作成</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">Excel連携</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">計装士知識</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                計算書作成を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-purple-100">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">承認申請</h4>
+                <i class="fas fa-file-signature text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">図面・仕様書・計算書の承認申請と進捗確認</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-medium">承認待ち: 2件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">承認済: 15件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                承認状況確認
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 現地作業・品質管理機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-orange-800 border-b-2 border-orange-200 pb-2">
+          <i class="fas fa-hard-hat mr-2"></i>現地作業・品質管理
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-orange-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-orange-100">
+            <div class="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">現地調査・測定</h4>
+                <i class="fas fa-map-marker-alt text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">現地調査記録・測定データ収集・写真撮影</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">本日: 1件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">モバイル対応</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                現地調査記録
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-indigo-100">
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">検査・品質記録</h4>
+                <i class="fas fa-clipboard-check text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">工場検査・現場検査・品質確認記録の作成</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">検査記録</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">不適合管理</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                検査記録作成
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-red-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-red-100">
+            <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">緊急技術対応</h4>
+                <i class="fas fa-exclamation-triangle text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">緊急技術問題・現場トラブル・技術サポート要請</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">対応中: 1件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">24時間対応</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                緊急対応記録
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 部門連携・情報共有機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-green-800 border-b-2 border-green-200 pb-2">
+          <i class="fas fa-users mr-2"></i>部門連携・情報共有
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-blue-100">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">営業技術支援</h4>
+                <i class="fas fa-handshake text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">営業部門からの技術質問対応・見積技術検討</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">質問: 2件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">回答済: 8件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                営業支援を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-green-100">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">工数・実績記録</h4>
+                <i class="fas fa-clock text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">作業工数記録・プロジェクト実績・時間管理</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">今月: 152h</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">効率: 85%</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                工数記録を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-purple-100">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">技術ナレッジ</h4>
+                <i class="fas fa-brain text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">技術ノウハウ・設計事例・トラブル対応事例</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-medium">閲覧: 45件</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">投稿: 3件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                ナレッジ検索
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 最近の個人活動履歴 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+      <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-history mr-2 text-blue-600"></i>
+        最近の個人活動履歴
+      </h3>
+      
+      <div class="space-y-3">
+        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+          <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+            <i class="fas fa-drafting-compass text-blue-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">制御系統図v3.2の進捗更新（80%完了）</div>
+            <div class="text-xs text-gray-500">2025/05/19 15:30 • P-2025-0123 ABC工場 • CAD作業</div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">図面作成</span>
+            <span class="skill-badge">DCS制御</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+          <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+            <i class="fas fa-calculator text-green-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">負荷計算書作成開始・基礎データ収集完了</div>
+            <div class="text-xs text-gray-500">2025/05/19 13:45 • P-2025-0118 DEF産業 • Excel計算</div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">計算書</span>
+            <span class="skill-badge bg-green-500">省エネ</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+          <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+            <i class="fas fa-question-circle text-purple-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">営業部技術質問回答（制御システム仕様について）</div>
+            <div class="text-xs text-gray-500">2025/05/19 11:20 • 営業：山田部長 • JKL工場案件</div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">営業支援</span>
+            <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">回答完了</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+          <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+            <i class="fas fa-file-signature text-orange-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">制御フロー図v2.1承認申請・田中部長承認待ち</div>
+            <div class="text-xs text-gray-500">2025/05/19 09:15 • P-2025-0123 ABC工場 • 承認フロー</div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">承認申請</span>
+            <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">承認待ち</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+          <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+            <i class="fas fa-clock text-indigo-600 text-sm"></i>
+          </div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">工数記録登録（設計作業6.5時間）</div>
+            <div class="text-xs text-gray-500">2025/05/18 18:00 • 複数プロジェクト • 効率88%</div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full">工数記録</span>
+            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">高効率</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center mt-4">
+        <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+          すべての個人活動履歴を表示
+        </button>
+      </div>
+    </div>
+
+    <!-- 技術情報とシステム連携 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <!-- 個人スキル・資格情報 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-award text-purple-600 mr-2"></i>
+          個人スキル・資格
+        </h4>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-cog text-blue-600"></i>
+              </div>
+              <div>
+                <div class="font-medium text-sm">計装士1級</div>
+                <div class="text-xs text-gray-500">制御設計専門</div>
+              </div>
+            </div>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">取得済</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-leaf text-green-600"></i>
+              </div>
+              <div>
+                <div class="font-medium text-sm">エネルギー管理士</div>
+                <div class="text-xs text-gray-500">省エネ設計</div>
+              </div>
+            </div>
+            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">取得済</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-bolt text-yellow-600"></i>
+              </div>
+              <div>
+                <div class="font-medium text-sm">電気施工管理1級</div>
+                <div class="text-xs text-gray-500">受験準備中</div>
+              </div>
+            </div>
+            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">学習中</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                <i class="fas fa-desktop text-purple-600"></i>
+              </div>
+              <div>
+                <div class="font-medium text-sm">AutoCAD認定</div>
+                <div class="text-xs text-gray-500">2D/3D設計</div>
+              </div>
+            </div>
+            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">Professional</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 今月の実績サマリー -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+          今月の実績サマリー
+        </h4>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">完了タスク</div>
+              <div class="text-xs text-gray-500">設計・図面・計算等</div>
+            </div>
+            <span class="text-lg font-bold text-green-600">18件</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">作業時間</div>
+              <div class="text-xs text-gray-500">実働時間・効率</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-blue-600">152h</div>
+              <div class="text-xs text-green-600">効率85%</div>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">営業支援</div>
+              <div class="text-xs text-gray-500">技術質問回答</div>
+            </div>
+            <span class="text-lg font-bold text-purple-600">8件</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">品質指標</div>
+              <div class="text-xs text-gray-500">手戻り・修正率</div>
+            </div>
+            <span class="text-lg font-bold text-amber-600">5%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- システム連携状況 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-link text-blue-600 mr-2"></i>
+          システム連携状況
+        </h4>
+        <div class="space-y-3">
+          <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <div class="font-medium text-sm text-blue-800">統合ファイル管理</div>
+            <div class="text-xs text-blue-600 mt-1">図面・計算書の自動保存</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 15:45</div>
+          </div>
+          
+          <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+            <div class="font-medium text-sm text-green-800">活動履歴管理</div>
+            <div class="text-xs text-green-600 mt-1">作業記録のリアルタイム記録</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 15:50</div>
+          </div>
+          
+          <div class="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+            <div class="font-medium text-sm text-purple-800">承認ダッシュボード</div>
+            <div class="text-xs text-purple-600 mt-1">承認申請・回答状況</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 15:40</div>
+          </div>
+          
+          <div class="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+            <div class="font-medium text-sm text-orange-800">工数管理システム</div>
+            <div class="text-xs text-orange-600 mt-1">作業時間・効率記録</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 15:35</div>
+          </div>
+          
+          <div class="text-center">
+            <button class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+              <i class="fas fa-sync mr-1"></i>システム連携確認
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 学習・スキルアップ情報 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+      <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-graduation-cap mr-2 text-indigo-600"></i>
+        学習・スキルアップ
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+          <h4 class="font-semibold text-blue-800 mb-2">進行中の学習</h4>
+          <div class="space-y-2">
+            <div class="text-sm">電気施工管理1級 受験準備</div>
+            <div class="text-xs text-blue-600">進捗: 65% | 試験日: 2025/10/15</div>
+            <div class="progress-bar">
+              <div class="progress-fill bg-blue-500" style="width: 65%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+          <h4 class="font-semibold text-green-800 mb-2">技術研修履歴</h4>
+          <div class="space-y-1">
+            <div class="text-sm">DCS制御システム研修</div>
+            <div class="text-xs text-green-600">2025/05/10 受講完了</div>
+            <div class="text-sm">省エネ法改正セミナー</div>
+            <div class="text-xs text-green-600">2025/04/25 受講完了</div>
+          </div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+          <h4 class="font-semibold text-purple-800 mb-2">知識共有実績</h4>
+          <div class="space-y-1">
+            <div class="text-sm">制御設計事例共有</div>
+            <div class="text-xs text-purple-600">技術ナレッジベース投稿: 3件</div>
+            <div class="text-sm">新人指導・メンタリング</div>
+            <div class="text-xs text-purple-600">後輩サポート: 2名</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // インタラクション機能
+    document.addEventListener('DOMContentLoaded', function() {
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 通知表示関数
+      function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = {
+          'success': 'bg-green-500',
+          'warning': 'bg-yellow-500',
+          'error': 'bg-red-500',
+          'info': 'bg-blue-500'
+        }[type] || 'bg-blue-500';
+        
+        const icon = {
+          'success': 'fas fa-check',
+          'warning': 'fas fa-exclamation-triangle',
+          'error': 'fas fa-times',
+          'info': 'fas fa-info-circle'
+        }[type] || 'fas fa-info-circle';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+        notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+        notification.style.transform = 'translateX(100%)';
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
+
+      // ボタンクリックイベント
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const text = this.textContent.trim();
+          
+          if (text.includes('図面完成') || text.includes('CAD図面作成')) {
+            showNotification('CAD図面作成画面を開いています...', 'info');
+          } else if (text.includes('計算開始') || text.includes('計算書作成')) {
+            showNotification('計算書作成画面を開いています...', 'info');
+          } else if (text.includes('進捗報告')) {
+            showNotification('進捗報告画面を開いています...', 'info');
+          } else if (text.includes('準備確認') || text.includes('調査準備')) {
+            showNotification('現地調査準備チェックリストを開いています...', 'info');
+          } else if (text.includes('回答作成')) {
+            showNotification('技術質問回答作成画面を開いています...', 'info');
+          } else if (text.includes('作業継続')) {
+            showNotification('作業を継続します...', 'success');
+          } else if (text.includes('承認状況確認')) {
+            showNotification('承認状況確認画面を開いています...', 'info');
+          } else if (text.includes('現地調査記録')) {
+            showNotification('現地調査記録画面を開いています...', 'info');
+          } else if (text.includes('検査記録')) {
+            showNotification('検査記録作成画面を開いています...', 'info');
+          } else if (text.includes('緊急対応記録')) {
+            showNotification('緊急対応記録画面を開いています...', 'warning');
+          } else if (text.includes('営業支援')) {
+            showNotification('営業技術支援画面を開いています...', 'info');
+          } else if (text.includes('工数記録')) {
+            showNotification('工数記録画面を開いています...', 'info');
+          } else if (text.includes('ナレッジ検索')) {
+            showNotification('技術ナレッジベースを開いています...', 'info');
+          } else if (text.includes('作業記録登録')) {
+            showNotification('作業記録登録画面を開いています...', 'info');
+          }
+        });
+      });
+
+      // 検索機能
+      const searchInput = document.querySelector('input[placeholder*="検索"]');
+      if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            const query = this.value.trim();
+            if (query) {
+              showNotification(`技術資料検索: "${query}" を実行中...`, 'info');
+            }
+          }
+        });
+      }
+
+      // よく使う機能ボタン
+      const quickButtons = document.querySelectorAll('.border.border-blue-200, .border.border-green-200, .border.border-purple-200, .border.border-orange-200, .border.border-red-200, .border.border-indigo-200');
+      quickButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const text = this.querySelector('.text-gray-800').textContent;
+          showNotification(`${text}機能を開いています...`, 'info');
+        });
+      });
+
+      // タブ切り替え機能
+      const tabButtons = document.querySelectorAll('.border.border-gray-300 button');
+      tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          tabButtons.forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('hover:bg-gray-100');
+          });
+          
+          this.classList.add('bg-indigo-600', 'text-white');
+          this.classList.remove('hover:bg-gray-100');
+          
+          const filterName = this.textContent.trim();
+          showNotification(`タスクフィルター "${filterName}" を適用しました`, 'info');
+        });
+      });
+
+      // プロジェクトカードクリック
+      const projectCards = document.querySelectorAll('.border.border-gray-200.rounded-xl');
+      projectCards.forEach(card => {
+        card.addEventListener('click', function() {
+          const projectName = this.querySelector('h4').textContent;
+          showNotification(`プロジェクト詳細画面を開いています: ${projectName}`, 'info');
+        });
+      });
+
+      // 活動履歴項目クリック
+      const activityItems = document.querySelectorAll('.flex.items-center.p-3.hover\\:bg-gray-50');
+      activityItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const activity = this.querySelector('.text-sm.font-medium').textContent;
+          showNotification(`活動詳細を表示: ${activity}`, 'info');
+        });
+      });
+
+      // スキルバーのインタラクション
+      const skillBars = document.querySelectorAll('.w-16.bg-gray-200');
+      skillBars.forEach(bar => {
+        bar.addEventListener('mouseenter', function() {
+          const skillRow = this.closest('.flex.items-center.justify-between');
+          const skillName = skillRow.querySelector('span.text-xs, span.text-sm').textContent;
+          const percentage = skillRow.querySelector('.font-semibold').textContent;
+          
+          // ツールチップ的な表示
+          const tooltip = document.createElement('div');
+          tooltip.className = 'absolute bg-gray-800 text-white text-xs rounded px-2 py-1 z-20';
+          tooltip.textContent = `${skillName}: ${percentage}`;
+          tooltip.style.top = '-30px';
+          tooltip.style.left = '50%';
+          tooltip.style.transform = 'translateX(-50%)';
+          this.style.position = 'relative';
+          this.appendChild(tooltip);
+        });
+        
+        bar.addEventListener('mouseleave', function() {
+          const tooltip = this.querySelector('.absolute');
+          if (tooltip) {
+            tooltip.remove();
+          }
+        });
+      });
+
+      // 進捗バーアニメーション
+      function animateProgressBars() {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach((bar, index) => {
+          setTimeout(() => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            setTimeout(() => {
+              bar.style.width = width;
+            }, 100);
+          }, index * 200);
+        });
+      }
+
+      // ページ読み込み後に進捗バーをアニメーション
+      setTimeout(animateProgressBars, 500);
+
+      // 個人効率の更新シミュレーション
+      function updatePersonalEfficiency() {
+        const efficiencyElement = document.querySelector('.text-lg.font-bold.text-white');
+        if (efficiencyElement && efficiencyElement.textContent.includes('%')) {
+          let currentEfficiency = parseInt(efficiencyElement.textContent);
+          if (Math.random() > 0.8) { // 20%の確率で更新
+            currentEfficiency = Math.min(currentEfficiency + 1, 95);
+            efficiencyElement.textContent = `${currentEfficiency}%`;
+          }
+        }
+      }
+
+      setInterval(updatePersonalEfficiency, 30000); // 30秒ごとに更新可能性をチェック
+
+      // タスク完了ボタンの処理
+      const completeButtons = document.querySelectorAll('.bg-red-500, .bg-amber-500, .bg-blue-500, .bg-green-500');
+      completeButtons.forEach(button => {
+        if (button.textContent.includes('完成') || button.textContent.includes('開始')) {
+          button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const taskName = this.closest('.border-l-4').querySelector('.font-semibold').textContent;
+            showNotification(`タスクを開始しました: ${taskName}`, 'success');
+            
+            // ボタンのテキストを一時的に変更
+            const originalText = this.textContent;
+            this.textContent = '処理中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              this.textContent = originalText;
+              this.disabled = false;
+            }, 2000);
+          });
+        }
+      });
+
+      // システム連携確認ボタン
+      const syncButton = document.querySelector('button');
+      if (syncButton && syncButton.textContent.includes('システム連携確認')) {
+        syncButton.addEventListener('click', function() {
+          showNotification('システム連携状況を確認中...', 'info');
+          
+          setTimeout(() => {
+            const syncTimes = document.querySelectorAll('.text-xs.text-gray-500');
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            syncTimes.forEach(time => {
+              if (time.textContent.includes('最終同期:')) {
+                time.textContent = `最終同期: 2025/05/19 ${timeString}`;
+              }
+            });
+            
+            showNotification('システム連携が正常に確認されました', 'success');
+          }, 1500);
+        });
+      }
+
+      // 期限インジケーターのアニメーション
+      const deadlineIndicators = document.querySelectorAll('.deadline-indicator');
+      deadlineIndicators.forEach(indicator => {
+        indicator.addEventListener('mouseenter', function() {
+          this.style.position = 'relative';
+          this.style.overflow = 'hidden';
+        });
+      });
+
+      // ページ読み込み時のアニメーション
+      const elements = document.querySelectorAll('.card-hover, .bg-white');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 50);
+      });
+
+      // 関連画面リンク
+      const navLinks = document.querySelectorAll('nav a[href="#"]');
+      navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const screenName = this.textContent.trim();
+          showNotification(`${screenName}に移動しています...`, 'info');
+        });
+      });
+
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('技術者ワークスペースへようこそ、鈴木さん', 'success');
+      }, 1000);
+
+      // 定期的なタスク更新シミュレーション
+      function updateTaskProgress() {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+          if (Math.random() > 0.9) { // 10%の確率で進捗更新
+            let currentWidth = parseInt(bar.style.width);
+            if (currentWidth < 100) {
+              currentWidth = Math.min(currentWidth + Math.floor(Math.random() * 5) + 1, 100);
+              bar.style.width = `${currentWidth}%`;
+              
+              // 進捗が100%になったら通知
+              if (currentWidth === 100) {
+                showNotification('タスクが完了しました！', 'success');
+              }
+            }
+          }
+        });
+      }
+
+      setInterval(updateTaskProgress, 45000); // 45秒ごとに進捗更新可能性をチェック
+
+      // 緊急度による期限表示の更新
+      function updateDeadlineStatus() {
+        const deadlineElements = document.querySelectorAll('.text-xs.text-gray-500');
+        deadlineElements.forEach(element => {
+          if (element.textContent.includes('残り') && element.textContent.includes('時間')) {
+            const match = element.textContent.match(/残り(\d+)時間/);
+            if (match) {
+              let hours = parseInt(match[1]);
+              if (Math.random() > 0.8) { // 20%の確率で時間更新
+                hours = Math.max(hours - 1, 0);
+                element.textContent = element.textContent.replace(/残り\d+時間/, `残り${hours}時間`);
+                
+                // 期限が近づいたら警告色に変更
+                if (hours <= 2) {
+                  element.classList.add('text-red-600');
+                  element.classList.remove('text-gray-500');
+                }
+              }
+            }
+          }
+        });
+      }
+
+      setInterval(updateDeadlineStatus, 60000); // 1分ごとに期限状況をチェック
+
+      // 新しい通知の追加シミュレーション
+      function simulateNewNotifications() {
+        const notifications = [
+          { message: '新しい技術質問が営業部から届きました', type: 'info' },
+          { message: '図面承認が完了しました', type: 'success' },
+          { message: '現地調査の時間が近づいています', type: 'warning' },
+          { message: '新しいプロジェクトがアサインされました', type: 'info' }
+        ];
+        
+        let notificationIndex = 0;
+        setInterval(() => {
+          if (Math.random() > 0.7) { // 30%の確率で通知
+            const notification = notifications[notificationIndex % notifications.length];
+            showNotification(notification.message, notification.type);
+            notificationIndex++;
+            
+            // 通知カウンターを更新
+            const bellCounter = document.querySelector('.alert-pulse');
+            if (bellCounter) {
+              let count = parseInt(bellCounter.textContent) || 0;
+              count++;
+              bellCounter.textContent = count;
+            }
+          }
+        }, 120000); // 2分ごとに通知可能性をチェック
+      }
+
+      simulateNewNotifications();
+
+      // スキル評価の動的更新
+      function updateSkillRatings() {
+        const skillProgressBars = document.querySelectorAll('.w-16.bg-gray-200 .bg-purple-500, .w-16.bg-gray-200 .bg-blue-500, .w-16.bg-gray-200 .bg-green-500');
+        skillProgressBars.forEach(bar => {
+          if (Math.random() > 0.95) { // 5%の確率でスキル向上
+            let currentWidth = parseInt(bar.style.width);
+            if (currentWidth < 98) {
+              currentWidth = Math.min(currentWidth + 1, 98);
+              bar.style.width = `${currentWidth}%`;
+              
+              // 対応するパーセンテージ表示も更新
+              const parentRow = bar.closest('.flex.items-center.justify-between');
+              const percentageElement = parentRow.querySelector('.font-semibold');
+              if (percentageElement) {
+                percentageElement.textContent = `${currentWidth}%`;
+              }
+            }
+          }
+        });
+      }
+
+      setInterval(updateSkillRatings, 180000); // 3分ごとにスキル向上可能性をチェック
+
+      // 作業効率の計算と表示更新
+      function updateWorkEfficiency() {
+        const efficiencyElements = document.querySelectorAll('.text-lg.font-bold');
+        efficiencyElements.forEach(element => {
+          if (element.textContent.includes('%') && element.closest('.bg-gradient-to-r.from-blue-50')) {
+            let currentEfficiency = parseInt(element.textContent);
+            if (Math.random() > 0.9) { // 10%の確率で効率更新
+              const change = Math.floor(Math.random() * 3) - 1; // -1, 0, +1の変化
+              currentEfficiency = Math.max(75, Math.min(95, currentEfficiency + change));
+              element.textContent = `${currentEfficiency}%`;
+              
+              // 効率に応じた色の変更
+              if (currentEfficiency >= 85) {
+                element.className = element.className.replace('text-gray-800', 'text-green-600');
+              } else if (currentEfficiency < 80) {
+                element.className = element.className.replace('text-gray-800', 'text-amber-600');
+              }
+            }
+          }
+        });
+      }
+
+      setInterval(updateWorkEfficiency, 90000); // 1.5分ごとに効率更新可能性をチェック
+
+      // 学習進捗の更新
+      function updateLearningProgress() {
+        const learningProgressBar = document.querySelector('.bg-gradient-to-br.from-blue-50 .progress-fill');
+        if (learningProgressBar && Math.random() > 0.9) { // 10%の確率で学習進捗更新
+          let currentProgress = parseInt(learningProgressBar.style.width);
+          if (currentProgress < 100) {
+            currentProgress = Math.min(currentProgress + Math.floor(Math.random() * 2) + 1, 100);
+            learningProgressBar.style.width = `${currentProgress}%`;
+            
+            // 対応するテキストも更新
+            const progressText = document.querySelector('.text-xs.text-blue-600');
+            if (progressText && progressText.textContent.includes('進捗:')) {
+              progressText.textContent = progressText.textContent.replace(/進捗: \d+%/, `進捗: ${currentProgress}%`);
+            }
+            
+            // 100%達成時の通知
+            if (currentProgress === 100) {
+              showNotification('電気施工管理1級の学習が完了しました！', 'success');
+            }
+          }
+        }
+      }
+
+      setInterval(updateLearningProgress, 300000); // 5分ごとに学習進捗更新可能性をチェック
+
+      // タスクステータスの自動更新
+      function updateTaskStatus() {
+        const statusBadges = document.querySelectorAll('.bg-blue-100.text-blue-800, .bg-amber-100.text-amber-800');
+        statusBadges.forEach(badge => {
+          if (badge.textContent.includes('%') && Math.random() > 0.85) {
+            let percentage = parseInt(badge.textContent);
+            if (percentage < 100) {
+              percentage = Math.min(percentage + Math.floor(Math.random() * 10) + 5, 100);
+              badge.textContent = `${percentage}%`;
+              
+              // 100%になったらステータスを完了に変更
+              if (percentage === 100) {
+                badge.textContent = '完了';
+                badge.className = 'text-xs bg-green-100 text-green-800 px-2 py-1 rounded';
+              }
+            }
+          }
+        });
+      }
+
+      setInterval(updateTaskStatus, 120000); // 2分ごとにタスクステータス更新可能性をチェック
+
+      // 新しい営業支援要請のシミュレーション
+      function simulateSalesSupport() {
+        const salesSupportCounter = document.querySelector('.bg-red-100.text-red-800');
+        if (salesSupportCounter && salesSupportCounter.textContent.includes('質問:') && Math.random() > 0.9) {
+          let questionCount = parseInt(salesSupportCounter.textContent.match(/\d+/)[0]);
+          questionCount++;
+          salesSupportCounter.textContent = `質問: ${questionCount}件`;
+          showNotification('新しい技術質問が営業部から届きました', 'info');
+        }
+      }
+
+      setInterval(simulateSalesSupport, 240000); // 4分ごとに営業支援要請可能性をチェック
+
+      // 個人実績の月次更新
+      function updateMonthlyStats() {
+        const completedTasks = document.querySelector('.text-lg.font-bold.text-green-600');
+        const workHours = document.querySelector('.text-lg.font-bold.text-blue-600');
+        const salesSupport = document.querySelector('.text-lg.font-bold.text-purple-600');
+        
+        if (Math.random() > 0.95) { // 5%の確率で実績更新
+          if (completedTasks) {
+            let tasks = parseInt(completedTasks.textContent);
+            tasks++;
+            completedTasks.textContent = `${tasks}件`;
+          }
+          
+          if (workHours) {
+            let hours = parseInt(workHours.textContent);
+            hours += Math.floor(Math.random() * 8) + 1; // 1-8時間の追加
+            workHours.textContent = `${hours}h`;
+          }
+          
+          if (salesSupport) {
+            let support = parseInt(salesSupport.textContent);
+            if (Math.random() > 0.7) { // 30%の確率で営業支援も増加
+              support++;
+              salesSupport.textContent = `${support}件`;
+            }
+          }
+        }
+      }
+
+      setInterval(updateMonthlyStats, 600000); // 10分ごとに実績更新可能性をチェック
+
+      // 画面初期化完了のログ出力
+      console.log('技術部門HUB（一般職版）が正常に初期化されました');
+      
+      // 初期化完了後の自動保存シミュレーション
+      setTimeout(() => {
+        showNotification('作業データが自動保存されました', 'success');
+      }, 300000); // 5分後に自動保存通知
+    });
+
+    // 外部から呼び出し可能な関数
+    window.techWorkerHub = {
+      refreshTasks: function() {
+        showNotification('タスク情報を更新しています...', 'info');
+        setTimeout(() => {
+          showNotification('タスク更新が完了しました', 'success');
+        }, 2000);
+      },
+      
+      completeTask: function(taskName) {
+        showNotification(`タスク「${taskName}」を完了しました`, 'success');
+      },
+      
+      startWork: function(projectId) {
+        showNotification(`プロジェクト ${projectId} の作業を開始しました`, 'info');
+      },
+      
+      recordProgress: function(projectId, progress) {
+        showNotification(`プロジェクト ${projectId} の進捗を ${progress}% に更新しました`, 'success');
+      },
+      
+      submitForApproval: function(documentName) {
+        showNotification(`「${documentName}」を承認申請しました`, 'info');
+      },
+      
+      updateSkill: function(skillName, level) {
+        showNotification(`スキル「${skillName}」のレベルが ${level}% に向上しました`, 'success');
+      }
+    };
+  </script>
+</body>
+</html>
