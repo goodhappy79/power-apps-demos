@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全社カレンダーシステム</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    .calendar-cell:hover {
+      background-color: #f1f5f9;
+    }
+    .event-item {
+      font-size: 10px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      margin: 1px 0;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .event-item:hover {
+      transform: scale(1.02);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .milestone-marker {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 2px solid white;
+    }
+    .resource-busy {
+      background: linear-gradient(45deg, #ef4444, #dc2626);
+    }
+    .resource-available {
+      background: linear-gradient(45deg, #10b981, #059669);
+    }
+    .resource-partial {
+      background: linear-gradient(45deg, #f59e0b, #d97706);
+    }
+    .today-cell {
+      background-color: #dbeafe;
+      border: 2px solid #3b82f6;
+    }
+    .weekend-cell {
+      background-color: #f8fafc;
+    }
+    .holiday-cell {
+      background-color: #fef2f2;
+      color: #dc2626;
+    }
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .filter-badge {
+      transition: all 0.2s ease;
+    }
+    .filter-badge:hover {
+      transform: translateY(-1px);
+    }
+    .timeline-hour {
+      border-right: 1px solid #e5e7eb;
+      position: relative;
+    }
+    .timeline-event {
+      position: absolute;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 11px;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-indigo-800 to-indigo-900 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fas fa-calendar-alt text-2xl mr-3"></i>
+          <div>
+            <h1 class="text-xl font-bold">全社カレンダーシステム</h1>
+            <p class="text-indigo-200 text-sm">Company Calendar Management</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <button class="p-2 hover:bg-indigo-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-lg"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-right">
+              <div class="font-semibold text-sm">山田 健太郎</div>
+              <div class="text-xs text-indigo-200">営業部長</div>
+            </div>
+            <div class="w-8 h-8 bg-white text-indigo-800 rounded-full flex items-center justify-center font-bold text-sm">
+              YK
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>
+          ホーム
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">
+          全社共通機能
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-600 font-medium">全社カレンダー</span>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-800 font-semibold">2025年5月</span>
+      </div>
+      
+      <!-- 関連画面への素早いアクセス -->
+      <div class="mt-3 pt-3 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-gray-500 font-medium">関連画面:</span>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-folder mr-1"></i>統合ファイル管理
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-history mr-1"></i>活動履歴管理
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-check-circle mr-1"></i>統合承認ダッシュボード
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-search mr-1"></i>全社検索
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- カレンダーコントロール -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div class="flex items-center space-x-4">
+          <!-- 月移動 -->
+          <div class="flex items-center space-x-2">
+            <button class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <i class="fas fa-chevron-left text-gray-600"></i>
+            </button>
+            <h2 class="text-xl font-bold text-gray-800 min-w-[120px] text-center">2025年5月</h2>
+            <button class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <i class="fas fa-chevron-right text-gray-600"></i>
+            </button>
+          </div>
+          
+          <!-- 今日へ戻る -->
+          <button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+            今日
+          </button>
+          
+          <!-- 表示切替 -->
+          <div class="flex space-x-1 bg-gray-100 rounded-lg p-1">
+            <button class="px-3 py-1.5 bg-white text-gray-700 rounded text-sm shadow-sm">月</button>
+            <button class="px-3 py-1.5 text-gray-600 rounded text-sm hover:bg-white">週</button>
+            <button class="px-3 py-1.5 text-gray-600 rounded text-sm hover:bg-white">日</button>
+            <button class="px-3 py-1.5 text-gray-600 rounded text-sm hover:bg-white">年</button>
+          </div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="flex items-center space-x-2">
+          <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 flex items-center">
+            <i class="fas fa-plus mr-2"></i>予定追加
+          </button>
+          <button class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 flex items-center">
+            <i class="fas fa-door-open mr-2"></i>会議室予約
+          </button>
+          <button class="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700 flex items-center">
+            <i class="fas fa-users mr-2"></i>リソース確認
+          </button>
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 flex items-center">
+            <i class="fas fa-sync mr-2"></i>同期
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- フィルター・表示設定 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex flex-wrap gap-3 items-center">
+        <span class="text-sm font-medium text-gray-700">表示フィルター:</span>
+        
+        <!-- 部門フィルター -->
+        <div class="flex flex-wrap gap-2">
+          <button class="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-sm hover:bg-blue-200 filter-badge">
+            <i class="fas fa-user-tie mr-1"></i>営業部門
+          </button>
+          <button class="px-3 py-1.5 bg-green-100 text-green-800 rounded-full text-sm hover:bg-green-200 filter-badge">
+            <i class="fas fa-cogs mr-1"></i>技術部門
+          </button>
+          <button class="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-full text-sm hover:bg-purple-200 filter-badge">
+            <i class="fas fa-headset mr-1"></i>カスタマー
+          </button>
+          <button class="px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full text-sm hover:bg-orange-200 filter-badge">
+            <i class="fas fa-bolt mr-1"></i>電力販売
+          </button>
+          <button class="px-3 py-1.5 bg-gray-100 text-gray-800 rounded-full text-sm hover:bg-gray-200 filter-badge">
+            <i class="fas fa-building mr-1"></i>管理部門
+          </button>
+        </div>
+        
+        <!-- 種別フィルター -->
+        <div class="border-l border-gray-300 pl-3 flex flex-wrap gap-2">
+          <button class="px-3 py-1.5 bg-red-100 text-red-800 rounded-full text-sm hover:bg-red-200 filter-badge">
+            <i class="fas fa-flag mr-1"></i>マイルストーン
+          </button>
+          <button class="px-3 py-1.5 bg-yellow-100 text-yellow-800 rounded-full text-sm hover:bg-yellow-200 filter-badge">
+            <i class="fas fa-handshake mr-1"></i>顧客対応
+          </button>
+          <button class="px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-full text-sm hover:bg-indigo-200 filter-badge">
+            <i class="fas fa-users mr-1"></i>会議
+          </button>
+          <button class="px-3 py-1.5 bg-pink-100 text-pink-800 rounded-full text-sm hover:bg-pink-200 filter-badge">
+            <i class="fas fa-plane mr-1"></i>休暇・出張
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <!-- 左サイドバー -->
+      <div class="lg:col-span-1 space-y-4">
+        <!-- 今日の予定サマリー -->
+        <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+          <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-calendar-day text-blue-600 mr-2"></i>
+            今日の予定 (5/20)
+          </h3>
+          <div class="space-y-2">
+            <div class="flex items-center p-2 bg-blue-50 rounded">
+              <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">ABC工場 技術打合せ</div>
+                <div class="text-xs text-gray-500">14:30-16:00</div>
+              </div>
+            </div>
+            <div class="flex items-center p-2 bg-green-50 rounded">
+              <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">部門長会議</div>
+                <div class="text-xs text-gray-500">10:00-11:30</div>
+              </div>
+            </div>
+            <div class="flex items-center p-2 bg-red-50 rounded">
+              <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+              <div class="flex-1">
+                <div class="text-sm font-medium">プロジェクト完了</div>
+                <div class="text-xs text-gray-500">マイルストーン</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 会議室利用状況 -->
+        <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+          <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-door-open text-purple-600 mr-2"></i>
+            会議室利用状況
+          </h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <span class="text-sm">会議室A</span>
+              <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">使用中</span>
+            </div>
+            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <span class="text-sm">会議室B</span>
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">空室</span>
+            </div>
+            <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+              <span class="text-sm">大会議室</span>
+              <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">予約済</span>
+            </div>
+          </div>
+          <button class="w-full mt-3 px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
+            会議室予約
+          </button>
+        </div>
+
+        <!-- リソース稼働状況 -->
+        <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+          <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-users text-orange-600 mr-2"></i>
+            リソース稼働状況
+          </h3>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">営業部門</span>
+              <div class="flex items-center">
+                <div class="w-16 h-2 bg-gray-200 rounded-full mr-2">
+                  <div class="w-12 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <span class="text-xs text-gray-600">75%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">技術部門</span>
+              <div class="flex items-center">
+                <div class="w-16 h-2 bg-gray-200 rounded-full mr-2">
+                  <div class="w-14 h-2 bg-red-500 rounded-full"></div>
+                </div>
+                <span class="text-xs text-gray-600">90%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">カスタマー</span>
+              <div class="flex items-center">
+                <div class="w-16 h-2 bg-gray-200 rounded-full mr-2">
+                  <div class="w-10 h-2 bg-green-500 rounded-full"></div>
+                </div>
+                <span class="text-xs text-gray-600">65%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- プロジェクトマイルストーン -->
+        <div class="bg-white rounded-lg shadow-md p-4 card-hover">
+          <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-flag text-red-600 mr-2"></i>
+            重要マイルストーン
+          </h3>
+          <div class="space-y-2">
+            <div class="p-2 border-l-4 border-red-500 bg-red-50 rounded">
+              <div class="text-sm font-medium">ABC工場 完工</div>
+              <div class="text-xs text-gray-500">5/25 (金)</div>
+            </div>
+            <div class="p-2 border-l-4 border-blue-500 bg-blue-50 rounded">
+              <div class="text-sm font-medium">DEF産業 着工</div>
+              <div class="text-xs text-gray-500">5/28 (月)</div>
+            </div>
+            <div class="p-2 border-l-4 border-green-500 bg-green-50 rounded">
+              <div class="text-sm font-medium">GHI商事 契約</div>
+              <div class="text-xs text-gray-500">5/30 (水)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- メインカレンダー -->
+      <div class="lg:col-span-3">
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <!-- カレンダーヘッダー -->
+          <div class="bg-gray-50 border-b border-gray-200">
+            <div class="grid grid-cols-7">
+              <div class="p-3 text-center font-medium text-gray-700 border-r border-gray-200">日</div>
+              <div class="p-3 text-center font-medium text-gray-700 border-r border-gray-200">月</div>
+              <div class="p-3 text-center font-medium text-gray-700 border-r border-gray-200">火</div>
+              <div class="p-3 text-center font-medium text-gray-700 border-r border-gray-200">水</div>
+              <div class="p-3 text-center font-medium text-gray-700 border-r border-gray-200">木</div>
+              <div class="p-3 text-center font-medium text-gray-700 border-r border-gray-200">金</div>
+              <div class="p-3 text-center font-medium text-gray-700">土</div>
+            </div>
+          </div>
+
+          <!-- カレンダー本体 -->
+          <div class="grid grid-cols-7">
+            <!-- 第1週 -->
+            <div class="calendar-cell weekend-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs text-gray-400">27</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs text-gray-400">28</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs text-gray-400">29</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs text-gray-400">30</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">1</div>
+              <div class="event-item bg-green-100 text-green-800">全社会議</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">2</div>
+              <div class="event-item bg-blue-100 text-blue-800">ABC工場打合せ</div>
+            </div>
+            <div class="calendar-cell weekend-cell h-24 p-1 border-b border-gray-200 relative">
+              <div class="text-xs font-medium">3</div>
+            </div>
+
+            <!-- 第2週 -->
+            <div class="calendar-cell weekend-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">4</div>
+            </div>
+            <div class="calendar-cell holiday-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">5</div>
+              <div class="text-xs">こどもの日</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">6</div>
+              <div class="event-item bg-purple-100 text-purple-800">DEF産業現地調査</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">7</div>
+              <div class="event-item bg-orange-100 text-orange-800">技術研修</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">8</div>
+              <div class="event-item bg-yellow-100 text-yellow-800">見積提出</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">9</div>
+              <div class="event-item bg-red-100 text-red-800">GHI商事プレゼン</div>
+            </div>
+            <div class="calendar-cell weekend-cell h-24 p-1 border-b border-gray-200 relative">
+              <div class="text-xs font-medium">10</div>
+            </div>
+
+            <!-- 第3週 -->
+            <div class="calendar-cell weekend-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">11</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">12</div>
+              <div class="event-item bg-indigo-100 text-indigo-800">部門長会議</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">13</div>
+              <div class="event-item bg-green-100 text-green-800">JKL工場点検</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">14</div>
+              <div class="event-item bg-purple-100 text-purple-800">電力販売会議</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">15</div>
+              <div class="event-item bg-blue-100 text-blue-800">技術検討会</div>
+              <div class="milestone-marker bg-red-500"></div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">16</div>
+              <div class="event-item bg-yellow-100 text-yellow-800">MNO社訪問</div>
+            </div>
+            <div class="calendar-cell weekend-cell h-24 p-1 border-b border-gray-200 relative">
+              <div class="text-xs font-medium">17</div>
+            </div>
+
+            <!-- 第4週 -->
+            <div class="calendar-cell weekend-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">18</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">19</div>
+              <div class="event-item bg-orange-100 text-orange-800">PQR工場対応</div>
+            </div>
+            <div class="calendar-cell today-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-bold">20</div>
+              <div class="event-item bg-blue-100 text-blue-800">ABC技術打合せ</div>
+              <div class="event-item bg-green-100 text-green-800">部門長会議</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">21</div>
+              <div class="event-item bg-purple-100 text-purple-800">STU商事提案</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">22</div>
+              <div class="event-item bg-red-100 text-red-800">VWX工場検査</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">23</div>
+              <div class="event-item bg-indigo-100 text-indigo-800">技術研修</div>
+            </div>
+            <div class="calendar-cell weekend-cell h-24 p-1 border-b border-gray-200 relative">
+              <div class="text-xs font-medium">24</div>
+            </div>
+
+            <!-- 第5週 -->
+            <div class="calendar-cell weekend-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">25</div>
+              <div class="milestone-marker bg-red-500"></div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">26</div>
+              <div class="event-item bg-yellow-100 text-yellow-800">YZA社面談</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">27</div>
+              <div class="event-item bg-green-100 text-green-800">月次報告会</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">28</div>
+              <div class="event-item bg-blue-100 text-blue-800">DEF産業着工</div>
+              <div class="milestone-marker bg-blue-500"></div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">29</div>
+              <div class="event-item bg-purple-100 text-purple-800">設備検査</div>
+            </div>
+            <div class="calendar-cell h-24 p-1 border-r border-b border-gray-200 relative">
+              <div class="text-xs font-medium">30</div>
+              <div class="event-item bg-red-100 text-red-800">GHI商事契約</div>
+              <div class="milestone-marker bg-green-500"></div>
+            </div>
+            <div class="calendar-cell weekend-cell h-24 p-1 border-gray-200 relative">
+              <div class="text-xs font-medium">31</div>
+              <div class="event-item bg-orange-100 text-orange-800">月末処理</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 詳細情報パネル -->
+        <div class="bg-white rounded-lg shadow-md mt-4 p-4">
+          <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+            選択日詳細情報: 2025年5月20日 (火)
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 予定詳細 -->
+            <div>
+              <h4 class="font-semibold text-gray-700 mb-3">今日の予定</h4>
+              <div class="space-y-3">
+                <div class="flex items-start p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                  <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-handshake text-blue-600"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">ABC工場 技術打合せ</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                      省エネ設備の制御仕様詳細検討・センサー配置最適化
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                      <span><i class="fas fa-clock mr-1"></i>14:30-16:00</span>
+                      <span><i class="fas fa-map-marker-alt mr-1"></i>会議室A</span>
+                      <span><i class="fas fa-users mr-1"></i>営業・技術部門</span>
+                      <span><i class="fas fa-folder mr-1"></i>2025-ME0123</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex items-start p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                  <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-users text-green-600"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">部門長会議</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                      月次進捗報告・課題共有・次月計画確認
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                      <span><i class="fas fa-clock mr-1"></i>10:00-11:30</span>
+                      <span><i class="fas fa-map-marker-alt mr-1"></i>大会議室</span>
+                      <span><i class="fas fa-users mr-1"></i>全部門長</span>
+                      <span><i class="fas fa-repeat mr-1"></i>定例</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex items-start p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+                  <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-flag text-red-600"></i>
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">プロジェクト完了マイルストーン</div>
+                    <div class="text-sm text-gray-600 mt-1">
+                      XYZ工場省エネ設備導入プロジェクト完工
+                    </div>
+                    <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                      <span><i class="fas fa-check-circle mr-1"></i>完了予定</span>
+                      <span><i class="fas fa-building mr-1"></i>XYZ工場</span>
+                      <span><i class="fas fa-folder mr-1"></i>2024-ME0089</span>
+                      <span><i class="fas fa-star mr-1"></i>重要</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 関連情報 -->
+            <div>
+              <h4 class="font-semibold text-gray-700 mb-3">関連情報・リソース</h4>
+              <div class="space-y-4">
+                <!-- プロジェクト関連 -->
+                <div class="p-3 bg-gray-50 rounded-lg">
+                  <div class="font-medium text-gray-800 mb-2 flex items-center">
+                    <i class="fas fa-project-diagram text-blue-600 mr-2"></i>
+                    関連プロジェクト
+                  </div>
+                  <div class="space-y-1">
+                    <div class="flex justify-between items-center text-sm">
+                      <span>2025-ME0123 ABC工場</span>
+                      <span class="text-blue-600 font-medium">進行中</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                      <span>2024-ME0089 XYZ工場</span>
+                      <span class="text-green-600 font-medium">完了予定</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 参加者・リソース -->
+                <div class="p-3 bg-gray-50 rounded-lg">
+                  <div class="font-medium text-gray-800 mb-2 flex items-center">
+                    <i class="fas fa-users text-green-600 mr-2"></i>
+                    参加者・担当者
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">山田健太郎</span>
+                    <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">田中修一</span>
+                    <span class="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">佐藤一郎</span>
+                    <span class="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">鈴木花子</span>
+                  </div>
+                </div>
+                
+                <!-- 会議室・設備 -->
+                <div class="p-3 bg-gray-50 rounded-lg">
+                  <div class="font-medium text-gray-800 mb-2 flex items-center">
+                    <i class="fas fa-door-open text-purple-600 mr-2"></i>
+                    予約リソース
+                  </div>
+                  <div class="space-y-1 text-sm">
+                    <div class="flex justify-between items-center">
+                      <span>会議室A</span>
+                      <span class="text-red-600">使用中</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span>大会議室</span>
+                      <span class="text-yellow-600">予約済</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                      <span>プロジェクター</span>
+                      <span class="text-green-600">利用可</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 関連ファイル -->
+                <div class="p-3 bg-gray-50 rounded-lg">
+                  <div class="font-medium text-gray-800 mb-2 flex items-center">
+                    <i class="fas fa-paperclip text-orange-600 mr-2"></i>
+                    関連ファイル
+                  </div>
+                  <div class="space-y-1">
+                    <a href="#" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                      <i class="fas fa-file-pdf mr-1"></i>技術仕様書_v2.1.pdf
+                    </a>
+                    <a href="#" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                      <i class="fas fa-file-excel mr-1"></i>進捗管理表.xlsx
+                    </a>
+                    <a href="#" class="block text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                      <i class="fas fa-file-powerpoint mr-1"></i>月次報告資料.pptx
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-200">
+            <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+              <i class="fas fa-edit mr-1"></i>予定編集
+            </button>
+            <button class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+              <i class="fas fa-plus mr-1"></i>予定追加
+            </button>
+            <button class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm">
+              <i class="fas fa-share mr-1"></i>共有
+            </button>
+            <button class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm">
+              <i class="fas fa-bell mr-1"></i>通知設定
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 部門間調整・リソース管理 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      <!-- 部門間調整状況 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-exchange-alt text-indigo-600 mr-2"></i>
+          部門間調整状況
+        </h4>
+        
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <div>
+              <div class="font-medium text-sm">営業 ↔ 技術部門</div>
+              <div class="text-xs text-gray-500">ABC工場案件の技術仕様調整</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-blue-600 font-medium">調整中</div>
+              <div class="text-xs text-gray-500">5/20 14:30</div>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+            <div>
+              <div class="font-medium text-sm">技術 ↔ カスタマー</div>
+              <div class="text-xs text-gray-500">工事完了後の引継ぎ準備</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-green-600 font-medium">完了</div>
+              <div class="text-xs text-gray-500">5/19 16:00</div>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+            <div>
+              <div class="font-medium text-sm">営業 ↔ 電力販売</div>
+              <div class="text-xs text-gray-500">顧客への複合提案検討</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-yellow-600 font-medium">要調整</div>
+              <div class="text-xs text-gray-500">5/21 予定</div>
+            </div>
+          </div>
+          
+          <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+            <div>
+              <div class="font-medium text-sm">全部門</div>
+              <div class="text-xs text-gray-500">月次進捗共有・課題検討</div>
+            </div>
+            <div class="text-right">
+              <div class="text-xs text-purple-600 font-medium">定例</div>
+              <div class="text-xs text-gray-500">毎月20日</div>
+            </div>
+          </div>
+        </div>
+        
+        <button class="w-full mt-4 px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+          <i class="fas fa-calendar-plus mr-1"></i>調整会議設定
+        </button>
+      </div>
+      
+      <!-- 週間リソース予測 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-line text-green-600 mr-2"></i>
+          週間リソース予測
+        </h4>
+        
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="font-medium">営業部門</span>
+              <span class="text-gray-600">今週平均: 75%</span>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center text-xs">
+                <span class="w-12">月</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-3/4 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">75%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">火</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-4/5 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">80%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">水</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-3/5 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">60%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">木</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-full h-2 bg-red-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">95%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">金</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-2/3 h-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">65%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between text-sm mb-2">
+              <span class="font-medium">技術部門</span>
+              <span class="text-gray-600">今週平均: 88%</span>
+            </div>
+            <div class="space-y-1">
+              <div class="flex items-center text-xs">
+                <span class="w-12">月</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-full h-2 bg-red-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">95%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">火</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-full h-2 bg-red-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">90%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">水</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-4/5 h-2 bg-yellow-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">85%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">木</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-4/5 h-2 bg-yellow-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">85%</span>
+              </div>
+              <div class="flex items-center text-xs">
+                <span class="w-12">金</span>
+                <div class="flex-1 mx-2 bg-gray-200 rounded-full h-2">
+                  <div class="w-4/5 h-2 bg-yellow-500 rounded-full"></div>
+                </div>
+                <span class="w-8 text-right">80%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="p-3 bg-orange-50 rounded border-l-4 border-orange-400">
+            <div class="flex items-center">
+              <i class="fas fa-exclamation-triangle text-orange-600 mr-2"></i>
+              <div class="text-sm">
+                <div class="font-medium">リソース過負荷警告</div>
+                <div class="text-xs text-gray-600">技術部門: 木曜日95%稼働予定</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 同期・連携状況 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+      <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-sync text-blue-600 mr-2"></i>
+        システム連携・同期状況
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-medium text-sm">営業案件管理</div>
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+          <div class="text-xs text-gray-600">
+            <div>最終同期: 2025/05/20 14:35</div>
+            <div>プロジェクトマイルストーン連携</div>
+          </div>
+        </div>
+        
+        <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-medium text-sm">活動履歴管理</div>
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+          <div class="text-xs text-gray-600">
+            <div>最終同期: 2025/05/20 14:33</div>
+            <div>リアルタイム活動連携</div>
+          </div>
+        </div>
+        
+        <div class="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+          <div class="flex items-center justify-between mb-2">
+            <div class="font-medium text-sm">統合ファイル管理</div>
+            <i class="fas fa-check-circle text-green-600"></i>
+          </div>
+          <div class="text-xs text-gray-600">
+            <div>最終同期: 2025/05/20 14:30</div>
+            <div>ドキュメント関連付け</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="flex justify-center mt-4">
+        <button class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+          <i class="fas fa-sync-alt mr-2"></i>手動同期実行
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- フローティング新規作成ボタン -->
+  <div class="fixed bottom-6 right-6">
+    <button class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl transition-all duration-300 hover:scale-110">
+      <i class="fas fa-calendar-plus"></i>
+    </button>
+  </div>
+
+  <!-- 新規予定登録モーダル（非表示） -->
+  <div id="eventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-bold">新規予定登録</h3>
+        <button class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <form class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">予定種別</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+              <option>顧客訪問・打合せ</option>
+              <option>社内会議</option>
+              <option>技術対応</option>
+              <option>プロジェクトマイルストーン</option>
+              <option>研修・セミナー</option>
+              <option>休暇・出張</option>
+              <option>その他</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">関連プロジェクト</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+              <option>なし</option>
+              <option>2025-ME0123 ABC工場省エネ設備</option>
+              <option>2025-EL0124 DEF産業電気設備</option>
+              <option>2025-AU0125 GHI商事制御システム</option>
+            </select>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">予定タイトル</label>
+          <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="予定のタイトルを入力">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">詳細・目的</label>
+          <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="3" placeholder="詳細内容や目的を入力"></textarea>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">開始日時</label>
+            <input type="datetime-local" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">終了日時</label>
+            <input type="datetime-local" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">場所・会議室</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded-md">
+              <option>指定なし</option>
+              <option>会議室A</option>
+              <option>会議室B</option>
+              <option>大会議室</option>
+              <option>顧客先</option>
+              <option>現場</option>
+              <option>オンライン</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">参加部門</label>
+            <select multiple class="w-full px-3 py-2 border border-gray-300 rounded-md">
+              <option>営業部門</option>
+              <option>技術部門</option>
+              <option>カスタマー部門</option>
+              <option>電力販売部門</option>
+              <option>管理部門</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="space-y-2">
+          <label class="flex items-center">
+            <input type="checkbox" class="mr-2">
+            <span class="text-sm">マイルストーン設定</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" class="mr-2">
+            <span class="text-sm">リマインダー通知</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" class="mr-2">
+            <span class="text-sm">全社共有</span>
+          </label>
+          <label class="flex items-center">
+            <input type="checkbox" class="mr-2">
+            <span class="text-sm">繰り返し予定</span>
+          </label>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-4">
+          <button type="button" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+            キャンセル
+          </button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+            登録
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // カレンダーセルのクリック処理
+      const calendarCells = document.querySelectorAll('.calendar-cell');
+      calendarCells.forEach(cell => {
+        cell.addEventListener('click', function() {
+          // 以前の選択を解除
+          calendarCells.forEach(c => c.classList.remove('ring-2', 'ring-indigo-500'));
+          
+          // 現在のセルを選択
+          this.classList.add('ring-2', 'ring-indigo-500');
+          
+          // 詳細情報を更新（シミュレーション）
+          const day = this.querySelector('div').textContent;
+          updateDetailPanel(day);
+        });
+      });
+
+      // フィルターバッジの切り替え
+      const filterBadges = document.querySelectorAll('.filter-badge');
+      filterBadges.forEach(badge => {
+        badge.addEventListener('click', function() {
+          this.classList.toggle('opacity-50');
+          
+          // フィルター適用のシミュレーション
+          const filterName = this.textContent.trim();
+          showNotification(`フィルター "${filterName}" を切り替えました`, 'info');
+        });
+      });
+
+      // イベント項目のホバー効果
+      const eventItems = document.querySelectorAll('.event-item');
+      eventItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+          this.style.transform = 'scale(1.02)';
+          this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+          this.style.transform = '';
+          this.style.boxShadow = '';
+        });
+
+        item.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const eventName = this.textContent;
+          showEventDetail(eventName);
+        });
+      });
+
+      // フローティングボタンとモーダル
+      const floatingButton = document.querySelector('.fixed.bottom-6.right-6 button');
+      const modal = document.getElementById('eventModal');
+      const closeButton = modal.querySelector('.fa-times').parentElement;
+      const cancelButton = modal.querySelector('button[type="button"]');
+
+      floatingButton.addEventListener('click', function() {
+        modal.classList.remove('hidden');
+      });
+
+      [closeButton, cancelButton].forEach(button => {
+        button.addEventListener('click', function() {
+          modal.classList.add('hidden');
+        });
+      });
+
+      // モーダル外クリックで閉じる
+      modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+          this.classList.add('hidden');
+        }
+      });
+
+      // フォーム送信のシミュレーション
+      const form = modal.querySelector('form');
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        showNotification('予定が登録されました', 'success');
+        modal.classList.add('hidden');
+        form.reset();
+      });
+
+      // 月移動ボタン
+      const prevButton = document.querySelector('.fa-chevron-left').parentElement;
+      const nextButton = document.querySelector('.fa-chevron-right').parentElement;
+      const monthTitle = document.querySelector('h2');
+
+      prevButton.addEventListener('click', function() {
+        showNotification('前月に移動しました', 'info');
+        // 実際の実装では月データを更新
+      });
+
+      nextButton.addEventListener('click', function() {
+        showNotification('次月に移動しました', 'info');
+        // 実際の実装では月データを更新
+      });
+
+      // 今日ボタン
+      const todayButton = document.querySelector('button');
+      if (todayButton && todayButton.textContent.includes('今日')) {
+        todayButton.addEventListener('click', function() {
+          showNotification('今日の日付に移動しました', 'info');
+          
+          // 今日のセルをハイライト
+          calendarCells.forEach(cell => {
+            cell.classList.remove('ring-2', 'ring-indigo-500');
+            if (cell.classList.contains('today-cell')) {
+              cell.classList.add('ring-2', 'ring-indigo-500');
+            }
+          });
+        });
+      }
+
+      // 表示切替ボタン
+      const viewButtons = document.querySelectorAll('.bg-gray-100 button');
+      viewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          // 全ボタンの選択状態をリセット
+          viewButtons.forEach(btn => {
+            btn.classList.remove('bg-white', 'shadow-sm');
+            btn.classList.add('text-gray-600');
+          });
+          
+          // クリックされたボタンを選択状態に
+          this.classList.add('bg-white', 'shadow-sm');
+          this.classList.remove('text-gray-600');
+          
+          const viewType = this.textContent.trim();
+          showNotification(`${viewType}表示に切り替えました`, 'info');
+        });
+      });
+
+      // 会議室予約ボタン
+      const roomBookingButtons = document.querySelectorAll('button');
+      roomBookingButtons.forEach(button => {
+        if (button.textContent.includes('会議室予約')) {
+          button.addEventListener('click', function() {
+            showNotification('会議室予約画面を開いています...', 'info');
+          });
+        }
+      });
+
+      // リソース確認ボタン
+      const resourceButtons = document.querySelectorAll('button');
+      resourceButtons.forEach(button => {
+        if (button.textContent.includes('リソース確認')) {
+          button.addEventListener('click', function() {
+            showNotification('リソース管理画面を開いています...', 'info');
+          });
+        }
+      });
+
+      // 同期ボタン
+      const syncButtons = document.querySelectorAll('button');
+      syncButtons.forEach(button => {
+        if (button.textContent.includes('同期')) {
+          button.addEventListener('click', function() {
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>同期中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              this.innerHTML = '<i class="fas fa-sync mr-2"></i>同期';
+              this.disabled = false;
+              showNotification('システム同期が完了しました', 'success');
+              
+              // 同期時刻を更新
+              const syncTimes = document.querySelectorAll('.text-xs.text-gray-600');
+              syncTimes.forEach(time => {
+                if (time.textContent.includes('最終同期:')) {
+                  const now = new Date();
+                  const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                  time.textContent = `最終同期: 2025/05/20 ${timeString}`;
+                }
+              });
+            }, 2000);
+          });
+        }
+      });
+
+      // 調整会議設定ボタン
+      const meetingButtons = document.querySelectorAll('button');
+      meetingButtons.forEach(button => {
+        if (button.textContent.includes('調整会議設定')) {
+          button.addEventListener('click', function() {
+            showNotification('部門間調整会議の設定画面を開いています...', 'info');
+          });
+        }
+      });
+
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+          this.style.boxShadow = '0 8px 25px -8px rgba(0, 0, 0, 0.15)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = '';
+          this.style.boxShadow = '';
+        });
+      });
+
+      // マイルストーンマーカーのクリック処理
+      const milestoneMarkers = document.querySelectorAll('.milestone-marker');
+      milestoneMarkers.forEach(marker => {
+        marker.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const color = this.classList.contains('bg-red-500') ? '重要' : 
+                       this.classList.contains('bg-blue-500') ? '開始' : '完了';
+          showNotification(`${color}マイルストーンの詳細を表示します`, 'info');
+        });
+      });
+    });
+
+    // 詳細パネル更新関数
+    function updateDetailPanel(day) {
+      // 実際の実装では選択された日付の予定を取得して表示
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `<i class="fas fa-calendar-day mr-2"></i>${day}日の詳細を表示しました`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 2000);
+    }
+
+    // イベント詳細表示関数
+    function showEventDetail(eventName) {
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-indigo-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `<i class="fas fa-info-circle mr-2"></i>"${eventName}" の詳細を表示します`;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 3000);
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    // ページ読み込み時の初期化
+    window.addEventListener('load', function() {
+      // 今日のセルを初期選択状態に
+      const todayCell = document.querySelector('.today-cell');
+      if (todayCell) {
+        todayCell.classList.add('ring-2', 'ring-indigo-500');
+      }
+
+      // プログレッシブロード風のアニメーション
+      const elements = document.querySelectorAll('.card-hover, .bg-white');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 50);
+      });
+      
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('全社カレンダーシステムへようこそ', 'success');
+      }, 1000);
+
+      // リアルタイム時刻更新（シミュレーション）
+      setInterval(() => {
+        const now = new Date();
+        const timeElements = document.querySelectorAll('.text-xs');
+        timeElements.forEach(el => {
+          if (el.textContent.includes('最終同期:') && Math.random() < 0.1) {
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            el.textContent = `最終同期: 2025/05/20 ${timeString}`;
+          }
+        });
+      }, 30000); // 30秒毎に更新チェック
+    });
+  </script>
+</body>
+</html>
