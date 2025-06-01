@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>システム利用状況モニター</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .kpi-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 1.5rem;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: rotate(45deg);
+      transition: all 0.3s ease;
+    }
+    .kpi-card:hover::before {
+      right: -30%;
+    }
+    .usage-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: #e5e7eb;
+      overflow: hidden;
+    }
+    .usage-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s ease-in-out;
+    }
+    .trend-up {
+      color: #10b981;
+    }
+    .trend-down {
+      color: #ef4444;
+    }
+    .trend-stable {
+      color: #6b7280;
+    }
+    .alert-pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .gradient-text {
+      background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+    .user-activity-item {
+      transition: all 0.2s ease;
+    }
+    .user-activity-item:hover {
+      background-color: #f8fafc;
+      border-left: 4px solid #3b82f6;
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+    .chart-container-small {
+      position: relative;
+      height: 200px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-indigo-800 to-purple-900 text-white shadow-lg">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fas fa-chart-line text-2xl mr-3"></i>
+          <div>
+            <h1 class="text-xl font-bold">システム利用状況モニター</h1>
+            <p class="text-indigo-200 text-sm">System Usage Analytics Dashboard</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="text-sm">
+            <div class="flex items-center space-x-2">
+              <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span>リアルタイム監視中</span>
+            </div>
+            <div class="text-xs text-indigo-200">最終更新: 2025/05/20 15:30</div>
+          </div>
+          <div class="relative">
+            <button class="p-2 hover:bg-indigo-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-lg"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-right">
+              <div class="font-semibold text-sm">システム管理者</div>
+              <div class="text-xs text-indigo-200">IT部門</div>
+            </div>
+            <div class="w-8 h-8 bg-white text-indigo-800 rounded-full flex items-center justify-center font-bold text-sm">
+              SA
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>
+          ホーム
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">
+          システム管理・監視
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-800 font-semibold">利用状況モニター</span>
+      </div>
+      
+      <!-- 関連画面への素早いアクセス -->
+      <div class="mt-3 pt-3 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-gray-500 font-medium">関連画面:</span>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-users-cog mr-1"></i>ユーザー管理
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-shield-alt mr-1"></i>セキュリティ監視
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-cogs mr-1"></i>システム設定
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 全体KPIサマリー -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+      <div class="kpi-card card-hover">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-users text-2xl opacity-80"></i>
+            <span class="text-sm opacity-80">月間</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">2,847</div>
+          <div class="text-sm opacity-90">アクティブユーザー</div>
+          <div class="flex items-center mt-2">
+            <i class="fas fa-arrow-up text-green-300 mr-1"></i>
+            <span class="text-xs">+12.5% 前月比</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="kpi-card card-hover" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-mouse-pointer text-2xl opacity-80"></i>
+            <span class="text-sm opacity-80">日平均</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">89.3%</div>
+          <div class="text-sm opacity-90">機能利用率</div>
+          <div class="flex items-center mt-2">
+            <i class="fas fa-arrow-up text-green-300 mr-1"></i>
+            <span class="text-xs">+3.2% 前週比</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="kpi-card card-hover" style="background: linear-gradient(135deg, #ff7b7b 0%, #a8e6cf 100%);">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-clock text-2xl opacity-80"></i>
+            <span class="text-sm opacity-80">平均</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">4.2h</div>
+          <div class="text-sm opacity-90">日次利用時間</div>
+          <div class="flex items-center mt-2">
+            <i class="fas fa-arrow-up text-green-300 mr-1"></i>
+            <span class="text-xs">+0.8h 前月比</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="kpi-card card-hover" style="background: linear-gradient(135deg, #ffeaa7 0%, #74b9ff 100%);">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-exclamation-triangle text-2xl opacity-80"></i>
+            <span class="text-sm opacity-80">今月</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">3</div>
+          <div class="text-sm opacity-90">未活用機能</div>
+          <div class="flex items-center mt-2">
+            <i class="fas fa-arrow-down text-green-300 mr-1"></i>
+            <span class="text-xs">-2件 前月比</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 機能別利用率とアラートエリア -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- 機能別利用率KPI -->
+      <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800 gradient-text">機能別利用率KPI</h3>
+          <div class="flex items-center space-x-2">
+            <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+              <option>過去7日間</option>
+              <option>過去30日間</option>
+              <option>過去90日間</option>
+            </select>
+            <button class="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+              <i class="fas fa-download mr-1"></i>レポート
+            </button>
+          </div>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- 営業案件管理 -->
+          <div class="border-l-4 border-blue-500 pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h4 class="font-medium text-gray-800">営業案件管理システム</h4>
+                <span class="text-sm text-gray-600">営業部門 • 50ライセンス</span>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-blue-600">94.2%</div>
+                <div class="text-xs text-green-600 flex items-center">
+                  <i class="fas fa-arrow-up mr-1"></i>+2.1%
+                </div>
+              </div>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-blue-500 to-blue-600" style="width: 94.2%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+              日平均利用時間: 3.8h • 週間アクティブユーザー: 47/50
+            </div>
+          </div>
+          
+          <!-- 統合ファイル管理 -->
+          <div class="border-l-4 border-green-500 pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h4 class="font-medium text-gray-800">統合ファイル管理システム</h4>
+                <span class="text-sm text-gray-600">全部門 • 100ライセンス</span>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-green-600">91.8%</div>
+                <div class="text-xs text-green-600 flex items-center">
+                  <i class="fas fa-arrow-up mr-1"></i>+1.5%
+                </div>
+              </div>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 91.8%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+              日平均利用時間: 2.1h • 週間アクティブユーザー: 92/100
+            </div>
+          </div>
+          
+          <!-- 活動履歴管理 -->
+          <div class="border-l-4 border-purple-500 pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h4 class="font-medium text-gray-800">活動履歴管理システム</h4>
+                <span class="text-sm text-gray-600">営業・技術・カスタマー • 80ライセンス</span>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-purple-600">87.3%</div>
+                <div class="text-xs text-green-600 flex items-center">
+                  <i class="fas fa-arrow-up mr-1"></i>+4.2%
+                </div>
+              </div>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-purple-500 to-purple-600" style="width: 87.3%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+              日平均利用時間: 1.6h • 週間アクティブユーザー: 70/80
+            </div>
+          </div>
+          
+          <!-- 統合承認ダッシュボード -->
+          <div class="border-l-4 border-orange-500 pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h4 class="font-medium text-gray-800">統合承認ダッシュボード</h4>
+                <span class="text-sm text-gray-600">管理職・承認者 • 25ライセンス</span>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-orange-600">78.4%</div>
+                <div class="text-xs text-yellow-600 flex items-center">
+                  <i class="fas fa-minus mr-1"></i>-1.2%
+                </div>
+              </div>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-orange-500 to-orange-600" style="width: 78.4%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+              日平均利用時間: 1.1h • 週間アクティブユーザー: 20/25
+            </div>
+          </div>
+          
+          <!-- 全社検索 -->
+          <div class="border-l-4 border-teal-500 pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <h4 class="font-medium text-gray-800">全社検索システム</h4>
+                <span class="text-sm text-gray-600">全部門 • 100ライセンス</span>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-teal-600">65.7%</div>
+                <div class="text-xs text-red-600 flex items-center">
+                  <i class="fas fa-arrow-down mr-1"></i>-3.8%
+                </div>
+              </div>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-teal-500 to-teal-600" style="width: 65.7%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-500">
+              日平均利用時間: 0.8h • 週間アクティブユーザー: 66/100
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 未活用機能アラート -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-exclamation-triangle text-yellow-500 mr-2"></i>
+          未活用機能アラート
+        </h3>
+        
+        <div class="space-y-4">
+          <div class="p-3 bg-red-50 border border-red-200 rounded-lg alert-pulse">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-medium text-red-800">全社検索システム</h4>
+              <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">要対応</span>
+            </div>
+            <div class="text-sm text-red-700 mb-2">
+              利用率が目標値（80%）を大幅に下回っています
+            </div>
+            <div class="text-xs text-red-600">
+              • 営業部門: 52% (-28%)
+              <br>• 技術部門: 71% (-9%)
+              <br>• 推奨アクション: 操作研修実施
+            </div>
+          </div>
+          
+          <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-medium text-yellow-800">承認ダッシュボード</h4>
+              <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">注意</span>
+            </div>
+            <div class="text-sm text-yellow-700 mb-2">
+              管理職の利用率が低下傾向
+            </div>
+            <div class="text-xs text-yellow-600">
+              • 先月比: -1.2%
+              <br>• 未利用者: 5名
+              <br>• 推奨アクション: 個別フォロー
+            </div>
+          </div>
+          
+          <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-medium text-blue-800">改善推奨機能</h4>
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">提案</span>
+            </div>
+            <div class="text-sm text-blue-700 mb-2">
+              AI機能の活用率向上
+            </div>
+            <div class="text-xs text-blue-600">
+              • Copilot機能: 34%利用
+              <br>• 自動化機能: 28%利用
+              <br>• 推奨アクション: ユースケース紹介
+            </div>
+          </div>
+        </div>
+        
+        <button class="w-full mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">
+          <i class="fas fa-cogs mr-2"></i>改善アクション実行
+        </button>
+      </div>
+    </div>
+
+    <!-- 部門別システム活用度とユーザー別統計 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- 部門別システム活用度 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-building text-blue-600 mr-2"></i>
+          部門別システム活用度
+        </h3>
+        
+        <div class="chart-container">
+          <canvas id="departmentChart"></canvas>
+        </div>
+        
+        <div class="mt-4 grid grid-cols-2 gap-4 text-sm">
+          <div class="text-center p-3 bg-blue-50 rounded">
+            <div class="font-bold text-blue-600">営業部門</div>
+            <div class="text-2xl font-bold text-blue-800">92.5%</div>
+            <div class="text-xs text-gray-600">月間平均</div>
+          </div>
+          <div class="text-center p-3 bg-green-50 rounded">
+            <div class="font-bold text-green-600">技術部門</div>
+            <div class="text-2xl font-bold text-green-800">89.1%</div>
+            <div class="text-xs text-gray-600">月間平均</div>
+          </div>
+          <div class="text-center p-3 bg-purple-50 rounded">
+            <div class="font-bold text-purple-600">カスタマー部門</div>
+            <div class="text-2xl font-bold text-purple-800">85.7%</div>
+            <div class="text-xs text-gray-600">月間平均</div>
+          </div>
+          <div class="text-center p-3 bg-orange-50 rounded">
+            <div class="font-bold text-orange-600">管理部門</div>
+            <div class="text-2xl font-bold text-orange-800">78.3%</div>
+            <div class="text-xs text-gray-600">月間平均</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ユーザー別アクセス統計 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-users text-green-600 mr-2"></i>
+          ユーザー別アクセス統計
+        </h3>
+        
+        <div class="space-y-3 max-h-80 overflow-y-auto">
+          <div class="user-activity-item p-3 rounded-lg border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-blue-600 font-bold text-sm">YK</span>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-800">山田健太郎</div>
+                  <div class="text-sm text-gray-600">営業部長</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-blue-600">98.5%</div>
+                <div class="text-xs text-gray-500">52.3h/週</div>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+              <span><i class="fas fa-mouse-pointer mr-1"></i>756回</span>
+              <span><i class="fas fa-clock mr-1"></i>5.9h/日</span>
+              <span><i class="fas fa-chart-line mr-1 text-green-500"></i>+6%</span>
+            </div>
+          </div>
+          
+          <div class="user-activity-item p-3 rounded-lg border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-yellow-600 font-bold text-sm">TK</span>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-800">高橋良子</div>
+                  <div class="text-sm text-gray-600">総務部</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-yellow-600">68.9%</div>
+                <div class="text-xs text-gray-500">32.1h/週</div>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+              <span><i class="fas fa-mouse-pointer mr-1"></i>423回</span>
+              <span><i class="fas fa-clock mr-1"></i>4.6h/日</span>
+              <span><i class="fas fa-chart-line mr-1 text-red-500"></i>-3%</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-600">上位5名表示中</span>
+            <button class="text-blue-600 hover:text-blue-800 font-medium">
+              全ユーザー表示
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI機能利用率とトレンド分析 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- AI機能利用率トラッキング -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-robot text-purple-600 mr-2"></i>
+          AI機能利用率トラッキング
+        </h3>
+        
+        <div class="feature-grid">
+          <div class="p-4 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center">
+                <i class="fas fa-brain text-purple-600 mr-2"></i>
+                <span class="font-medium">Copilotアシスタント</span>
+              </div>
+              <span class="text-lg font-bold text-purple-600">34.2%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-purple-500 to-purple-600" style="width: 34.2%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-600">
+              週間利用: 1,247回 • トレンド: <span class="text-green-600">+18%</span>
+            </div>
+          </div>
+          
+          <div class="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center">
+                <i class="fas fa-magic text-blue-600 mr-2"></i>
+                <span class="font-medium">自動化フロー</span>
+              </div>
+              <span class="text-lg font-bold text-blue-600">28.7%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-blue-500 to-blue-600" style="width: 28.7%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-600">
+              週間実行: 892回 • トレンド: <span class="text-green-600">+24%</span>
+            </div>
+          </div>
+          
+          <div class="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center">
+                <i class="fas fa-search-plus text-green-600 mr-2"></i>
+                <span class="font-medium">高度検索</span>
+              </div>
+              <span class="text-lg font-bold text-green-600">45.8%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 45.8%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-600">
+              週間利用: 2,134回 • トレンド: <span class="text-green-600">+12%</span>
+            </div>
+          </div>
+          
+          <div class="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-lg border border-orange-200">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center">
+                <i class="fas fa-chart-line text-orange-600 mr-2"></i>
+                <span class="font-medium">予測分析</span>
+              </div>
+              <span class="text-lg font-bold text-orange-600">19.3%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-orange-500 to-orange-600" style="width: 19.3%"></div>
+            </div>
+            <div class="mt-2 text-xs text-gray-600">
+              週間利用: 367回 • トレンド: <span class="text-red-600">-5%</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div class="flex items-center text-yellow-800">
+            <i class="fas fa-lightbulb mr-2"></i>
+            <span class="font-medium">改善提案</span>
+          </div>
+          <div class="mt-2 text-sm text-yellow-700">
+            AI機能の利用率向上のため、実践的なユースケース紹介セミナーの開催を推奨します。
+          </div>
+        </div>
+      </div>
+      
+      <!-- システム利用トレンド分析 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-area text-blue-600 mr-2"></i>
+          システム利用トレンド分析
+        </h3>
+        
+        <div class="chart-container">
+          <canvas id="trendChart"></canvas>
+        </div>
+        
+        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+          <div class="p-3 bg-blue-50 rounded">
+            <div class="text-xs text-gray-600">今週の成長率</div>
+            <div class="text-lg font-bold text-blue-600">+12.5%</div>
+            <div class="text-xs text-green-600">
+              <i class="fas fa-arrow-up mr-1"></i>前週比
+            </div>
+          </div>
+          <div class="p-3 bg-green-50 rounded">
+            <div class="text-xs text-gray-600">月間ピーク</div>
+            <div class="text-lg font-bold text-green-600">94.7%</div>
+            <div class="text-xs text-gray-600">5/18達成</div>
+          </div>
+          <div class="p-3 bg-purple-50 rounded">
+            <div class="text-xs text-gray-600">予測利用率</div>
+            <div class="text-lg font-bold text-purple-600">96.2%</div>
+            <div class="text-xs text-gray-600">来月末</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- リアルタイム活動とシステムパフォーマンス -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- リアルタイム活動モニター -->
+      <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-pulse text-red-600 mr-2"></i>
+          リアルタイム活動モニター
+        </h3>
+        
+        <div class="space-y-3 max-h-64 overflow-y-auto">
+          <div class="flex items-center p-3 bg-green-50 rounded-lg border-l-4 border-green-500">
+            <div class="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse"></div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">山田健太郎が営業案件管理にアクセス</div>
+              <div class="text-xs text-gray-600">2025-ME0123 ABC工場案件を編集中 • 15:29</div>
+            </div>
+            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">進行中</span>
+          </div>
+          
+          <div class="flex items-center p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+            <div class="w-3 h-3 bg-blue-500 rounded-full mr-3 animate-pulse"></div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">田中修一がファイル管理でCAD図面をアップロード</div>
+              <div class="text-xs text-gray-600">設計資料/電気設備/単線結線図_Rev3.dwg • 15:28</div>
+            </div>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">完了</span>
+          </div>
+          
+          <div class="flex items-center p-3 bg-purple-50 rounded-lg border-l-4 border-purple-500">
+            <div class="w-3 h-3 bg-purple-500 rounded-full mr-3 animate-pulse"></div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">佐藤浩二が活動履歴に緊急対応を記録</div>
+              <div class="text-xs text-gray-600">JKL工場空調システム緊急対応 • 15:27</div>
+            </div>
+            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded">緊急</span>
+          </div>
+          
+          <div class="flex items-center p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
+            <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3 animate-pulse"></div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">鈴木花子が見積承認申請を送信</div>
+              <div class="text-xs text-gray-600">GHI商事制御システム更新見積 • 15:26</div>
+            </div>
+            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">承認待ち</span>
+          </div>
+          
+          <div class="flex items-center p-3 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
+            <div class="w-3 h-3 bg-indigo-500 rounded-full mr-3 animate-pulse"></div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">全社検索で「ABC工場」を検索</div>
+              <div class="text-xs text-gray-600">389件の結果を表示 • 検索時間: 0.12秒 • 15:25</div>
+            </div>
+            <span class="text-xs bg-indigo-100 text-indigo-800 px-2 py-1 rounded">検索</span>
+          </div>
+          
+          <div class="flex items-center p-3 bg-gray-50 rounded-lg border-l-4 border-gray-500">
+            <div class="w-3 h-3 bg-gray-500 rounded-full mr-3"></div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">システム自動バックアップが完了</div>
+              <div class="text-xs text-gray-600">全データベース • 容量: 2.3GB • 15:00</div>
+            </div>
+            <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded">システム</span>
+          </div>
+        </div>
+        
+        <div class="mt-4 flex items-center justify-between text-sm">
+          <span class="text-gray-600">過去5分間の活動</span>
+          <div class="flex items-center space-x-4">
+            <span class="flex items-center text-green-600">
+              <div class="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+              アクティブ: 24名
+            </span>
+            <button class="text-blue-600 hover:text-blue-800 font-medium">
+              全活動ログ表示
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- システムパフォーマンス -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-tachometer-alt text-orange-600 mr-2"></i>
+          システムパフォーマンス
+        </h3>
+        
+        <div class="space-y-4">
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span>CPU使用率</span>
+              <span class="font-medium text-green-600">34.2%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-green-500 to-green-600" style="width: 34.2%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span>メモリ使用率</span>
+              <span class="font-medium text-blue-600">67.8%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-blue-500 to-blue-600" style="width: 67.8%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span>ストレージ使用率</span>
+              <span class="font-medium text-orange-600">82.1%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-orange-500 to-orange-600" style="width: 82.1%"></div>
+            </div>
+          </div>
+          
+          <div>
+            <div class="flex justify-between text-sm mb-1">
+              <span>ネットワーク帯域</span>
+              <span class="font-medium text-purple-600">45.6%</span>
+            </div>
+            <div class="usage-bar">
+              <div class="usage-fill bg-gradient-to-r from-purple-500 to-purple-600" style="width: 45.6%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-6 space-y-3">
+          <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+            <span class="text-sm font-medium">応答時間</span>
+            <span class="text-green-600 font-bold">0.12秒</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
+            <span class="text-sm font-medium">稼働率</span>
+            <span class="text-blue-600 font-bold">99.97%</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-purple-50 rounded">
+            <span class="text-sm font-medium">同時接続数</span>
+            <span class="text-purple-600 font-bold">147名</span>
+          </div>
+        </div>
+        
+        <button class="w-full mt-4 px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 transition-colors">
+          <i class="fas fa-chart-line mr-2"></i>詳細分析
+        </button>
+      </div>
+    </div>
+
+    <!-- 改善提案とアクションアイテム -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>
+        改善提案とアクションアイテム
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- 高優先度改善提案 -->
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-red-800">高優先度</h4>
+            <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">緊急</span>
+          </div>
+          <div class="space-y-3">
+            <div class="p-3 bg-white rounded border border-red-100">
+              <div class="font-medium text-sm">全社検索利用率改善</div>
+              <div class="text-xs text-gray-600 mt-1">目標値を15%下回り</div>
+              <div class="mt-2">
+                <button class="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
+                  研修計画作成
+                </button>
+              </div>
+            </div>
+            <div class="p-3 bg-white rounded border border-red-100">
+              <div class="font-medium text-sm">ストレージ容量対策</div>
+              <div class="text-xs text-gray-600 mt-1">使用率82%で警告</div>
+              <div class="mt-2">
+                <button class="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
+                  拡張検討
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 中優先度改善提案 -->
+        <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-yellow-800">中優先度</h4>
+            <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">重要</span>
+          </div>
+          <div class="space-y-3">
+            <div class="p-3 bg-white rounded border border-yellow-100">
+              <div class="font-medium text-sm">AI機能活用促進</div>
+              <div class="text-xs text-gray-600 mt-1">平均利用率30%台</div>
+              <div class="mt-2">
+                <button class="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700">
+                  事例紹介セミナー
+                </button>
+              </div>
+            </div>
+            <div class="p-3 bg-white rounded border border-yellow-100">
+              <div class="font-medium text-sm">管理職利用率向上</div>
+              <div class="text-xs text-gray-600 mt-1">承認機能の活用不足</div>
+              <div class="mt-2">
+                <button class="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700">
+                  個別サポート
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 低優先度改善提案 -->
+        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="font-bold text-blue-800">低優先度</h4>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">改善</span>
+          </div>
+          <div class="space-y-3">
+            <div class="p-3 bg-white rounded border border-blue-100">
+              <div class="font-medium text-sm">UI/UX最適化</div>
+              <div class="text-xs text-gray-600 mt-1">操作効率の向上</div>
+              <div class="mt-2">
+                <button class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
+                  ユーザー調査
+                </button>
+              </div>
+            </div>
+            <div class="p-3 bg-white rounded border border-blue-100">
+              <div class="font-medium text-sm">新機能開発</div>
+              <div class="text-xs text-gray-600 mt-1">追加価値の提供</div>
+              <div class="mt-2">
+                <button class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
+                  要件検討
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-6 flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div class="flex items-center">
+          <i class="fas fa-calendar-check text-indigo-600 mr-2"></i>
+          <span class="font-medium">次回レビュー予定: 2025年5月27日</span>
+        </div>
+        <div class="flex space-x-2">
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors">
+            <i class="fas fa-file-export mr-2"></i>レポート出力
+          </button>
+          <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+            <i class="fas fa-cogs mr-2"></i>アクション実行
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フローティング更新ボタン -->
+  <div class="fixed bottom-6 right-6">
+    <button id="refreshButton" class="w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg flex items-center justify-center text-xl transition-all duration-300 hover:scale-110">
+      <i class="fas fa-sync-alt"></i>
+    </button>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Chart.js - 部門別システム活用度
+      const departmentCtx = document.getElementById('departmentChart').getContext('2d');
+      const departmentChart = new Chart(departmentCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['営業部門', '技術部門', 'カスタマー部門', '管理部門'],
+          datasets: [{
+            data: [92.5, 89.1, 85.7, 78.3],
+            backgroundColor: [
+              '#3b82f6',
+              '#10b981',
+              '#8b5cf6',
+              '#f59e0b'
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                usePointStyle: true,
+                padding: 15
+              }
+            }
+          }
+        }
+      });
+
+      // Chart.js - システム利用トレンド
+      const trendCtx = document.getElementById('trendChart').getContext('2d');
+      const trendChart = new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: ['5/13', '5/14', '5/15', '5/16', '5/17', '5/18', '5/19', '5/20'],
+          datasets: [
+            {
+              label: '全体利用率',
+              data: [82.3, 84.1, 86.7, 88.2, 89.5, 94.7, 91.3, 89.3],
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              fill: true,
+              tension: 0.4
+            },
+            {
+              label: 'AI機能利用率',
+              data: [28.1, 29.5, 31.2, 32.8, 34.1, 36.4, 35.7, 34.2],
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              fill: true,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                usePointStyle: true
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // リアルタイム更新シミュレーション
+      function updateRealTimeData() {
+        // KPI数値の更新
+        const kpiElements = document.querySelectorAll('.text-3xl.font-bold');
+        kpiElements.forEach(element => {
+          if (element.textContent.includes('%')) {
+            const currentValue = parseFloat(element.textContent);
+            const newValue = currentValue + (Math.random() - 0.5) * 0.2;
+            element.textContent = newValue.toFixed(1) + '%';
+          }
+        });
+
+        // 使用率バーの更新
+        const usageBars = document.querySelectorAll('.usage-fill');
+        usageBars.forEach(bar => {
+          const currentWidth = parseFloat(bar.style.width);
+          const newWidth = Math.max(0, Math.min(100, currentWidth + (Math.random() - 0.5) * 1));
+          bar.style.width = newWidth + '%';
+        });
+
+        // システムパフォーマンスの更新
+        const perfValues = document.querySelectorAll('.text-green-600.font-bold, .text-blue-600.font-bold, .text-orange-600.font-bold, .text-purple-600.font-bold');
+        perfValues.forEach(value => {
+          if (value.textContent.includes('%')) {
+            const currentVal = parseFloat(value.textContent);
+            const newVal = Math.max(0, Math.min(100, currentVal + (Math.random() - 0.5) * 2));
+            value.textContent = newVal.toFixed(1) + '%';
+          }
+        });
+      }
+
+      // 30秒ごとにデータ更新
+      setInterval(updateRealTimeData, 30000);
+
+      // 更新ボタンのクリック処理
+      const refreshButton = document.getElementById('refreshButton');
+      refreshButton.addEventListener('click', function() {
+        // ボタンアニメーション
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        this.disabled = true;
+        
+        // データ更新シミュレーション
+        setTimeout(() => {
+          updateRealTimeData();
+          this.innerHTML = '<i class="fas fa-sync-alt"></i>';
+          this.disabled = false;
+          showNotification('データを更新しました', 'success');
+        }, 2000);
+      });
+
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // ユーザー活動アイテムのホバー効果
+      const userItems = document.querySelectorAll('.user-activity-item');
+      userItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+          this.style.backgroundColor = '#f8fafc';
+          this.style.borderLeftColor = '#3b82f6';
+        });
+        
+        item.addEventListener('mouseleave', function() {
+          this.style.backgroundColor = '';
+          this.style.borderLeftColor = 'transparent';
+        });
+      });
+
+      // アクションボタンの処理
+      const actionButtons = document.querySelectorAll('button');
+      actionButtons.forEach(button => {
+        if (button.textContent.includes('研修計画作成')) {
+          button.addEventListener('click', function() {
+            showNotification('全社検索システム研修計画を作成しています...', 'info');
+            this.textContent = '作成中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              this.textContent = '計画完了';
+              this.classList.remove('bg-red-600', 'hover:bg-red-700');
+              this.classList.add('bg-green-600', 'hover:bg-green-700');
+              showNotification('研修計画が作成されました', 'success');
+            }, 3000);
+          });
+        } else if (button.textContent.includes('拡張検討')) {
+          button.addEventListener('click', function() {
+            showNotification('ストレージ拡張の検討を開始します', 'info');
+            this.textContent = '検討中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              this.textContent = '提案作成';
+              this.classList.remove('bg-red-600', 'hover:bg-red-700');
+              this.classList.add('bg-blue-600', 'hover:bg-blue-700');
+              showNotification('拡張提案書を作成しました', 'success');
+            }, 4000);
+          });
+        } else if (button.textContent.includes('事例紹介セミナー')) {
+          button.addEventListener('click', function() {
+            showNotification('AI機能活用セミナーを企画中...', 'info');
+            this.textContent = '企画中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              this.textContent = 'セミナー予約';
+              this.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+              this.classList.add('bg-green-600', 'hover:bg-green-700');
+              showNotification('セミナーの日程が確定しました', 'success');
+            }, 2500);
+          });
+        } else if (button.textContent.includes('個別サポート')) {
+          button.addEventListener('click', function() {
+            showNotification('管理職向け個別サポートを開始します', 'info');
+            this.textContent = 'サポート中';
+            this.classList.remove('bg-yellow-600', 'hover:bg-yellow-700');
+            this.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+          });
+        } else if (button.textContent.includes('改善アクション実行')) {
+          button.addEventListener('click', function() {
+            showNotification('改善アクションプランを実行中...', 'info');
+            
+            // 未活用機能アラートの更新シミュレーション
+            setTimeout(() => {
+              const alertCards = document.querySelectorAll('.alert-pulse');
+              alertCards.forEach(card => {
+                card.classList.remove('alert-pulse');
+                card.classList.add('opacity-50');
+              });
+              showNotification('改善アクションが実行されました', 'success');
+            }, 3000);
+          });
+        } else if (button.textContent.includes('レポート出力')) {
+          button.addEventListener('click', function() {
+            showNotification('システム利用状況レポートを生成中...', 'info');
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              this.innerHTML = '<i class="fas fa-file-export mr-2"></i>レポート出力';
+              this.disabled = false;
+              showNotification('レポートのダウンロードが開始されました', 'success');
+            }, 3000);
+          });
+        } else if (button.textContent.includes('詳細分析')) {
+          button.addEventListener('click', function() {
+            showNotification('システムパフォーマンスの詳細分析画面を開いています...', 'info');
+          });
+        } else if (button.textContent.includes('全ユーザー表示')) {
+          button.addEventListener('click', function() {
+            showNotification('全ユーザーの利用状況画面に移動中...', 'info');
+          });
+        } else if (button.textContent.includes('全活動ログ表示')) {
+          button.addEventListener('click', function() {
+            showNotification('全活動ログ画面を開いています...', 'info');
+          });
+        }
+      });
+
+      // 時刻表示の更新
+      function updateTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('ja-JP', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        const timeElements = document.querySelectorAll('.text-xs.text-indigo-200');
+        timeElements.forEach(element => {
+          if (element.textContent.includes('最終更新:')) {
+            element.textContent = `最終更新: 2025/05/20 ${timeString}`;
+          }
+        });
+      }
+
+      // 1秒ごとに時刻更新
+      setInterval(updateTime, 1000);
+
+      // リアルタイム活動の追加シミュレーション
+      function addNewActivity() {
+        const activities = [
+          {
+            user: '新入社員A',
+            action: 'システムに初回ログイン',
+            detail: 'オンボーディング研修の一環',
+            color: 'green',
+            status: '新規'
+          },
+          {
+            user: '経理部B',
+            action: '月次集計レポートを作成',
+            detail: '5月度売上集計レポート.xlsx',
+            color: 'blue',
+            status: '完了'
+          },
+          {
+            user: 'システム',
+            action: '定期メンテナンスを実行',
+            detail: 'データベース最適化とキャッシュクリア',
+            color: 'gray',
+            status: 'システム'
+          }
+        ];
+        
+        const container = document.querySelector('.space-y-3.max-h-64.overflow-y-auto');
+        if (container && container.children.length >= 6) {
+          // 最古の活動を削除
+          container.removeChild(container.lastElementChild);
+        }
+        
+        // 新しい活動を追加
+        const randomActivity = activities[Math.floor(Math.random() * activities.length)];
+        const now = new Date();
+        const timeString = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        const newActivity = document.createElement('div');
+        newActivity.className = `flex items-center p-3 bg-${randomActivity.color}-50 rounded-lg border-l-4 border-${randomActivity.color}-500`;
+        newActivity.innerHTML = `
+          <div class="w-3 h-3 bg-${randomActivity.color}-500 rounded-full mr-3 animate-pulse"></div>
+          <div class="flex-1">
+            <div class="text-sm font-medium">${randomActivity.user}が${randomActivity.action}</div>
+            <div class="text-xs text-gray-600">${randomActivity.detail} • ${timeString}</div>
+          </div>
+          <span class="text-xs bg-${randomActivity.color}-100 text-${randomActivity.color}-800 px-2 py-1 rounded">${randomActivity.status}</span>
+        `;
+        
+        if (container) {
+          container.insertBefore(newActivity, container.firstChild);
+        }
+      }
+
+      // 15秒ごとに新しい活動を追加
+      setInterval(addNewActivity, 15000);
+
+      // フィルター機能のシミュレーション
+      const selectElements = document.querySelectorAll('select');
+      selectElements.forEach(select => {
+        select.addEventListener('change', function() {
+          const selectedValue = this.value;
+          showNotification(`期間を${selectedValue}に変更しました`, 'info');
+          
+          // チャートデータの更新シミュレーション
+          if (selectedValue === '過去30日間') {
+            // チャートの更新ロジック（簡略化）
+            setTimeout(() => {
+              showNotification('データが更新されました', 'success');
+            }, 1000);
+          }
+        });
+      });
+
+      // アラートカードのクリック処理
+      const alertCards = document.querySelectorAll('.alert-pulse');
+      alertCards.forEach(card => {
+        card.addEventListener('click', function() {
+          const title = this.querySelector('h4').textContent;
+          showNotification(`${title}の詳細情報を表示中...`, 'info');
+        });
+      });
+
+      // 通知表示の改善
+      let notificationQueue = [];
+      let isShowingNotification = false;
+
+      function showQueuedNotifications() {
+        if (notificationQueue.length > 0 && !isShowingNotification) {
+          const notification = notificationQueue.shift();
+          showNotification(notification.message, notification.type);
+        }
+      }
+
+      setInterval(showQueuedNotifications, 500);
+
+      // 初期化完了通知
+      setTimeout(() => {
+        showNotification('システム利用状況モニターが正常に初期化されました', 'success');
+      }, 1000);
+
+      // 自動データ収集開始の通知
+      setTimeout(() => {
+        showNotification('リアルタイム監視を開始しました', 'info');
+      }, 2000);
+    });
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    // ページ読み込み時の初期化
+    window.addEventListener('load', function() {
+      // プログレッシブロード風のアニメーション
+      const elements = document.querySelectorAll('.card-hover, .bg-white');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 50);
+      });
+    });
+  </script>
+</body>
+</html>-x-4 text-xs text-gray-500">
+              <span><i class="fas fa-mouse-pointer mr-1"></i>1,247回</span>
+              <span><i class="fas fa-clock mr-1"></i>7.4h/日</span>
+              <span><i class="fas fa-chart-line mr-1 text-green-500"></i>+15%</span>
+            </div>
+          </div>
+          
+          <div class="user-activity-item p-3 rounded-lg border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-green-600 font-bold text-sm">TS</span>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-800">田中修一</div>
+                  <div class="text-sm text-gray-600">技術部課長</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-green-600">94.2%</div>
+                <div class="text-xs text-gray-500">48.1h/週</div>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+              <span><i class="fas fa-mouse-pointer mr-1"></i>1,089回</span>
+              <span><i class="fas fa-clock mr-1"></i>6.9h/日</span>
+              <span><i class="fas fa-chart-line mr-1 text-green-500"></i>+8%</span>
+            </div>
+          </div>
+          
+          <div class="user-activity-item p-3 rounded-lg border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-purple-600 font-bold text-sm">SH</span>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-800">佐藤浩二</div>
+                  <div class="text-sm text-gray-600">カスタマー主任</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-purple-600">91.7%</div>
+                <div class="text-xs text-gray-500">44.3h/週</div>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center space-x-4 text-xs text-gray-500">
+              <span><i class="fas fa-mouse-pointer mr-1"></i>934回</span>
+              <span><i class="fas fa-clock mr-1"></i>6.3h/日</span>
+              <span><i class="fas fa-chart-line mr-1 text-green-500"></i>+12%</span>
+            </div>
+          </div>
+          
+          <div class="user-activity-item p-3 rounded-lg border border-gray-200">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                  <span class="text-orange-600 font-bold text-sm">SK</span>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-800">鈴木花子</div>
+                  <div class="text-sm text-gray-600">営業担当</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-bold text-orange-600">87.3%</div>
+                <div class="text-xs text-gray-500">41.8h/週</div>
+              </div>
+            </div>
+            <div class="mt-2 flex items-center space
