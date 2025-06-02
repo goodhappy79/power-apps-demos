@@ -1,0 +1,1426 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>技術文書承認統合システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .approval-flow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+    .approval-flow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      z-index: 1;
+    }
+    .approval-step {
+      position: relative;
+      z-index: 2;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 50%;
+      border: 3px solid #10b981;
+      min-width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .approval-step.pending {
+      border-color: #f59e0b;
+      background: #fef3c7;
+    }
+    .approval-step.completed {
+      border-color: #10b981;
+      background: #d1fae5;
+    }
+    .approval-step.current {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      animation: pulse 2s infinite;
+    }
+    .copilot-suggestion {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      color: white;
+      margin: 1rem 0;
+    }
+    .diff-viewer {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .diff-added {
+      background-color: #dcfce7;
+      color: #166534;
+      padding: 2px 4px;
+    }
+    .diff-removed {
+      background-color: #fecaca;
+      color: #dc2626;
+      text-decoration: line-through;
+      padding: 2px 4px;
+    }
+    .diff-modified {
+      background-color: #fef3c7;
+      color: #d97706;
+      padding: 2px 4px;
+    }
+    .document-viewer {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      background: #f9fafb;
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+    .document-toolbar {
+      background: #374151;
+      color: white;
+      padding: 0.5rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .version-compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      height: 350px;
+    }
+    .version-panel {
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .version-header {
+      background: #f3f4f6;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #d1d5db;
+      font-weight: 600;
+      text-align: center;
+    }
+    .version-content {
+      padding: 1rem;
+      height: 300px;
+      overflow-y: auto;
+      background: white;
+    }
+    .checklist-item {
+      padding: 0.75rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      transition: all 0.2s;
+    }
+    .checklist-item:hover {
+      border-color: #3b82f6;
+      background: #f8fafc;
+    }
+    .checklist-item.completed {
+      background: #f0fdf4;
+      border-color: #22c55e;
+    }
+    .checklist-item.warning {
+      background: #fffbeb;
+      border-color: #f59e0b;
+    }
+    .checklist-item.error {
+      background: #fef2f2;
+      border-color: #ef4444;
+    }
+    .technical-drawing {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(45deg, #f8f9fa 25%, #e9ecef 25%, #e9ecef 50%, #f8f9fa 50%, #f8f9fa 75%, #e9ecef 75%);
+      background-size: 20px 20px;
+      border: 2px dashed #6c757d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6c757d;
+      font-weight: bold;
+      position: relative;
+    }
+    .revision-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #dc3545;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    @keyframes highlight-change {
+      0%, 100% { background-color: transparent; }
+      50% { background-color: #fef3c7; }
+    }
+    .change-highlight {
+      animation: highlight-change 2s infinite;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-indigo-800 to-purple-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-file-alt text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">技術文書承認統合システム</h1>
+              <p class="text-indigo-200 text-sm">Technical Document Approval Integration System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-purple-700 px-3 py-1 rounded-full text-sm font-medium">技術部門専用</span>
+            <div class="text-center">
+              <div class="text-xs text-indigo-200">承認効率化率</div>
+              <div class="text-lg font-bold text-white">92%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-purple-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">田中 修一</div>
+              <div class="text-sm text-indigo-200">技術部長</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-indigo-800 rounded-full flex items-center justify-center font-bold text-lg">
+              TK
+            </div>
+          </div>
+          <button class="text-indigo-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">技術部門HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">技術文書管理</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">技術文書承認</span>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-purple-600 font-semibold">DOC-2025-0123-05</span>
+    </nav>
+
+    <!-- 文書概要カード -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-file-code text-white text-2xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">空調設備制御仕様書 Rev.2</h2>
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mt-2">
+              <span class="flex items-center"><i class="fas fa-hashtag mr-1 text-purple-500"></i>DOC-2025-0123-05</span>
+              <span class="flex items-center"><i class="fas fa-calendar mr-1 text-green-500"></i>2025/05/20</span>
+              <span class="flex items-center"><i class="fas fa-user mr-1 text-blue-500"></i>鈴木一郎</span>
+              <span class="flex items-center"><i class="fas fa-building mr-1 text-orange-500"></i>ABC工場案件</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div class="text-right">
+            <div class="text-2xl font-bold text-purple-600">Rev.2</div>
+            <div class="text-sm text-gray-500">リビジョン</div>
+          </div>
+          <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+
+      <!-- 承認フロー -->
+      <div class="bg-gray-50 rounded-xl p-4 mb-4">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-route text-purple-600 mr-2"></i>
+          承認ワークフロー
+        </h3>
+        <div class="approval-flow">
+          <div class="flex-1 flex justify-between items-center">
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-user text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">作成者</div>
+              <div class="text-xs text-gray-500">鈴木一郎</div>
+              <div class="text-xs text-green-600">完了</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-user-check text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">主任承認</div>
+              <div class="text-xs text-gray-500">佐藤主任</div>
+              <div class="text-xs text-green-600">承認済</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step current">
+                <i class="fas fa-user-tie text-blue-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">部長承認</div>
+              <div class="text-xs text-gray-500">田中部長</div>
+              <div class="text-xs text-blue-600">承認待ち</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step pending">
+                <i class="fas fa-paper-plane text-yellow-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">顧客提出</div>
+              <div class="text-xs text-gray-500">5/25期限</div>
+              <div class="text-xs text-yellow-600">待機中</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインコンテンツ -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- Copilot技術文書分析 -->
+        <div class="copilot-suggestion card-hover">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-robot text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold">Copilot 技術分析</h3>
+              <p class="text-white text-opacity-80 text-sm">AI支援による技術文書妥当性評価</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <!-- 技術的整合性チェック -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-cogs text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">技術的整合性チェック</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>✅ 制御点数表と制御仕様の整合性: <span class="font-bold text-green-300">適合</span></div>
+                <div>⚠️ P.12制御フロー図: <span class="font-bold text-yellow-300">更新推奨</span></div>
+                <div>✅ 電気容量計算: <span class="font-bold text-green-300">問題なし</span></div>
+              </div>
+            </div>
+            
+            <!-- 関連文書チェック -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-link text-yellow-300 mr-2"></i>
+                <span class="text-white font-medium text-sm">関連文書整合性</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 制御系統図: <span class="font-bold text-green-300">Rev.2更新済み</span></div>
+                <div>• 計装図: <span class="font-bold text-red-300">Rev.1要更新</span></div>
+                <div>• 監視画面仕様書: <span class="font-bold text-red-300">Rev.1要更新</span></div>
+              </div>
+            </div>
+            
+            <!-- 標準仕様準拠性 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-shield-alt text-green-300 mr-2"></i>
+                <span class="text-white font-medium text-sm">標準仕様準拠性</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 社内制御標準: <span class="font-bold text-green-300">95% 準拠</span></div>
+                <div>• 顧客要求仕様: <span class="font-bold text-green-300">100% 対応</span></div>
+                <div>• 安全基準: <span class="font-bold text-green-300">JIS準拠</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex space-x-2 mt-4">
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-download mr-1"></i>詳細分析
+            </button>
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-search mr-1"></i>類似文書参照
+            </button>
+          </div>
+        </div>
+
+        <!-- リビジョン差分表示 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-code-branch text-purple-600 mr-2"></i>
+              変更差分表示 (Rev.1 → Rev.2)
+            </h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200">
+                <i class="fas fa-eye mr-1"></i>全差分
+              </button>
+              <button class="px-3 py-1 bg-green-100 text-green-600 rounded text-sm hover:bg-green-200">
+                <i class="fas fa-plus mr-1"></i>追加のみ
+              </button>
+              <button class="px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200">
+                <i class="fas fa-minus mr-1"></i>削除のみ
+              </button>
+            </div>
+          </div>
+
+          <!-- バージョン比較 -->
+          <div class="version-compare">
+            <!-- Rev.1 -->
+            <div class="version-panel">
+              <div class="version-header bg-red-50 text-red-700">
+                <i class="fas fa-file-alt mr-2"></i>Rev.1 (変更前)
+              </div>
+              <div class="version-content diff-viewer">
+                <div class="mb-4">
+                  <div class="font-bold mb-2">P.5 制御点数表</div>
+                  <div>空調機台数: 5台</div>
+                  <div class="diff-removed">制御点数: 50点 (各機10点)</div>
+                  <div>・温度制御: 各機1点</div>
+                  <div>・運転制御: 各機1点</div>
+                  <div>・警報監視: 各機2点</div>
+                </div>
+
+                <div class="mb-4">
+                  <div class="font-bold mb-2">P.7 センサ仕様</div>
+                  <div class="diff-removed">温度センサ: 室内×5</div>
+                  <div>・測定範囲: 0-50℃</div>
+                  <div>・精度: ±0.5℃</div>
+                </div>
+
+                <div class="mb-4">
+                  <div class="font-bold mb-2">P.10 制御仕様</div>
+                  <div>基本制御: 温度制御</div>
+                  <div class="diff-removed">制御モード: 自動/手動</div>
+                  <div>スケジュール運転: 平日/休日</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rev.2 -->
+            <div class="version-panel">
+              <div class="version-header bg-green-50 text-green-700">
+                <i class="fas fa-file-alt mr-2"></i>Rev.2 (変更後)
+              </div>
+              <div class="version-content diff-viewer">
+                <div class="mb-4">
+                  <div class="font-bold mb-2">P.5 制御点数表</div>
+                  <div>空調機台数: 5台</div>
+                  <div class="diff-added">制御点数: 65点 (各機13点)</div>
+                  <div>・温度制御: 各機1点</div>
+                  <div>・運転制御: 各機1点</div>
+                  <div>・警報監視: 各機2点</div>
+                  <div class="diff-added">・湿度制御: 各機3点 (新規)</div>
+                </div>
+
+                <div class="mb-4">
+                  <div class="font-bold mb-2">P.7 センサ仕様</div>
+                  <div class="diff-modified">温湿度センサ: 室内×5 (変更)</div>
+                  <div>・測定範囲: 0-50℃</div>
+                  <div>・精度: ±0.5℃</div>
+                  <div class="diff-added">・湿度範囲: 10-90%RH (新規)</div>
+                  <div class="diff-added">・湿度精度: ±3%RH (新規)</div>
+                </div>
+
+                <div class="mb-4">
+                  <div class="font-bold mb-2">P.10 制御仕様</div>
+                  <div>基本制御: 温度制御</div>
+                  <div class="diff-modified">制御モード: 自動/手動/湿度制御 (変更)</div>
+                  <div>スケジュール運転: 平日/休日</div>
+                  <div class="diff-added">湿度制御: 除湿/加湿制御 (新規)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 主要変更サマリー -->
+          <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 class="font-semibold text-blue-800 mb-2 flex items-center">
+              <i class="fas fa-list-ul mr-2"></i>
+              主要変更事項サマリー
+            </h4>
+            <div class="text-sm text-blue-700 space-y-1">
+              <div class="flex items-center">
+                <span class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs mr-2">+</span>
+                温湿度センサ追加による制御点数変更（50点→65点）
+              </div>
+              <div class="flex items-center">
+                <span class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs mr-2">M</span>
+                湿度制御モード追加（除湿・加湿制御機能）
+              </div>
+              <div class="flex items-center">
+                <span class="w-6 h-6 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs mr-2">!</span>
+                P.12制御フロー図の更新が必要（未反映）
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 技術仕様チェックリスト -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-tasks text-green-600 mr-2"></i>
+            技術仕様チェックリスト
+          </h3>
+          
+          <div class="space-y-3">
+            <!-- 基本仕様チェック -->
+            <div class="checklist-item completed">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-check text-xs"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">制御点数計算</div>
+                    <div class="text-sm text-gray-500">各機器の制御点数とシステム全体の整合性確認</div>
+                  </div>
+                </div>
+                <div class="text-green-600 font-bold">適合</div>
+              </div>
+            </div>
+
+            <div class="checklist-item completed">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-check text-xs"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">電源容量計算</div>
+                    <div class="text-sm text-gray-500">追加センサによる電源容量への影響確認</div>
+                  </div>
+                </div>
+                <div class="text-green-600 font-bold">問題なし</div>
+              </div>
+            </div>
+
+            <div class="checklist-item warning">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-yellow-500 text-white rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-exclamation text-xs"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">制御フロー図更新</div>
+                    <div class="text-sm text-gray-500">P.12の制御フロー図が新制御仕様に未対応</div>
+                  </div>
+                </div>
+                <div class="text-yellow-600 font-bold">要更新</div>
+              </div>
+            </div>
+
+            <div class="checklist-item completed">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-check text-xs"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">安全基準準拠</div>
+                    <div class="text-sm text-gray-500">JIS・IEC基準への準拠確認</div>
+                  </div>
+                </div>
+                <div class="text-green-600 font-bold">準拠</div>
+              </div>
+            </div>
+
+            <div class="checklist-item error">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-times text-xs"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">関連文書更新</div>
+                    <div class="text-sm text-gray-500">計装図・監視画面仕様書の更新必要</div>
+                  </div>
+                </div>
+                <div class="text-red-600 font-bold">未対応</div>
+              </div>
+            </div>
+
+            <div class="checklist-item completed">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center mr-3">
+                    <i class="fas fa-check text-xs"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-gray-800">顧客要求仕様</div>
+                    <div class="text-sm text-gray-500">顧客要求事項への対応確認</div>
+                  </div>
+                </div>
+                <div class="text-green-600 font-bold">100%対応</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- チェック状況サマリー -->
+          <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div class="grid grid-cols-4 gap-4 text-center">
+              <div>
+                <div class="text-2xl font-bold text-green-600">4</div>
+                <div class="text-sm text-gray-500">適合</div>
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-yellow-600">1</div>
+                <div class="text-sm text-gray-500">要注意</div>
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-red-600">1</div>
+                <div class="text-sm text-gray-500">要対応</div>
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-blue-600">83%</div>
+                <div class="text-sm text-gray-500">適合率</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 図面・仕様書プレビュー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-image text-blue-600 mr-2"></i>
+            図面・仕様書プレビュー
+          </h3>
+          
+          <!-- プレビュータブ -->
+          <div class="flex border-b border-gray-200 mb-4">
+            <button class="px-4 py-2 border-b-2 border-blue-500 text-blue-600 font-medium" id="tab-drawing">
+              制御系統図
+            </button>
+            <button class="px-4 py-2 text-gray-500 hover:text-gray-700" id="tab-flowchart">
+              制御フロー図
+            </button>
+            <button class="px-4 py-2 text-gray-500 hover:text-gray-700" id="tab-spec">
+              仕様一覧表
+            </button>
+          </div>
+
+          <!-- 図面表示エリア -->
+          <div class="document-viewer">
+            <div class="document-toolbar">
+              <div class="flex items-center space-x-4">
+                <span class="font-medium">制御系統図 Rev.2</span>
+                <span class="text-sm bg-white bg-opacity-20 px-2 py-1 rounded">2025-ME0123_制御系統図_Rev2.dwg</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button class="p-1 hover:bg-white hover:bg-opacity-20 rounded">
+                  <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="p-1 hover:bg-white hover:bg-opacity-20 rounded">
+                  <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="p-1 hover:bg-white hover:bg-opacity-20 rounded">
+                  <i class="fas fa-expand"></i>
+                </button>
+                <button class="p-1 hover:bg-white hover:bg-opacity-20 rounded">
+                  <i class="fas fa-download"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- 図面表示（簡易デモ） -->
+            <div class="p-4">
+              <div class="grid grid-cols-2 gap-4">
+                <div class="technical-drawing">
+                  <div>
+                    <div class="revision-badge">Rev.2</div>
+                    <i class="fas fa-project-diagram text-4xl mb-2"></i>
+                    <div>制御系統図</div>
+                    <div class="text-sm">湿度制御系統追加</div>
+                  </div>
+                </div>
+                <div class="bg-white border border-gray-300 rounded p-4">
+                  <h4 class="font-bold mb-3">変更箇所ハイライト</h4>
+                  <div class="space-y-2 text-sm">
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-green-400 rounded mr-2"></div>
+                      <span>湿度センサ追加 (5箇所)</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-blue-400 rounded mr-2"></div>
+                      <span>制御盤容量変更</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-purple-400 rounded mr-2"></div>
+                      <span>配線経路追加</span>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="w-4 h-4 bg-orange-400 rounded mr-2"></div>
+                      <span>制御ループ追加</span>
+                    </div>
+                  </div>
+                  
+                  <div class="mt-4 p-3 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                    <div class="flex items-center">
+                      <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                      <div class="text-sm">
+                        <div class="font-medium">注意事項</div>
+                        <div class="text-yellow-700">制御フロー図の更新も必要です</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- 文書情報サマリー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-info-circle text-purple-600 mr-2"></i>
+            文書詳細情報
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 基本情報 -->
+            <div class="border-b pb-3">
+              <div class="text-sm text-gray-600 mb-1">文書番号</div>
+              <div class="font-bold">DOC-2025-0123-05</div>
+            </div>
+            
+            <div class="border-b pb-3">
+              <div class="text-sm text-gray-600 mb-1">文書名</div>
+              <div class="font-medium">ABC工場空調設備制御仕様書</div>
+            </div>
+
+            <div class="border-b pb-3">
+              <div class="text-sm text-gray-600 mb-1">現在リビジョン</div>
+              <div class="flex items-center">
+                <span class="font-bold text-purple-600 text-lg">Rev.2</span>
+                <span class="ml-2 text-sm bg-purple-100 text-purple-600 px-2 py-1 rounded">最新</span>
+              </div>
+            </div>
+
+            <div class="border-b pb-3">
+              <div class="text-sm text-gray-600 mb-1">作成者</div>
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  鈴
+                </div>
+                <div>
+                  <div class="font-medium">鈴木一郎</div>
+                  <div class="text-xs text-gray-500">設計主任</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border-b pb-3">
+              <div class="text-sm text-gray-600 mb-1">作成日時</div>
+              <div class="font-medium">2025年5月15日 14:30</div>
+            </div>
+
+            <div class="border-b pb-3">
+              <div class="text-sm text-gray-600 mb-1">ファイルサイズ</div>
+              <div class="font-medium">2.8MB</div>
+            </div>
+
+            <div>
+              <div class="text-sm text-gray-600 mb-1">関連プロジェクト</div>
+              <div class="font-medium text-blue-600">2025-ME0123</div>
+              <div class="text-sm text-gray-500">ABC工場省エネ設備導入</div>
+            </div>
+          </div>
+
+          <!-- ステータス表示 -->
+          <div class="mt-4 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+            <div class="flex items-center">
+              <i class="fas fa-clock text-yellow-600 mr-2"></i>
+              <div class="text-sm">
+                <div class="font-medium text-yellow-800">承認待ち</div>
+                <div class="text-yellow-700">顧客提出期限: 5/25</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- リビジョン履歴 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-history text-green-600 mr-2"></i>
+            リビジョン履歴
+          </h3>
+          
+          <div class="space-y-3">
+            <div class="border-l-4 border-purple-400 pl-4 bg-purple-50 p-3 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-purple-700">Rev.2</span>
+                <span class="text-xs bg-purple-600 text-white px-2 py-1 rounded">現在</span>
+              </div>
+              <div class="text-sm text-gray-600">
+                <div>湿度制御追加・制御点数変更</div>
+                <div class="text-xs text-gray-500">2025/05/15 - 鈴木一郎</div>
+              </div>
+            </div>
+
+            <div class="border-l-4 border-gray-300 pl-4 bg-gray-50 p-3 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-gray-700">Rev.1</span>
+                <span class="text-xs bg-green-600 text-white px-2 py-1 rounded">承認済</span>
+              </div>
+              <div class="text-sm text-gray-600">
+                <div>初版作成・基本制御仕様</div>
+                <div class="text-xs text-gray-500">2025/04/20 - 鈴木一郎</div>
+              </div>
+            </div>
+
+            <div class="border-l-4 border-gray-300 pl-4 bg-gray-50 p-3 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <span class="font-bold text-gray-700">Rev.0</span>
+                <span class="text-xs bg-gray-500 text-white px-2 py-1 rounded">草案</span>
+              </div>
+              <div class="text-sm text-gray-600">
+                <div>初回草案・基本構成</div>
+                <div class="text-xs text-gray-500">2025/04/10 - 鈴木一郎</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 比較機能 -->
+          <div class="mt-4 flex space-x-2">
+            <button class="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+              <i class="fas fa-code-branch mr-1"></i>Rev差分
+            </button>
+            <button class="flex-1 px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">
+              <i class="fas fa-download mr-1"></i>全Rev
+            </button>
+          </div>
+        </div>
+
+        <!-- 関連文書 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-sitemap text-orange-600 mr-2"></i>
+            関連文書
+          </h3>
+          
+          <div class="space-y-3">
+            <div class="p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-green-100 rounded flex items-center justify-center mr-2">
+                    <i class="fas fa-file-alt text-green-600 text-sm"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm">制御系統図</div>
+                    <div class="text-xs text-gray-500">Rev.2 更新済み</div>
+                  </div>
+                </div>
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+            </div>
+
+            <div class="p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-red-100 rounded flex items-center justify-center mr-2">
+                    <i class="fas fa-file-alt text-red-600 text-sm"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm">計装図</div>
+                    <div class="text-xs text-gray-500">Rev.1 要更新</div>
+                  </div>
+                </div>
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+              </div>
+            </div>
+
+            <div class="p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-red-100 rounded flex items-center justify-center mr-2">
+                    <i class="fas fa-desktop text-red-600 text-sm"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm">監視画面仕様書</div>
+                    <div class="text-xs text-gray-500">Rev.1 要更新</div>
+                  </div>
+                </div>
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+              </div>
+            </div>
+
+            <div class="p-3 border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-2">
+                    <i class="fas fa-file-excel text-blue-600 text-sm"></i>
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm">機器一覧表</div>
+                    <div class="text-xs text-gray-500">Rev.2 連動済み</div>
+                  </div>
+                </div>
+                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 一括更新ボタン -->
+          <div class="mt-4">
+            <button class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">
+              <i class="fas fa-sync mr-1"></i>関連文書一括更新
+            </button>
+          </div>
+        </div>
+
+        <!-- 承認コメント -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-comments text-indigo-600 mr-2"></i>
+            承認コメント・履歴
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 佐藤主任のコメント -->
+            <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  佐
+                </div>
+                <div>
+                  <div class="font-medium text-sm">佐藤主任 (第1承認者)</div>
+                  <div class="text-xs text-gray-500">2025/05/19 16:45</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                制御点追加は妥当です。ただし、P.12の制御フロー図の更新も忘れずにお願いします。電源容量の確認も完了しました。
+              </div>
+            </div>
+            
+            <!-- 作成者コメント -->
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  鈴
+                </div>
+                <div>
+                  <div class="font-medium text-sm">鈴木一郎 (作成者)</div>
+                  <div class="text-xs text-gray-500">2025/05/15 14:30</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                顧客要望により温湿度管理の精度向上が必要となったため、湿度センサを各空調機に追加しました。制御仕様も湿度制御モードに対応しています。
+              </div>
+            </div>
+            
+            <!-- システム履歴 -->
+            <div class="space-y-2">
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-robot text-green-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">Copilot技術分析完了</span>
+                  <span class="text-gray-500 text-xs ml-2">16:15</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-check text-blue-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">第1承認 (佐藤主任) 完了</span>
+                  <span class="text-gray-500 text-xs ml-2">16:45</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-upload text-purple-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">Rev.2文書登録</span>
+                  <span class="text-gray-500 text-xs ml-2">14:30</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- コメント入力 -->
+            <div class="border-t pt-4">
+              <textarea 
+                placeholder="承認コメントを入力..." 
+                class="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none"
+                rows="3"></textarea>
+              <div class="flex justify-end mt-2">
+                <button class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">
+                  <i class="fas fa-comment mr-1"></i>コメント追加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 承認アクションバー -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4">
+      <div class="container mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">承認対象:</span>
+            <span class="text-lg font-bold text-purple-600 ml-2">制御仕様書 Rev.2</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">提出期限:</span>
+            <span class="text-red-600 font-bold ml-2">2025/05/25 17:00</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- 承認オプション -->
+          <div class="flex items-center space-x-2">
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>条件付き承認</span>
+            </label>
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>関連文書更新必須</span>
+            </label>
+          </div>
+          
+          <!-- アクションボタン -->
+          <button class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            <i class="fas fa-download mr-2"></i>文書DL
+          </button>
+          <button class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+            <i class="fas fa-undo mr-2"></i>差戻し
+          </button>
+          <button class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <i class="fas fa-times mr-2"></i>却下
+          </button>
+          <button class="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
+            <i class="fas fa-check mr-2"></i>承認する
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 余白（固定バー用） -->
+    <div class="h-20"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // タブ切り替え機能
+      const tabs = ['tab-drawing', 'tab-flowchart', 'tab-spec'];
+      tabs.forEach(tabId => {
+        document.getElementById(tabId).addEventListener('click', function() {
+          // 全てのタブを非アクティブに
+          tabs.forEach(id => {
+            const tab = document.getElementById(id);
+            tab.classList.remove('border-b-2', 'border-blue-500', 'text-blue-600', 'font-medium');
+            tab.classList.add('text-gray-500', 'hover:text-gray-700');
+          });
+          
+          // クリックしたタブをアクティブに
+          this.classList.remove('text-gray-500', 'hover:text-gray-700');
+          this.classList.add('border-b-2', 'border-blue-500', 'text-blue-600', 'font-medium');
+          
+          showNotification(`${this.textContent}を表示しています`, 'info');
+        });
+      });
+
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 承認ボタンのクリック処理
+      const approveButton = document.querySelector('.bg-gradient-to-r.from-green-600');
+      if (approveButton) {
+        approveButton.addEventListener('click', function() {
+          const hasCondition = document.querySelector('input[type="checkbox"]').checked;
+          const conditionText = hasCondition ? '\n※条件付き承認' : '';
+          
+          if (confirm(`この技術文書を承認しますか？\n\n文書: 制御仕様書 Rev.2\n作成者: 鈴木一郎${conditionText}`)) {
+            // 承認処理のシミュレーション
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              showNotification('技術文書承認が完了しました。顧客提出準備に移ります。', 'success');
+              
+              // 承認ステップの更新
+              const currentStep = document.querySelector('.approval-step.current');
+              const nextStep = currentStep.parentElement.nextElementSibling.querySelector('.approval-step');
+              
+              currentStep.classList.remove('current');
+              currentStep.classList.add('completed');
+              currentStep.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+              currentStep.parentElement.querySelector('.text-blue-600').textContent = '承認済';
+              currentStep.parentElement.querySelector('.text-blue-600').className = 'text-xs text-green-600';
+              
+              if (nextStep) {
+                nextStep.classList.remove('pending');
+                nextStep.classList.add('current');
+                nextStep.parentElement.querySelector('.text-yellow-600').textContent = '準備中';
+                nextStep.parentElement.querySelector('.text-yellow-600').className = 'text-xs text-blue-600';
+              }
+              
+              // アクションバーを非表示
+              document.querySelector('.fixed.bottom-0').style.display = 'none';
+              
+            }, 2000);
+          }
+        });
+      }
+
+      // その他のイベントハンドラー
+      addEventHandlers();
+      
+      // 初期化処理
+      animateChecklistItems();
+      updateDeadlineCountdown();
+      setInterval(updateDeadlineCountdown, 60000);
+
+      // ページ読み込み時のアニメーション
+      animatePageLoad();
+
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('技術文書承認システムへようこそ。Copilot分析結果をご確認ください。', 'success');
+      }, 1000);
+    });
+
+    function addEventHandlers() {
+      // 差戻しボタン
+      const rejectButton = document.querySelector('.bg-yellow-600');
+      if (rejectButton) {
+        rejectButton.addEventListener('click', function() {
+          const reason = prompt('差戻し理由を入力してください：');
+          if (reason && reason.trim()) {
+            showNotification(`技術文書を差戻ししました。理由: ${reason}`, 'warning');
+          }
+        });
+      }
+
+      // 文書ダウンロードボタン
+      const downloadButton = document.querySelector('.bg-gray-500');
+      if (downloadButton && downloadButton.textContent.includes('文書DL')) {
+        downloadButton.addEventListener('click', function() {
+          showNotification('制御仕様書 Rev.2 をダウンロードしています...', 'info');
+        });
+      }
+
+      // Copilot詳細分析ボタン
+      const detailAnalysisButton = document.querySelector('.bg-white.bg-opacity-20');
+      if (detailAnalysisButton && detailAnalysisButton.textContent.includes('詳細分析')) {
+        detailAnalysisButton.addEventListener('click', function() {
+          showNotification('Copilot詳細技術分析レポートを生成しています...', 'info');
+        });
+      }
+
+      // 関連文書更新ボタン
+      const updateDocsButton = document.querySelector('.bg-orange-600');
+      if (updateDocsButton) {
+        updateDocsButton.addEventListener('click', function() {
+          this.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>更新中...';
+          this.disabled = true;
+          
+          setTimeout(() => {
+            showNotification('関連文書の更新依頼を送信しました', 'success');
+            this.innerHTML = '<i class="fas fa-check mr-1"></i>更新依頼送信済';
+            this.classList.remove('bg-orange-600', 'hover:bg-orange-700');
+            this.classList.add('bg-green-600');
+          }, 2000);
+        });
+      }
+
+      // チェックリストアイテムのクリック
+      const checklistItems = document.querySelectorAll('.checklist-item');
+      checklistItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const statusDiv = this.querySelector('.font-bold');
+          const icon = this.querySelector('.fa-exclamation, .fa-times');
+          
+          if (this.classList.contains('warning') || this.classList.contains('error')) {
+            // 詳細情報をモーダル表示（簡易実装）
+            const itemTitle = this.querySelector('.font-medium').textContent;
+            showNotification(`${itemTitle}の詳細確認が必要です`, 'info');
+          }
+        });
+      });
+
+      // 関連文書アイテムのクリック
+      const relatedDocs = document.querySelectorAll('.border.border-gray-200');
+      relatedDocs.forEach(doc => {
+        doc.addEventListener('click', function() {
+          const docName = this.querySelector('.font-medium').textContent;
+          showNotification(`${docName}を開いています...`, 'info');
+        });
+      });
+
+      // Rev差分ボタン
+      const diffButton = document.querySelector('.bg-blue-600');
+      if (diffButton && diffButton.textContent.includes('Rev差分')) {
+        diffButton.addEventListener('click', function() {
+          // 差分ハイライトのアニメーション
+          const diffElements = document.querySelectorAll('.diff-added, .diff-removed, .diff-modified');
+          diffElements.forEach((element, index) => {
+            setTimeout(() => {
+              element.classList.add('change-highlight');
+              setTimeout(() => {
+                element.classList.remove('change-highlight');
+              }, 2000);
+            }, index * 300);
+          });
+          
+          showNotification('リビジョン差分をハイライト表示しています', 'info');
+        });
+      }
+
+      // コメント追加機能
+      const commentButton = document.querySelector('.bg-gray-500');
+      const commentTextarea = document.querySelector('textarea');
+      if (commentButton && commentTextarea && commentButton.textContent.includes('コメント追加')) {
+        commentButton.addEventListener('click', function() {
+          const comment = commentTextarea.value.trim();
+          if (comment) {
+            const commentSection = document.querySelector('.space-y-4');
+            const newComment = document.createElement('div');
+            newComment.className = 'p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400';
+            newComment.innerHTML = `
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  田
+                </div>
+                <div>
+                  <div class="font-medium text-sm">田中修一 (技術部長)</div>
+                  <div class="text-xs text-gray-500">${new Date().toLocaleString('ja-JP')}</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">${comment}</div>
+            `;
+            commentSection.insertBefore(newComment, commentSection.lastElementChild);
+            commentTextarea.value = '';
+            showNotification('コメントを追加しました', 'success');
+          }
+        });
+      }
+
+      // 図面ツールバーボタン
+      const zoomInBtn = document.querySelector('.fa-search-plus');
+      const zoomOutBtn = document.querySelector('.fa-search-minus');
+      const expandBtn = document.querySelector('.fa-expand');
+      const downloadBtn = document.querySelector('.fa-download');
+
+      if (zoomInBtn) {
+        zoomInBtn.parentElement.addEventListener('click', () => {
+          showNotification('図面を拡大しています', 'info');
+        });
+      }
+
+      if (zoomOutBtn) {
+        zoomOutBtn.parentElement.addEventListener('click', () => {
+          showNotification('図面を縮小しています', 'info');
+        });
+      }
+
+      if (expandBtn) {
+        expandBtn.parentElement.addEventListener('click', () => {
+          showNotification('図面をフルスクリーン表示します', 'info');
+        });
+      }
+
+      if (downloadBtn) {
+        downloadBtn.parentElement.addEventListener('click', () => {
+          showNotification('制御系統図をダウンロードしています...', 'info');
+        });
+      }
+    }
+
+    function animateChecklistItems() {
+      const items = document.querySelectorAll('.checklist-item');
+      items.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+          item.style.transition = 'all 0.3s ease';
+          item.style.opacity = '1';
+          item.style.transform = 'translateX(0)';
+        }, index * 100);
+      });
+    }
+
+    function updateDeadlineCountdown() {
+      const deadlineText = document.querySelector('.text-red-600.font-bold');
+      if (deadlineText && deadlineText.textContent.includes('2025/05/25')) {
+        const deadline = new Date('2025-05-25T17:00:00');
+        const now = new Date();
+        const diff = deadline - now;
+        
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          deadlineText.textContent = `残り ${days}日${hours}時間`;
+        }
+      }
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+
+      // チェックリストの進行アニメーション
+      setTimeout(() => {
+        const completedItems = document.querySelectorAll('.checklist-item.completed');
+        completedItems.forEach((item, index) => {
+          setTimeout(() => {
+            const checkIcon = item.querySelector('.fa-check');
+            if (checkIcon) {
+              checkIcon.style.transform = 'scale(1.2)';
+              setTimeout(() => {
+                checkIcon.style.transform = 'scale(1)';
+              }, 200);
+            }
+          }, index * 150);
+        });
+      }, 1000);
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // リアルタイム技術分析（デモ用）
+    function runRealtimeAnalysis() {
+      const analysisItems = [
+        { text: '制御点数整合性チェック完了', type: 'success' },
+        { text: '電源容量計算検証中...', type: 'info' },
+        { text: '関連文書更新チェック完了', type: 'warning' },
+        { text: '安全基準準拠性確認完了', type: 'success' }
+      ];
+
+      analysisItems.forEach((item, index) => {
+        setTimeout(() => {
+          showNotification(`Copilot分析: ${item.text}`, item.type);
+        }, (index + 1) * 3000);
+      });
+    }
+
+    // 5秒後にリアルタイム分析開始
+    setTimeout(runRealtimeAnalysis, 5000);
+
+    // エラーハンドリング
+    window.addEventListener('error', function(e) {
+      console.error('JavaScript Error:', e.error);
+    });
+
+    // パフォーマンス最適化
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        // リサイズ後の処理
+        const cards = document.querySelectorAll('.card-hover');
+        cards.forEach(card => {
+          card.style.transform = 'translateY(0)';
+        });
+      }, 250);
+    });
+  </script>
+</body>
+</html>
+
+      

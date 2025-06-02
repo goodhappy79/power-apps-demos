@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>統合納期管理システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .status-delivered { background: linear-gradient(135deg, #10b981, #065f46); color: white; }
+    .status-on-schedule { background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; }
+    .status-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .status-delayed { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+    .status-critical { background: linear-gradient(135deg, #7c2d12, #451a03); color: white; }
+    
+    .calendar-day {
+      min-height: 80px;
+      border: 1px solid #e5e7eb;
+      position: relative;
+    }
+    .calendar-day.today {
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+      border-color: #3b82f6;
+    }
+    .calendar-day.has-delivery {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+    }
+    .calendar-day.has-delayed {
+      background: linear-gradient(135deg, #fecaca, #fca5a5);
+    }
+    
+    .delivery-indicator {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .delivery-normal { background: #10b981; }
+    .delivery-warning { background: #f59e0b; }
+    .delivery-delayed { background: #ef4444; }
+    
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring-circle {
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 251.2;
+      transition: stroke-dashoffset 0.35s;
+    }
+    
+    .kpi-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 16px;
+    }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #e5e7eb, #d1d5db);
+    }
+    .timeline-item:last-child::before {
+      background: linear-gradient(to bottom, #e5e7eb 50%, transparent 50%);
+    }
+    
+    .vendor-rating {
+      background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+      border-radius: 8px;
+      padding: 4px 8px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-clock text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">統合納期管理システム</h1>
+              <p class="text-blue-200 text-sm">Integrated Delivery Management System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">技術部門専用</span>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">納期遵守率</div>
+              <div class="text-lg font-bold text-white">94.2%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors" onclick="showNotification('納期アラート: 本日納期の案件が3件あります', 'warning')">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">8</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">田中 修一</div>
+              <div class="text-sm text-blue-200">技術部長</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-blue-800 rounded-full flex items-center justify-center font-bold text-lg">
+              TK
+            </div>
+          </div>
+          <button class="text-blue-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">技術部門HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">納期管理</span>
+    </nav>
+
+    <!-- KPI概要カード -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
+      <!-- 遅延案件 -->
+      <div class="status-delayed rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-white text-opacity-90 text-sm font-medium">遅延案件</div>
+            <div class="text-3xl font-bold text-white">5件</div>
+          </div>
+          <div class="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-white text-2xl"></i>
+          </div>
+        </div>
+        <div class="flex items-center text-white text-opacity-80 text-sm">
+          <i class="fas fa-clock mr-2"></i>
+          <span>平均遅延: 3.2日</span>
+        </div>
+      </div>
+
+      <!-- 本日納期 -->
+      <div class="status-warning rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-white text-opacity-90 text-sm font-medium">本日納期</div>
+            <div class="text-3xl font-bold text-white">8件</div>
+          </div>
+          <div class="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-calendar-day text-white text-2xl"></i>
+          </div>
+        </div>
+        <div class="flex items-center text-white text-opacity-80 text-sm">
+          <i class="fas fa-truck mr-2"></i>
+          <span>納品予定: 6件</span>
+        </div>
+      </div>
+
+      <!-- 今週納期 -->
+      <div class="status-on-schedule rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-white text-opacity-90 text-sm font-medium">今週納期</div>
+            <div class="text-3xl font-bold text-white">15件</div>
+          </div>
+          <div class="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-calendar-week text-white text-2xl"></i>
+          </div>
+        </div>
+        <div class="flex items-center text-white text-opacity-80 text-sm">
+          <i class="fas fa-check mr-2"></i>
+          <span>順調進行中</span>
+        </div>
+      </div>
+
+      <!-- 納期遵守率 -->
+      <div class="status-delivered rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <div class="text-white text-opacity-90 text-sm font-medium">納期遵守率</div>
+            <div class="text-3xl font-bold text-white">94.2%</div>
+          </div>
+          <div class="w-16 h-16 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <svg class="w-8 h-8 text-white">
+              <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="2" fill="none" stroke-dasharray="88" stroke-dashoffset="5"/>
+            </svg>
+          </div>
+        </div>
+        <div class="flex items-center text-white text-opacity-80 text-sm">
+          <i class="fas fa-trending-up mr-2"></i>
+          <span>前月比 +2.1%</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインコンテンツ -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- 納期カレンダー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+              納期カレンダー
+            </h3>
+            <div class="flex items-center space-x-2">
+              <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <i class="fas fa-chevron-left text-gray-600"></i>
+              </button>
+              <span class="text-lg font-semibold text-gray-800 px-4">2025年5月</span>
+              <button class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <i class="fas fa-chevron-right text-gray-600"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- カレンダーグリッド -->
+          <div class="grid grid-cols-7 gap-1 mb-4">
+            <!-- 曜日ヘッダー -->
+            <div class="p-2 text-center text-sm font-medium text-gray-600">日</div>
+            <div class="p-2 text-center text-sm font-medium text-gray-600">月</div>
+            <div class="p-2 text-center text-sm font-medium text-gray-600">火</div>
+            <div class="p-2 text-center text-sm font-medium text-gray-600">水</div>
+            <div class="p-2 text-center text-sm font-medium text-gray-600">木</div>
+            <div class="p-2 text-center text-sm font-medium text-gray-600">金</div>
+            <div class="p-2 text-center text-sm font-medium text-gray-600">土</div>
+
+            <!-- 日付セル -->
+            <div class="calendar-day p-2"></div>
+            <div class="calendar-day p-2"></div>
+            <div class="calendar-day p-2"></div>
+            <div class="calendar-day p-2"></div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">1</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">2</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">3</div>
+            </div>
+            
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">4</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">5</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">6</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">7</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">8</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">9</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">10</div>
+            </div>
+            
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">11</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">12</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">13</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">14</div>
+            </div>
+            <div class="calendar-day p-2 has-delayed">
+              <div class="text-sm font-medium">15</div>
+              <div class="text-xs text-red-600 font-medium">遅延2件</div>
+              <div class="delivery-indicator delivery-delayed"></div>
+            </div>
+            <div class="calendar-day p-2 has-delivery">
+              <div class="text-sm font-medium">16</div>
+              <div class="text-xs text-orange-600 font-medium">納期3件</div>
+              <div class="delivery-indicator delivery-warning"></div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">17</div>
+            </div>
+            
+            <div class="calendar-day today p-2">
+              <div class="text-sm font-bold text-blue-600">18</div>
+              <div class="text-xs text-orange-600 font-medium">本日8件</div>
+              <div class="delivery-indicator delivery-warning"></div>
+            </div>
+            <div class="calendar-day p-2 has-delivery">
+              <div class="text-sm font-medium">19</div>
+              <div class="text-xs text-green-600 font-medium">納期2件</div>
+              <div class="delivery-indicator delivery-normal"></div>
+            </div>
+            <div class="calendar-day p-2 has-delivery">
+              <div class="text-sm font-medium">20</div>
+              <div class="text-xs text-orange-600 font-medium">納期5件</div>
+              <div class="delivery-indicator delivery-warning"></div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">21</div>
+            </div>
+            <div class="calendar-day p-2 has-delivery">
+              <div class="text-sm font-medium">22</div>
+              <div class="text-xs text-green-600 font-medium">納期1件</div>
+              <div class="delivery-indicator delivery-normal"></div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">23</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">24</div>
+            </div>
+            
+            <div class="calendar-day p-2 has-delivery">
+              <div class="text-sm font-medium">25</div>
+              <div class="text-xs text-green-600 font-medium">納期3件</div>
+              <div class="delivery-indicator delivery-normal"></div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">26</div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">27</div>
+            </div>
+            <div class="calendar-day p-2 has-delivery">
+              <div class="text-sm font-medium">28</div>
+              <div class="text-xs text-orange-600 font-medium">納期4件</div>
+              <div class="delivery-indicator delivery-warning"></div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">29</div>
+            </div>
+            <div class="calendar-day p-2 has-delivery">
+              <div class="text-sm font-medium">30</div>
+              <div class="text-xs text-green-600 font-medium">納期2件</div>
+              <div class="delivery-indicator delivery-normal"></div>
+            </div>
+            <div class="calendar-day p-2">
+              <div class="text-sm font-medium">31</div>
+            </div>
+          </div>
+
+          <!-- カレンダー凡例 -->
+          <div class="flex items-center justify-center space-x-6 mt-4 p-4 bg-gray-50 rounded-lg">
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full delivery-normal"></div>
+              <span class="text-sm text-gray-600">順調</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full delivery-warning"></div>
+              <span class="text-sm text-gray-600">注意</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full delivery-delayed"></div>
+              <span class="text-sm text-gray-600">遅延</span>
+            </div>
+            <div class="flex items-center space-x-2">
+              <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span class="text-sm text-gray-600">本日</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 機器別納期リスト -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-list-ul text-green-600 mr-2"></i>
+              機器別納期リスト
+            </h3>
+            <div class="flex items-center space-x-2">
+              <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option>すべての機器</option>
+                <option>空調機器</option>
+                <option>電気設備</option>
+                <option>制御機器</option>
+                <option>配管部材</option>
+              </select>
+              <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors">
+                <i class="fas fa-filter mr-1"></i>フィルター
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-gray-200">
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">機器・部材名</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">発注先</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">発注日</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">納期</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">残り日数</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">ステータス</th>
+                  <th class="text-left py-3 px-4 font-semibold text-gray-700">アクション</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-4 px-4">
+                    <div class="font-medium text-gray-900">高効率空調機 AC-5000EX</div>
+                    <div class="text-sm text-gray-500">ABC工場案件・5台</div>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="text-sm text-gray-900">XYZ空調サービス</div>
+                    <div class="vendor-rating text-xs">信頼度: A+</div>
+                  </td>
+                  <td class="py-4 px-4 text-sm text-gray-600">2025/05/01</td>
+                  <td class="py-4 px-4 text-sm text-gray-900 font-medium">2025/05/15</td>
+                  <td class="py-4 px-4">
+                    <span class="text-red-600 font-bold">遅延 3日</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="status-delayed px-3 py-1 rounded-full text-xs font-medium">遅延中</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="flex space-x-2">
+                      <button class="text-blue-600 hover:text-blue-800 text-sm" onclick="openDeliveryDialog('AC-5000EX')">
+                        <i class="fas fa-truck mr-1"></i>納品登録
+                      </button>
+                      <button class="text-orange-600 hover:text-orange-800 text-sm" onclick="openContactDialog('XYZ空調サービス')">
+                        <i class="fas fa-phone mr-1"></i>連絡
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-4 px-4">
+                    <div class="font-medium text-gray-900">制御装置 CT-3200AI</div>
+                    <div class="text-sm text-gray-500">DEF工場案件・1式</div>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="text-sm text-gray-900">制御システム社</div>
+                    <div class="vendor-rating text-xs">信頼度: A</div>
+                  </td>
+                  <td class="py-4 px-4 text-sm text-gray-600">2025/05/10</td>
+                  <td class="py-4 px-4 text-sm text-gray-900 font-medium">2025/05/18</td>
+                  <td class="py-4 px-4">
+                    <span class="text-orange-600 font-bold">本日納期</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="status-warning px-3 py-1 rounded-full text-xs font-medium">本日納期</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="flex space-x-2">
+                      <button class="text-blue-600 hover:text-blue-800 text-sm" onclick="openDeliveryDialog('CT-3200AI')">
+                        <i class="fas fa-truck mr-1"></i>納品登録
+                      </button>
+                      <button class="text-green-600 hover:text-green-800 text-sm">
+                        <i class="fas fa-check mr-1"></i>確認中
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-4 px-4">
+                    <div class="font-medium text-gray-900">LED照明器具 LL-1000</div>
+                    <div class="text-sm text-gray-500">GHI事務所案件・50台</div>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="text-sm text-gray-900">電機設備工業</div>
+                    <div class="vendor-rating text-xs">信頼度: B+</div>
+                  </td>
+                  <td class="py-4 px-4 text-sm text-gray-600">2025/05/12</td>
+                  <td class="py-4 px-4 text-sm text-gray-900 font-medium">2025/05/20</td>
+                  <td class="py-4 px-4">
+                    <span class="text-blue-600 font-bold">あと 2日</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="status-on-schedule px-3 py-1 rounded-full text-xs font-medium">予定通り</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="flex space-x-2">
+                      <button class="text-gray-600 hover:text-gray-800 text-sm">
+                        <i class="fas fa-eye mr-1"></i>詳細
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-4 px-4">
+                    <div class="font-medium text-gray-900">配管部材セット</div>
+                    <div class="text-sm text-gray-500">JKL工場案件・1式</div>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="text-sm text-gray-900">配管工事店</div>
+                    <div class="vendor-rating text-xs">信頼度: A-</div>
+                  </td>
+                  <td class="py-4 px-4 text-sm text-gray-600">2025/05/08</td>
+                  <td class="py-4 px-4 text-sm text-gray-900 font-medium">2025/05/16</td>
+                  <td class="py-4 px-4">
+                    <span class="text-green-600 font-bold">納品済</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="status-delivered px-3 py-1 rounded-full text-xs font-medium">納品完了</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="flex space-x-2">
+                      <button class="text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="fas fa-file-alt mr-1"></i>検収書
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr class="border-b border-gray-100 hover:bg-gray-50">
+                  <td class="py-4 px-4">
+                    <div class="font-medium text-gray-900">受変電設備 TR-800</div>
+                    <div class="text-sm text-gray-500">MNO工場案件・1台</div>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="text-sm text-gray-900">重電機器製作所</div>
+                    <div class="vendor-rating text-xs">信頼度: A+</div>
+                  </td>
+                  <td class="py-4 px-4 text-sm text-gray-600">2025/04/25</td>
+                  <td class="py-4 px-4 text-sm text-gray-900 font-medium">2025/05/25</td>
+                  <td class="py-4 px-4">
+                    <span class="text-blue-600 font-bold">あと 7日</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="status-on-schedule px-3 py-1 rounded-full text-xs font-medium">予定通り</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <div class="flex space-x-2">
+                      <button class="text-gray-600 hover:text-gray-800 text-sm">
+                        <i class="fas fa-eye mr-1"></i>詳細
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 納期遅延アラート -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+            <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+            納期遅延アラート
+          </h3>
+
+          <div class="space-y-4">
+            <!-- 重要アラート -->
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-exclamation text-white"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-red-800">緊急: 空調機器納期大幅遅延</h4>
+                    <span class="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">3日前</span>
+                  </div>
+                  <p class="text-sm text-red-700 mb-3">
+                    ABC工場案件の高効率空調機 AC-5000EXが3日遅延中。製造元での部品調達遅れが原因。
+                  </p>
+                  <div class="flex items-center space-x-2">
+                    <button class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700">
+                      <i class="fas fa-phone mr-1"></i>業者連絡
+                    </button>
+                    <button class="bg-red-100 text-red-600 px-3 py-1 rounded text-xs hover:bg-red-200">
+                      <i class="fas fa-calendar mr-1"></i>納期調整
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 注意アラート -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 bg-yellow-500 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-clock text-white"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-yellow-800">注意: 本日納期案件多数</h4>
+                    <span class="text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded">今日</span>
+                  </div>
+                  <p class="text-sm text-yellow-700 mb-3">
+                    本日納期の案件が8件あります。納品確認と検収書類の準備をお忘れなく。
+                  </p>
+                  <div class="flex items-center space-x-2">
+                    <button class="bg-yellow-600 text-white px-3 py-1 rounded text-xs hover:bg-yellow-700">
+                      <i class="fas fa-list mr-1"></i>一覧確認
+                    </button>
+                    <button class="bg-yellow-100 text-yellow-600 px-3 py-1 rounded text-xs hover:bg-yellow-200">
+                      <i class="fas fa-check mr-1"></i>まとめて確認
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 情報アラート -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <i class="fas fa-info text-white"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-blue-800">情報: 来週の納期集中</h4>
+                    <span class="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">来週</span>
+                  </div>
+                  <p class="text-sm text-blue-700 mb-3">
+                    来週（5/19-5/25）に15件の納期が集中しています。受入体制の準備をお願いします。
+                  </p>
+                  <div class="flex items-center space-x-2">
+                    <button class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
+                      <i class="fas fa-calendar-week mr-1"></i>週間計画
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- ベンダー連絡記録 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-address-book text-purple-600 mr-2"></i>
+            ベンダー連絡記録
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 連絡履歴 -->
+            <div class="relative pl-8 timeline-item">
+              <div class="absolute left-0 top-2 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div>
+              <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium text-red-800">XYZ空調サービス</span>
+                  <span class="text-xs text-red-600">2時間前</span>
+                </div>
+                <p class="text-sm text-red-700">空調機の納期遅延について連絡。部品調達に3日追加必要との回答。</p>
+                <div class="mt-2 flex space-x-2">
+                  <button class="text-xs bg-red-100 text-red-600 px-2 py-1 rounded hover:bg-red-200">
+                    <i class="fas fa-phone mr-1"></i>再連絡
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative pl-8 timeline-item">
+              <div class="absolute left-0 top-2 w-4 h-4 bg-yellow-500 rounded-full border-2 border-white"></div>
+              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium text-yellow-800">制御システム社</span>
+                  <span class="text-xs text-yellow-600">4時間前</span>
+                </div>
+                <p class="text-sm text-yellow-700">本日納期の制御装置について最終確認。14時頃納品予定との連絡。</p>
+                <div class="mt-2 flex space-x-2">
+                  <button class="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded hover:bg-yellow-200">
+                    <i class="fas fa-check mr-1"></i>確認済
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="relative pl-8 timeline-item">
+              <div class="absolute left-0 top-2 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+              <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium text-green-800">配管工事店</span>
+                  <span class="text-xs text-green-600">昨日</span>
+                </div>
+                <p class="text-sm text-green-700">配管部材の納品完了。検収書類も併せて受領済み。</p>
+                <div class="mt-2 flex space-x-2">
+                  <button class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded hover:bg-green-200">
+                    <i class="fas fa-file mr-1"></i>書類確認
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 新規連絡入力 -->
+          <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+            <h4 class="font-medium text-gray-800 mb-2">新規連絡記録</h4>
+            <div class="space-y-2">
+              <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                <option>ベンダーを選択</option>
+                <option>XYZ空調サービス</option>
+                <option>制御システム社</option>
+                <option>電機設備工業</option>
+                <option>配管工事店</option>
+                <option>重電機器製作所</option>
+              </select>
+              <textarea 
+                placeholder="連絡内容を入力..." 
+                class="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none"
+                rows="3"></textarea>
+              <button class="w-full bg-purple-600 text-white px-4 py-2 rounded text-sm hover:bg-purple-700">
+                <i class="fas fa-plus mr-1"></i>連絡記録を追加
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 納品確認機能 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-truck text-blue-600 mr-2"></i>
+            納品確認機能
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 本日の納品予定 -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 class="font-medium text-blue-800 mb-3">本日の納品予定</h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 bg-white rounded border">
+                  <div class="text-sm">
+                    <div class="font-medium">制御装置 CT-3200AI</div>
+                    <div class="text-gray-500">制御システム社 14:00予定</div>
+                  </div>
+                  <button class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700" onclick="openDeliveryDialog('CT-3200AI')">
+                    <i class="fas fa-check mr-1"></i>確認
+                  </button>
+                </div>
+                
+                <div class="flex items-center justify-between p-2 bg-white rounded border">
+                  <div class="text-sm">
+                    <div class="font-medium">配線器具セット</div>
+                    <div class="text-gray-500">電機設備工業 16:00予定</div>
+                  </div>
+                  <button class="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
+                    <i class="fas fa-check mr-1"></i>確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- クイック納品登録 -->
+            <div class="bg-gray-50 rounded-lg p-4">
+              <h4 class="font-medium text-gray-800 mb-3">クイック納品登録</h4>
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">機器・部材</label>
+                  <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                    <option>選択してください</option>
+                    <option>制御装置 CT-3200AI</option>
+                    <option>LED照明器具 LL-1000</option>
+                    <option>受変電設備 TR-800</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">実納品日時</label>
+                  <input type="datetime-local" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" value="2025-05-18T14:00">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">受領者</label>
+                  <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+                    <option>田中修一（技術部長）</option>
+                    <option>佐藤健太（技術主任）</option>
+                    <option>鈴木一郎（設備担当）</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">備考</label>
+                  <textarea 
+                    placeholder="検収結果や特記事項があれば入力..." 
+                    class="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none"
+                    rows="2"></textarea>
+                </div>
+                <button class="w-full bg-green-600 text-white px-4 py-2 rounded text-sm hover:bg-green-700">
+                  <i class="fas fa-check mr-1"></i>納品登録
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 履歴表示 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-history text-green-600 mr-2"></i>
+            最近の履歴
+          </h3>
+          
+          <div class="space-y-3">
+            <!-- 活動履歴連携 -->
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                  <i class="fas fa-truck text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-medium text-green-800">配管部材セット 納品完了</div>
+                  <div class="text-xs text-green-600 mt-1">
+                    配管工事店 → JKL工場案件
+                    <br>受領者: 佐藤健太 | 2025/05/16 10:30
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                  <i class="fas fa-phone text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-medium text-blue-800">ベンダー連絡記録更新</div>
+                  <div class="text-xs text-blue-600 mt-1">
+                    XYZ空調サービス | 納期遅延の件
+                    <br>連絡者: 田中修一 | 2025/05/18 08:45
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-orange-50 border border-orange-200 rounded-lg p-3">
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                  <i class="fas fa-calendar text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-medium text-orange-800">納期変更通知</div>
+                  <div class="text-xs text-orange-600 mt-1">
+                    高効率空調機 AC-5000EX
+                    <br>新納期: 2025/05/21 | 2025/05/18 07:30
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <div class="flex items-start space-x-3">
+                <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                  <i class="fas fa-file-alt text-white text-sm"></i>
+                </div>
+                <div class="flex-1">
+                  <div class="text-sm font-medium text-purple-800">検収書類作成</div>
+                  <div class="text-xs text-purple-600 mt-1">
+                    LED照明器具 LL-800 | STU事務所案件
+                    <br>作成者: 鈴木一郎 | 2025/05/17 16:20
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 活動履歴連携ボタン -->
+          <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+            <button class="w-full bg-gray-600 text-white px-4 py-2 rounded text-sm hover:bg-gray-700">
+              <i class="fas fa-external-link-alt mr-1"></i>
+              全社活動履歴連携を開く
+            </button>
+          </div>
+        </div>
+
+        <!-- パフォーマンス分析 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-line text-indigo-600 mr-2"></i>
+            パフォーマンス分析
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 納期遵守率 -->
+            <div class="text-center">
+              <div class="relative w-24 h-24 mx-auto mb-2">
+                <svg class="w-24 h-24 progress-ring">
+                  <circle cx="48" cy="48" r="40" stroke="#e5e7eb" stroke-width="8" fill="transparent"/>
+                  <circle cx="48" cy="48" r="40" stroke="#10b981" stroke-width="8" fill="transparent" 
+                          class="progress-ring-circle" stroke-dasharray="251.2" stroke-dashoffset="15"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <span class="text-xl font-bold text-green-600">94.2%</span>
+                </div>
+              </div>
+              <div class="text-sm text-gray-600">今月の納期遵守率</div>
+              <div class="text-xs text-green-600">目標95% まで+0.8%</div>
+            </div>
+
+            <!-- KPI詳細 -->
+            <div class="grid grid-cols-2 gap-4">
+              <div class="text-center p-3 bg-blue-50 rounded-lg">
+                <div class="text-lg font-bold text-blue-600">2.3日</div>
+                <div class="text-xs text-gray-600">平均遅延日数</div>
+                <div class="text-xs text-green-600">前月比-0.8日</div>
+              </div>
+              <div class="text-center p-3 bg-green-50 rounded-lg">
+                <div class="text-lg font-bold text-green-600">98%</div>
+                <div class="text-xs text-gray-600">今週達成率</div>
+                <div class="text-xs text-green-600">目標達成</div>
+              </div>
+            </div>
+
+            <!-- ベンダー評価 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-2">ベンダー別実績</h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-700">XYZ空調サービス</span>
+                  <div class="flex items-center">
+                    <div class="w-16 h-2 bg-gray-200 rounded-full mr-2">
+                      <div class="w-14 h-2 bg-green-500 rounded-full"></div>
+                    </div>
+                    <span class="text-green-600 font-medium">92%</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-700">制御システム社</span>
+                  <div class="flex items-center">
+                    <div class="w-16 h-2 bg-gray-200 rounded-full mr-2">
+                      <div class="w-15 h-2 bg-blue-500 rounded-full"></div>
+                    </div>
+                    <span class="text-blue-600 font-medium">96%</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-700">電機設備工業</span>
+                  <div class="flex items-center">
+                    <div class="w-16 h-2 bg-gray-200 rounded-full mr-2">
+                      <div class="w-13 h-2 bg-yellow-500 rounded-full"></div>
+                    </div>
+                    <span class="text-yellow-600 font-medium">89%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 納品登録ダイアログ（モーダル） -->
+  <div id="deliveryDialog" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800">納品登録</h3>
+        <button onclick="closeDeliveryDialog()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">機器名</label>
+          <input type="text" id="deliveryItemName" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" readonly>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">実納品日時</label>
+          <input type="datetime-local" class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">受領者</label>
+          <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+            <option>田中修一（技術部長）</option>
+            <option>佐藤健太（技術主任）</option>
+            <option>鈴木一郎（設備担当）</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">検収結果</label>
+          <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+            <option>良好（問題なし）</option>
+            <option>軽微な問題あり</option>
+            <option>要修正</option>
+            <option>検収保留</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">備考</label>
+          <textarea class="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none" rows="3" placeholder="検収結果の詳細や特記事項"></textarea>
+        </div>
+      </div>
+      
+      <div class="flex space-x-3 mt-6">
+        <button onclick="closeDeliveryDialog()" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          キャンセル
+        </button>
+        <button onclick="confirmDelivery()" class="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          <i class="fas fa-check mr-1"></i>登録
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ベンダー連絡ダイアログ（モーダル） -->
+  <div id="contactDialog" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800">ベンダー連絡</h3>
+        <button onclick="closeContactDialog()" class="text-gray-400 hover:text-gray-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">連絡先</label>
+          <input type="text" id="contactVendorName" class="w-full border border-gray-300 rounded px-3 py-2 text-sm" readonly>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">連絡方法</label>
+          <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+            <option>電話</option>
+            <option>メール</option>
+            <option>FAX</option>
+            <option>訪問</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">連絡内容</label>
+          <textarea class="w-full border border-gray-300 rounded px-3 py-2 text-sm resize-none" rows="4" placeholder="連絡内容を入力してください"></textarea>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">緊急度</label>
+          <select class="w-full border border-gray-300 rounded px-3 py-2 text-sm">
+            <option>通常</option>
+            <option>急ぎ</option>
+            <option>緊急</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="flex space-x-3 mt-6">
+        <button onclick="closeContactDialog()" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          キャンセル
+        </button>
+        <button onclick="confirmContact()" class="flex-1 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
+          <i class="fas fa-phone mr-1"></i>連絡記録
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // ページ読み込み時の初期化
+      initializeCharts();
+      updateProgressRings();
+      addEventHandlers();
+      
+      // 自動更新設定
+      setInterval(updateRealTimeData, 30000); // 30秒ごと
+      
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('納期管理システムにアクセスしました。本日納期の案件が8件あります。', 'info');
+      }, 1000);
+    });
+
+    function initializeCharts() {
+      // プログレスリングの初期化
+      const progressRings = document.querySelectorAll('.progress-ring-circle');
+      progressRings.forEach(ring => {
+        const percentage = 94.2; // 納期遵守率
+        const circumference = 2 * Math.PI * 40;
+        const offset = circumference - (percentage / 100) * circumference;
+        ring.style.strokeDashoffset = offset;
+      });
+    }
+
+    function updateProgressRings() {
+      // アニメーション付きでプログレスリングを更新
+      setTimeout(() => {
+        const rings = document.querySelectorAll('.progress-ring-circle');
+        rings.forEach(ring => {
+          ring.style.transition = 'stroke-dashoffset 0.5s ease-in-out';
+        });
+      }, 500);
+    }
+
+    function addEventHandlers() {
+      // カレンダーの日付クリック
+      const calendarDays = document.querySelectorAll('.calendar-day');
+      calendarDays.forEach(day => {
+        day.addEventListener('click', function() {
+          const dayNumber = this.querySelector('.text-sm')?.textContent;
+          if (dayNumber && this.classList.contains('has-delivery')) {
+            showCalendarDetails(dayNumber);
+          }
+        });
+      });
+
+      // 機器リストのソート
+      const tableHeaders = document.querySelectorAll('th');
+      tableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+          sortTable(this);
+        });
+      });
+
+      // リアルタイム更新
+      startRealTimeUpdates();
+    }
+
+    function startRealTimeUpdates() {
+      // 模擬的なリアルタイム更新
+      setInterval(() => {
+        updateDeliveryStatus();
+        updateNotificationCount();
+      }, 60000); // 1分ごと
+    }
+
+    function updateRealTimeData() {
+      // 納期状況の更新
+      const statusCards = document.querySelectorAll('.status-delivered, .status-on-schedule, .status-warning, .status-delayed');
+      statusCards.forEach(card => {
+        const number = card.querySelector('.text-3xl');
+        if (number) {
+          // 模擬的な数値変動
+          const currentValue = parseInt(number.textContent);
+          const variation = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+          const newValue = Math.max(0, currentValue + variation);
+          
+          if (newValue !== currentValue) {
+            number.style.transform = 'scale(1.1)';
+            setTimeout(() => {
+              number.textContent = newValue;
+              number.style.transform = 'scale(1)';
+            }, 200);
+          }
+        }
+      });
+    }
+
+    function updateDeliveryStatus() {
+      // 納品ステータスの動的更新
+      const statusElements = document.querySelectorAll('.status-badge');
+      statusElements.forEach(element => {
+        if (element.textContent.includes('本日納期')) {
+          const now = new Date();
+          if (now.getHours() >= 17) {
+            element.className = 'status-badge status-delayed';
+            element.innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>要確認';
+          }
+        }
+      });
+    }
+
+    function updateNotificationCount() {
+      const notificationBadge = document.querySelector('.bg-red-500.text-white');
+      if (notificationBadge) {
+        const currentCount = parseInt(notificationBadge.textContent);
+        // 模擬的な通知増加
+        if (Math.random() < 0.1) { // 10%の確率で通知増加
+          notificationBadge.textContent = currentCount + 1;
+          notificationBadge.style.animation = 'pulse 0.5s ease-in-out';
+        }
+      }
+    }
+
+    function showCalendarDetails(day) {
+      const details = {
+        '15': '遅延案件: 空調機器×2件',
+        '16': '納期案件: LED照明×3件',
+        '18': '本日納期: 制御装置など8件',
+        '19': '納期案件: 配線器具×2件',
+        '20': '納期案件: 照明器具など5件',
+        '22': '納期案件: 変圧器×1件',
+        '25': '納期案件: 空調部品など3件',
+        '28': '納期案件: 電気設備など4件',
+        '30': '納期案件: 制御盤など2件'
+      };
+      
+      const detail = details[day] || '納期案件なし';
+      showNotification(`5月${day}日: ${detail}`, 'info');
+    }
+
+    function sortTable(header) {
+      const table = header.closest('table');
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const columnIndex = Array.from(header.parentElement.children).indexOf(header);
+      
+      rows.sort((a, b) => {
+        const aValue = a.children[columnIndex].textContent.trim();
+        const bValue = b.children[columnIndex].textContent.trim();
+        
+        // 日付の場合
+        if (aValue.match(/\d{4}\/\d{2}\/\d{2}/)) {
+          return new Date(aValue) - new Date(bValue);
+        }
+        
+        // 数値の場合
+        if (aValue.match(/^\d+/)) {
+          return parseInt(aValue) - parseInt(bValue);
+        }
+        
+        // 文字列の場合
+        return aValue.localeCompare(bValue);
+      });
+      
+      // テーブルを再構築
+      rows.forEach(row => tbody.appendChild(row));
+      
+      showNotification(`${header.textContent}でソートしました`, 'success');
+    }
+
+    // ダイアログ関連関数
+    function openDeliveryDialog(itemName) {
+      document.getElementById('deliveryItemName').value = itemName;
+      document.getElementById('deliveryDialog').classList.remove('hidden');
+      document.getElementById('deliveryDialog').classList.add('flex');
+    }
+
+    function closeDeliveryDialog() {
+      document.getElementById('deliveryDialog').classList.add('hidden');
+      document.getElementById('deliveryDialog').classList.remove('flex');
+    }
+
+    function confirmDelivery() {
+      const itemName = document.getElementById('deliveryItemName').value;
+      closeDeliveryDialog();
+      showNotification(`${itemName}の納品登録が完了しました`, 'success');
+      
+      // 納品済みに状態更新（実際の実装では API呼び出し）
+      setTimeout(() => {
+        updateDeliveryTable(itemName);
+      }, 500);
+    }
+
+    function openContactDialog(vendorName) {
+      document.getElementById('contactVendorName').value = vendorName;
+      document.getElementById('contactDialog').classList.remove('hidden');
+      document.getElementById('contactDialog').classList.add('flex');
+    }
+
+    function closeContactDialog() {
+      document.getElementById('contactDialog').classList.add('hidden');
+      document.getElementById('contactDialog').classList.remove('flex');
+    }
+
+    function confirmContact() {
+      const vendorName = document.getElementById('contactVendorName').value;
+      closeContactDialog();
+      showNotification(`${vendorName}への連絡記録を追加しました`, 'success');
+      
+      // 連絡履歴更新（実際の実装では API呼び出し）
+      setTimeout(() => {
+        addContactHistory(vendorName);
+      }, 500);
+    }
+
+    function updateDeliveryTable(itemName) {
+      // 該当行のステータスを「納品済み」に更新
+      const rows = document.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        const nameCell = row.querySelector('.font-medium');
+        if (nameCell && nameCell.textContent.includes(itemName)) {
+          const statusCell = row.querySelector('.status-badge');
+          const remainingCell = row.cells[4];
+          
+          if (statusCell) {
+            statusCell.className = 'status-badge status-delivered px-3 py-1 rounded-full text-xs font-medium';
+            statusCell.innerHTML = '<i class="fas fa-check mr-1"></i>納品完了';
+          }
+          
+          if (remainingCell) {
+            remainingCell.innerHTML = '<span class="text-green-600 font-bold">納品済</span>';
+          }
+          
+          // 行全体をハイライト
+          row.style.backgroundColor = '#f0fdf4';
+          setTimeout(() => {
+            row.style.backgroundColor = '';
+          }, 2000);
+        }
+      });
+    }
+
+    function addContactHistory(vendorName) {
+      // 連絡履歴に新しいエントリを追加
+      const historyContainer = document.querySelector('.timeline-item').parentElement;
+      const newEntry = document.createElement('div');
+      newEntry.className = 'relative pl-8 timeline-item';
+      newEntry.innerHTML = `
+        <div class="absolute left-0 top-2 w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-sm font-medium text-blue-800">${vendorName}</span>
+            <span class="text-xs text-blue-600">たった今</span>
+          </div>
+          <p class="text-sm text-blue-700">納期について連絡を行いました。</p>
+          <div class="mt-2 flex space-x-2">
+            <button class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200">
+              <i class="fas fa-eye mr-1"></i>詳細
+            </button>
+          </div>
+        </div>
+      `;
+      
+      historyContainer.insertBefore(newEntry, historyContainer.firstChild);
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check-circle',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times-circle',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-sm`;
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <i class="${icon} mr-3"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // キーボードショートカット
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+          case 'f': // Ctrl+F で検索
+            e.preventDefault();
+            document.querySelector('input[placeholder*="プロジェクト名"]')?.focus();
+            break;
+          case 'n': // Ctrl+N で新規納品登録
+            e.preventDefault();
+            openDeliveryDialog('新規登録');
+            break;
+          case 'r': // Ctrl+R でリアルタイム更新
+            e.preventDefault();
+            updateRealTimeData();
+            showNotification('データを更新しました', 'success');
+            break;
+        }
+      }
+      
+      // ESCキーでダイアログを閉じる
+      if (e.key === 'Escape') {
+        closeDeliveryDialog();
+        closeContactDialog();
+      }
+    });
+
+    // ページ離脱時の確認
+    window.addEventListener('beforeunload', function(e) {
+      const openDialogs = document.querySelectorAll('.fixed:not(.hidden)');
+      if (openDialogs.length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    });
+
+    // タブの可視性変更時の処理
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        // タブがアクティブになった時にデータを更新
+        updateRealTimeData();
+      }
+    });
+  </script>
+</body>
+</html>
+          

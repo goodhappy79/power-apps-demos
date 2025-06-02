@@ -1,0 +1,1579 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>技術文書承認システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .approval-flow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+    .approval-flow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      z-index: 1;
+    }
+    .approval-step {
+      position: relative;
+      z-index: 2;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 50%;
+      border: 3px solid #10b981;
+      min-width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .approval-step.pending {
+      border-color: #f59e0b;
+      background: #fef3c7;
+    }
+    .approval-step.completed {
+      border-color: #10b981;
+      background: #d1fae5;
+    }
+    .approval-step.current {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      animation: pulse 2s infinite;
+    }
+    .copilot-suggestion {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      color: white;
+      margin: 1rem 0;
+    }
+    .diff-added {
+      background-color: #dcfce7;
+      border-left: 4px solid #16a34a;
+      padding: 0.25rem 0.5rem;
+      margin: 0.25rem 0;
+    }
+    .diff-modified {
+      background-color: #fef3c7;
+      border-left: 4px solid #f59e0b;
+      padding: 0.25rem 0.5rem;
+      margin: 0.25rem 0;
+    }
+    .diff-removed {
+      background-color: #fee2e2;
+      border-left: 4px solid #dc2626;
+      padding: 0.25rem 0.5rem;
+      margin: 0.25rem 0;
+    }
+    .technical-highlight {
+      background-color: #eff6ff;
+      border: 2px solid #3b82f6;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .drawing-viewer {
+      background: linear-gradient(145deg, #f8fafc, #e2e8f0);
+      border: 2px solid #cbd5e1;
+      border-radius: 12px;
+      min-height: 400px;
+      position: relative;
+      overflow: hidden;
+    }
+    .drawing-controls {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 10;
+    }
+    .drawing-grid {
+      background-image: 
+        linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+        linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.5;
+    }
+    .revision-tag {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      background: #dc2626;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .drawing-annotation {
+      position: absolute;
+      background: rgba(239, 68, 68, 0.9);
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      animation: blink 2s infinite;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0.7; }
+    }
+    .pipe-connection {
+      stroke: #ef4444;
+      stroke-width: 3;
+      stroke-dasharray: 5,5;
+      animation: pipe-flow 2s linear infinite;
+    }
+    @keyframes pipe-flow {
+      0% { stroke-dashoffset: 0; }
+      100% { stroke-dashoffset: 10; }
+    }
+    .equipment-box {
+      fill: #f3f4f6;
+      stroke: #374151;
+      stroke-width: 2;
+    }
+    .equipment-box.modified {
+      fill: #fef3c7;
+      stroke: #f59e0b;
+      stroke-width: 3;
+    }
+    .equipment-box.new {
+      fill: #dcfce7;
+      stroke: #16a34a;
+      stroke-width: 3;
+    }
+    .heat-source-layout {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-blue-800 to-indigo-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-drafting-compass text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">技術文書承認システム</h1>
+              <p class="text-blue-200 text-sm">Technical Document Approval System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">設計・施工図面</span>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">承認効率化率</div>
+              <div class="text-lg font-bold text-white">92%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">佐藤 主任</div>
+              <div class="text-sm text-blue-200">設計管理責任者</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-blue-800 rounded-full flex items-center justify-center font-bold text-lg">
+              ST
+            </div>
+          </div>
+          <button class="text-blue-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">技術部門HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">技術文書承認</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">施工図面承認</span>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-blue-600 font-semibold">DOC-2025-0157</span>
+    </nav>
+
+    <!-- 文書概要カード -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-fire text-white text-2xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">熱源装置廻り施工図</h2>
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mt-2">
+              <span class="flex items-center"><i class="fas fa-hashtag mr-1 text-blue-500"></i>DOC-2025-0157</span>
+              <span class="flex items-center"><i class="fas fa-calendar mr-1 text-green-500"></i>2025/05/20</span>
+              <span class="flex items-center"><i class="fas fa-user mr-1 text-purple-500"></i>鈴木一郎</span>
+              <span class="flex items-center"><i class="fas fa-building mr-1 text-orange-500"></i>ABC工場案件</span>
+              <span class="flex items-center"><i class="fas fa-code-branch mr-1 text-red-500"></i>Rev.3</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div class="text-right">
+            <div class="text-2xl font-bold text-orange-600">Rev.3</div>
+            <div class="text-sm text-gray-500">最新版</div>
+          </div>
+          <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+
+      <!-- 承認フロー -->
+      <div class="bg-gray-50 rounded-xl p-4 mb-4">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-route text-blue-600 mr-2"></i>
+          承認ワークフロー
+        </h3>
+        <div class="approval-flow">
+          <div class="flex-1 flex justify-between items-center">
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-user text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">作成者</div>
+              <div class="text-xs text-gray-500">鈴木一郎</div>
+              <div class="text-xs text-green-600">完了</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step current">
+                <i class="fas fa-user-tie text-blue-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">設計責任者</div>
+              <div class="text-xs text-gray-500">佐藤主任</div>
+              <div class="text-xs text-blue-600">承認待ち</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step pending">
+                <i class="fas fa-user-cog text-yellow-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">技術部長</div>
+              <div class="text-xs text-gray-500">田中修一</div>
+              <div class="text-xs text-yellow-600">待機中</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step pending">
+                <i class="fas fa-building text-yellow-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">顧客承認</div>
+              <div class="text-xs text-gray-500">ABC工場</div>
+              <div class="text-xs text-yellow-600">待機中</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインコンテンツ -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- Copilotアシスタント -->
+        <div class="copilot-suggestion card-hover">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-robot text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold">Copilot 技術文書分析</h3>
+              <p class="text-white text-opacity-80 text-sm">AI支援による図面・仕様適正性評価</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <!-- 技術整合性チェック -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-cogs text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">技術整合性チェック</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 配管サイズ: <span class="font-bold text-green-300">基本設計と整合性あり</span></div>
+                <div>• 熱交換器容量: <span class="font-bold text-green-300">負荷計算書と適合</span></div>
+                <div>• バイパス弁位置: <span class="font-bold text-yellow-300">運転性向上のため位置変更推奨</span></div>
+              </div>
+            </div>
+            
+            <!-- 安全性分析 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-shield-alt text-yellow-300 mr-2"></i>
+                <span class="text-white font-medium text-sm">安全性・保守性分析</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 安全弁設置: <span class="font-bold text-green-300">JIS規格準拠</span></div>
+                <div>• 保守スペース: <span class="font-bold text-yellow-300">一部不足箇所あり（要確認）</span></div>
+                <div>• 緊急停止装置: <span class="font-bold text-green-300">適切配置</span></div>
+              </div>
+            </div>
+            
+            <!-- 施工性評価 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-tools text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">施工性・コスト評価</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 配管ルート: <span class="font-bold text-green-300">施工効率良好</span></div>
+                <div>• 溶接継手数: <span class="font-bold text-blue-300">標準範囲内</span></div>
+                <div>• 材料使用量: <span class="font-bold text-yellow-300">Rev.2比+5%（配管変更影響）</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex space-x-2 mt-4">
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-download mr-1"></i>詳細分析
+            </button>
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-comment-medical mr-1"></i>改善提案
+            </button>
+          </div>
+        </div>
+
+        <!-- 図面ビューアー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-drafting-compass text-orange-600 mr-2"></i>
+              熱源装置廻り施工図 Rev.3
+            </h3>
+            <div class="flex items-center space-x-2">
+              <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">最新版</span>
+              <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">変更あり</span>
+            </div>
+          </div>
+
+          <!-- 図面ビューアー -->
+          <div class="drawing-viewer drawing-grid">
+            <div class="revision-tag">Rev.3 - 変更箇所</div>
+            
+            <!-- 図面コントロール -->
+            <div class="drawing-controls">
+              <div class="bg-white bg-opacity-90 rounded-lg p-2 flex space-x-2">
+                <button class="p-2 hover:bg-gray-100 rounded" title="拡大">
+                  <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="p-2 hover:bg-gray-100 rounded" title="縮小">
+                  <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="p-2 hover:bg-gray-100 rounded" title="全体表示">
+                  <i class="fas fa-expand"></i>
+                </button>
+                <button class="p-2 hover:bg-gray-100 rounded" title="差分表示">
+                  <i class="fas fa-code-compare"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- SVG図面描画 -->
+            <svg width="100%" height="400" viewBox="0 0 800 400" class="absolute inset-0">
+              <!-- 背景グリッド -->
+              <defs>
+                <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e2e8f0" stroke-width="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+              
+              <!-- 熱源装置本体 -->
+              <rect x="100" y="150" width="120" height="80" class="equipment-box" />
+              <text x="160" y="185" text-anchor="middle" class="text-xs font-bold fill-gray-700">熱源装置</text>
+              <text x="160" y="200" text-anchor="middle" class="text-xs fill-gray-600">750kW</text>
+              
+              <!-- 熱交換器（新規追加） -->
+              <rect x="300" y="160" width="80" height="60" class="equipment-box new" />
+              <text x="340" y="185" text-anchor="middle" class="text-xs font-bold fill-green-700">熱交換器</text>
+              <text x="340" y="200" text-anchor="middle" class="text-xs fill-green-600">新規追加</text>
+              
+              <!-- 循環ポンプ -->
+              <circle cx="460" cy="190" r="25" class="equipment-box" />
+              <text x="460" y="195" text-anchor="middle" class="text-xs font-bold fill-gray-700">P-1</text>
+              
+              <!-- 膨張タンク -->
+              <rect x="550" y="100" width="60" height="40" class="equipment-box" />
+              <text x="580" y="125" text-anchor="middle" class="text-xs font-bold fill-gray-700">膨張タンク</text>
+              
+              <!-- 配管ライン（往き） -->
+              <path d="M 220 170 L 300 170 L 300 180 L 435 180" 
+                    stroke="#ef4444" stroke-width="4" fill="none" />
+              <text x="250" y="165" class="text-xs fill-red-600 font-bold">往き 65A</text>
+              
+              <!-- 配管ライン（戻り） -->
+              <path d="M 435 200 L 300 200 L 300 210 L 220 210" 
+                    stroke="#3b82f6" stroke-width="4" fill="none" />
+              <text x="250" y="225" class="text-xs fill-blue-600 font-bold">戻り 65A</text>
+              
+              <!-- バイパス配管（変更箇所） -->
+              <path d="M 380 180 L 420 180 L 420 200 L 380 200" 
+                    class="pipe-connection" fill="none" />
+              <text x="400" y="175" text-anchor="middle" class="text-xs fill-red-600 font-bold">バイパス弁</text>
+              <text x="400" y="160" text-anchor="middle" class="text-xs fill-red-600">変更</text>
+              
+              <!-- 補給水配管 -->
+              <path d="M 580 140 L 580 180 L 485 180" 
+                    stroke="#16a34a" stroke-width="2" fill="none" stroke-dasharray="5,5" />
+              <text x="520" y="155" class="text-xs fill-green-600">補給水 25A</text>
+              
+              <!-- 安全弁 -->
+              <circle cx="500" cy="160" r="8" fill="#fbbf24" stroke="#f59e0b" stroke-width="2" />
+              <text x="500" y="145" text-anchor="middle" class="text-xs fill-orange-600 font-bold">SV</text>
+              
+              <!-- 温度計 -->
+              <circle cx="250" cy="170" r="6" fill="#8b5cf6" />
+              <text x="250" y="155" text-anchor="middle" class="text-xs fill-purple-600">TI</text>
+              
+              <circle cx="250" cy="210" r="6" fill="#8b5cf6" />
+              <text x="250" y="240" text-anchor="middle" class="text-xs fill-purple-600">TI</text>
+              
+              <!-- 圧力計 -->
+              <circle cx="350" cy="180" r="6" fill="#06b6d4" />
+              <text x="350" y="165" text-anchor="middle" class="text-xs fill-cyan-600">PI</text>
+              
+              <!-- 変更注記 -->
+              <rect x="50" y="280" width="200" height="80" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" rx="5" />
+              <text x="60" y="300" class="text-sm font-bold fill-orange-800">Rev.3 変更点</text>
+              <text x="60" y="320" class="text-xs fill-orange-700">1. バイパス弁位置変更</text>
+              <text x="60" y="335" class="text-xs fill-orange-700">2. 熱交換器追加</text>
+              <text x="60" y="350" class="text-xs fill-orange-700">3. 配管サイズ見直し</text>
+              
+              <!-- 図面情報 -->
+              <rect x="600" y="280" width="150" height="100" fill="#f8fafc" stroke="#64748b" stroke-width="1" rx="5" />
+              <text x="610" y="300" class="text-sm font-bold fill-gray-800">図面情報</text>
+              <text x="610" y="320" class="text-xs fill-gray-600">図面番号: M-2025-0157</text>
+              <text x="610" y="335" class="text-xs fill-gray-600">作成日: 2025/05/20</text>
+              <text x="610" y="350" class="text-xs fill-gray-600">縮尺: 1/50</text>
+              <text x="610" y="365" class="text-xs fill-gray-600">作成者: 鈴木一郎</text>
+            </svg>
+
+            <!-- 変更箇所アノテーション -->
+            <div class="drawing-annotation" style="top: 180px; left: 420px;">
+              変更箇所
+            </div>
+            <div class="drawing-annotation" style="top: 160px; left: 340px;">
+              新規追加
+            </div>
+          </div>
+
+          <!-- 図面詳細情報 -->
+          <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 bg-orange-50 rounded-lg">
+              <h4 class="font-semibold text-orange-800 mb-2">図面仕様</h4>
+              <div class="text-sm text-orange-700 space-y-1">
+                <div>• 縮尺: 1/50</div>
+                <div>• CADソフト: AutoCAD 2024</div>
+                <div>• ファイル形式: DWG</div>
+                <div>• ファイルサイズ: 3.2MB</div>
+              </div>
+            </div>
+            <div class="p-4 bg-blue-50 rounded-lg">
+              <h4 class="font-semibold text-blue-800 mb-2">適用規格</h4>
+              <div class="text-sm text-blue-700 space-y-1">
+                <div>• JIS B 8201（熱交換器）</div>
+                <div>• JIS B 8225（安全弁）</div>
+                <div>• ASME VIII（圧力容器）</div>
+                <div>• 建築設備設計基準</div>
+              </div>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg">
+              <h4 class="font-semibold text-green-800 mb-2">材質・仕様</h4>
+              <div class="text-sm text-green-700 space-y-1">
+                <div>• 配管: SGP + 保温材</div>
+                <div>• 弁類: 青銅弁・鋳鉄弁</div>
+                <div>• 接続: JIS 10K フランジ</div>
+                <div>• 設計圧力: 1.0MPa</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 変更履歴・差分表示 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-code-compare text-purple-600 mr-2"></i>
+            変更履歴・差分表示 (Rev.2 → Rev.3)
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 変更サマリー -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="text-center p-3 bg-green-50 rounded-lg border border-green-200">
+                <div class="text-2xl font-bold text-green-600">2</div>
+                <div class="text-sm text-green-700">追加項目</div>
+              </div>
+              <div class="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <div class="text-2xl font-bold text-yellow-600">3</div>
+                <div class="text-sm text-yellow-700">変更項目</div>
+              </div>
+              <div class="text-center p-3 bg-red-50 rounded-lg border border-red-200">
+                <div class="text-2xl font-bold text-red-600">1</div>
+                <div class="text-sm text-red-700">削除項目</div>
+              </div>
+            </div>
+
+            <!-- 詳細変更内容 -->
+            <div class="space-y-3">
+              <div class="diff-added">
+                <div class="flex items-center">
+                  <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                  <span class="font-medium">熱交換器追加</span>
+                  <span class="ml-auto text-sm text-gray-500">H-01</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1 ml-6">
+                  プレート式熱交換器（100kW）を熱源装置下流に追加。効率向上のため。
+                </div>
+              </div>
+
+              <div class="diff-added">
+                <div class="flex items-center">
+                  <i class="fas fa-plus-circle text-green-600 mr-2"></i>
+                  <span class="font-medium">温度調節弁追加</span>
+                  <span class="ml-auto text-sm text-gray-500">TCV-01</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1 ml-6">
+                  熱交換器制御用の温度調節弁を配管系統に追加。
+                </div>
+              </div>
+
+              <div class="diff-modified">
+                <div class="flex items-center">
+                  <i class="fas fa-edit text-yellow-600 mr-2"></i>
+                  <span class="font-medium">バイパス弁位置変更</span>
+                  <span class="ml-auto text-sm text-gray-500">BPV-01</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1 ml-6">
+                  保守性向上のため、バイパス弁を熱交換器上流に移設。
+                </div>
+              </div>
+
+              <div class="diff-modified">
+                <div class="flex items-center">
+                  <i class="fas fa-edit text-yellow-600 mr-2"></i>
+                  <span class="font-medium">配管サイズ変更</span>
+                  <span class="ml-auto text-sm text-gray-500">往き・戻り</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1 ml-6">
+                  往き管・戻り管を50A→65Aに変更。流量増加に対応。
+                </div>
+              </div>
+
+              <div class="diff-modified">
+                <div class="flex items-center">
+                  <i class="fas fa-edit text-yellow-600 mr-2"></i>
+                  <span class="font-medium">保温材仕様変更</span>
+                  <span class="ml-auto text-sm text-gray-500">全配管</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1 ml-6">
+                  保温材厚さを25mm→40mmに変更。省エネ効果向上。
+                </div>
+              </div>
+
+              <div class="diff-removed">
+                <div class="flex items-center">
+                  <i class="fas fa-minus-circle text-red-600 mr-2"></i>
+                  <span class="font-medium">仮設配管削除</span>
+                  <span class="ml-auto text-sm text-gray-500">TEMP-01</span>
+                </div>
+                <div class="text-sm text-gray-600 mt-1 ml-6">
+                  試運転用仮設配管を本設計から削除。
+                </div>
+              </div>
+            </div>
+
+            <!-- 承認者コメント（前回） -->
+            <div class="mt-6 p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <h4 class="font-semibold text-blue-800 mb-2">Rev.2 承認時コメント</h4>
+              <div class="text-sm text-blue-700">
+                <div class="mb-2">
+                  <span class="font-medium">田中部長:</span> 
+                  「バイパス弁の位置が保守性を考慮すると不適切。熱交換器追加も検討すべき。」
+                </div>
+                <div>
+                  <span class="font-medium">佐藤主任:</span> 
+                  「配管サイズについても流量計算結果を反映した見直しが必要。」
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 技術的整合性チェック結果 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-check-double text-green-600 mr-2"></i>
+            技術的整合性チェック結果
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 設計整合性 -->
+            <div class="technical-highlight">
+              <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                <i class="fas fa-ruler-combined mr-2"></i>
+                基本設計との整合性
+              </h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">熱負荷計算</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">機器容量</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">配管系統</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">制御方式</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 法規チェック -->
+            <div class="technical-highlight">
+              <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                <i class="fas fa-gavel mr-2"></i>
+                法規・規格適合性
+              </h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">建築基準法</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">消防法</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">労働安全衛生法</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">JIS規格</span>
+                  <span class="text-green-600 font-bold">✓ 適合</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 施工性評価 -->
+            <div class="technical-highlight">
+              <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                <i class="fas fa-hard-hat mr-2"></i>
+                施工性・保守性
+              </h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">施工スペース</span>
+                  <span class="text-green-600 font-bold">✓ 良好</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">保守アクセス</span>
+                  <span class="text-yellow-600 font-bold">△ 要注意</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">配管ルート</span>
+                  <span class="text-green-600 font-bold">✓ 良好</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">機器配置</span>
+                  <span class="text-green-600 font-bold">✓ 良好</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 安全性評価 -->
+            <div class="technical-highlight">
+              <h4 class="font-semibold text-blue-800 mb-3 flex items-center">
+                <i class="fas fa-shield-alt mr-2"></i>
+                安全性・信頼性
+              </h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">安全装置</span>
+                  <span class="text-green-600 font-bold">✓ 適切</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">緊急停止装置</span>
+                  <span class="text-green-600 font-bold">✓ 適切</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">圧力安全弁</span>
+                  <span class="text-green-600 font-bold">✓ 適切</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-sm">漏洩対策</span>
+                  <span class="text-green-600 font-bold">✓ 適切</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 注意事項 -->
+          <div class="mt-4 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+            <h5 class="font-semibold text-yellow-800 mb-2">
+              <i class="fas fa-exclamation-triangle mr-2"></i>
+              確認要注意事項
+            </h5>
+            <div class="text-sm text-yellow-700 space-y-1">
+              <div>• 熱交換器周りの保守スペースが最小限のため、将来の保守計画時に注意が必要</div>
+              <div>• バイパス弁の操作性について現地確認を推奨</div>
+              <div>• 配管サイズ変更に伴う支持金物の強度再計算が必要</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 関連文書・ファイル管理 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-folder-open text-purple-600 mr-2"></i>
+            関連文書・ファイル管理
+          </h3>
+          
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-drafting-compass text-blue-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">熱源装置施工図_Rev3.dwg</div>
+              <div class="text-xs text-gray-500">3.2MB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-pdf text-red-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">機器仕様書.pdf</div>
+              <div class="text-xs text-gray-500">1.8MB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-excel text-green-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">熱負荷計算書.xlsx</div>
+              <div class="text-xs text-gray-500">956KB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-word text-purple-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">変更理由書.docx</div>
+              <div class="text-xs text-gray-500">425KB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 関連文書リスト -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3">関連設計文書</h4>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div class="flex items-center">
+                  <i class="fas fa-link text-blue-500 mr-2"></i>
+                  <span class="text-sm font-medium">基本設計書 (Rev.2)</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">整合性確認済</span>
+                  <button class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-external-link-alt text-xs"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div class="flex items-center">
+                  <i class="fas fa-link text-blue-500 mr-2"></i>
+                  <span class="text-sm font-medium">P&ID図 (Rev.1)</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">要更新</span>
+                  <button class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-external-link-alt text-xs"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div class="flex items-center">
+                  <i class="fas fa-link text-blue-500 mr-2"></i>
+                  <span class="text-sm font-medium">制御仕様書 (Rev.2)</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">整合性確認済</span>
+                  <button class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-external-link-alt text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ファイル管理連携 -->
+          <div class="mt-4 p-4 bg-purple-50 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-semibold text-purple-800 mb-1">統合ファイル管理連携</h4>
+                <div class="text-sm text-purple-600">プロジェクトフォルダ: 2025-ME0123_ABC工場省エネ設備導入/3_設計資料/31_詳細設計/</div>
+              </div>
+              <button class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                <i class="fas fa-folder-open mr-1"></i>フォルダを開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- 承認ステータス詳細 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-clipboard-check text-blue-600 mr-2"></i>
+            承認ステータス詳細
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 現在の承認者 -->
+            <div class="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <div class="font-medium text-blue-800 mb-2">現在の承認者</div>
+              <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold">
+                  佐
+                </div>
+                <div>
+                  <div class="font-medium text-sm">佐藤主任</div>
+                  <div class="text-xs text-gray-500">設計管理責任者</div>
+                </div>
+              </div>
+              <div class="mt-2 text-sm text-blue-700">
+                承認期限: 2025/05/22 17:00
+              </div>
+            </div>
+            
+            <!-- 承認権限レベル -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-2">承認権限レベル</h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between text-sm">
+                  <span>設計変更</span>
+                  <span class="text-green-600 font-bold">✓ 権限あり</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span>仕様変更</span>
+                  <span class="text-green-600 font-bold">✓ 権限あり</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span>コスト変更</span>
+                  <span class="text-yellow-600 font-bold">△ 条件付</span>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span>最終承認</span>
+                  <span class="text-red-600 font-bold">× 権限なし</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 次の承認者 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-2">次の承認者</h4>
+              <div class="p-3 bg-gray-50 rounded">
+                <div class="flex items-center space-x-3">
+                  <div class="w-8 h-8 bg-gray-500 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                    田
+                  </div>
+                  <div>
+                    <div class="font-medium text-sm">田中修一</div>
+                    <div class="text-xs text-gray-500">技術部長</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 技術評価指標 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-line text-green-600 mr-2"></i>
+            技術評価指標
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 設計品質スコア -->
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium">設計品質スコア</span>
+                <span class="text-lg font-bold text-green-600">92/100</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+              </div>
+            </div>
+            
+            <!-- 法規適合度 -->
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium">法規適合度</span>
+                <span class="text-lg font-bold text-green-600">100%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+              </div>
+            </div>
+            
+            <!-- 施工性評価 -->
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium">施工性評価</span>
+                <span class="text-lg font-bold text-yellow-600">85/100</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-500 h-2 rounded-full" style="width: 85%"></div>
+              </div>
+            </div>
+            
+            <!-- 保守性評価 -->
+            <div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm font-medium">保守性評価</span>
+                <span class="text-lg font-bold text-yellow-600">78/100</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-500 h-2 rounded-full" style="width: 78%"></div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 総合評価 -->
+          <div class="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-green-600">A</div>
+              <div class="text-sm text-green-700">総合評価</div>
+              <div class="text-xs text-gray-600 mt-1">承認推奨レベル</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- コスト影響分析 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-yen-sign text-orange-600 mr-2"></i>
+            コスト影響分析
+          </h3>
+          
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Rev.2 概算コスト</span>
+              <span class="font-medium">¥2,850,000</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">Rev.3 概算コスト</span>
+              <span class="font-bold text-blue-600">¥3,150,000</span>
+            </div>
+            <div class="border-t pt-2 flex justify-between items-center">
+              <span class="text-sm text-gray-600">変更による増額</span>
+              <span class="font-bold text-orange-600">+¥300,000</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">増額率</span>
+              <span class="font-bold text-orange-600">+10.5%</span>
+            </div>
+          </div>
+          
+          <!-- コスト内訳 -->
+          <div class="mt-4">
+            <h4 class="font-medium text-gray-800 mb-2">増額要因</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span>熱交換器追加</span>
+                <span class="text-red-600">+¥180,000</span>
+              </div>
+              <div class="flex justify-between">
+                <span>配管サイズアップ</span>
+                <span class="text-red-600">+¥85,000</span>
+              </div>
+              <div class="flex justify-between">
+                <span>保温材仕様変更</span>
+                <span class="text-red-600">+¥35,000</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 投資回収 -->
+          <div class="mt-4 p-3 bg-blue-50 rounded-lg">
+            <div class="text-sm">
+              <div class="font-medium text-blue-800 mb-1">省エネ効果</div>
+              <div class="text-blue-700">年間 ¥95,000 の光熱費削減</div>
+              <div class="text-blue-700">投資回収期間: 約3.2年</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- スケジュール影響 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-calendar-alt text-purple-600 mr-2"></i>
+            スケジュール影響
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 承認期限 -->
+            <div class="p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+              <div class="font-medium text-red-800 mb-1">承認期限</div>
+              <div class="text-sm text-red-700">
+                <div>期限: 2025/05/22 17:00</div>
+                <div>残り: <span class="font-bold">1日 6時間</span></div>
+              </div>
+            </div>
+            
+            <!-- 工程への影響 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-3">工程への影響</h4>
+              <div class="space-y-3">
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div class="font-medium text-sm">詳細設計完了</div>
+                  <div class="text-xs text-gray-500">承認後 1週間</div>
+                </div>
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div class="font-medium text-sm">機器製作開始</div>
+                  <div class="text-xs text-gray-500">承認後 2週間</div>
+                </div>
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div class="font-medium text-sm">現地工事開始</div>
+                  <div class="text-xs text-gray-500">7月1日予定</div>
+                </div>
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div class="font-medium text-sm">完工・引渡し</div>
+                  <div class="text-xs text-gray-500">8月末予定</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 遅延リスク -->
+            <div class="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+              <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                <div class="text-sm">
+                  <div class="font-medium text-yellow-800">遅延リスク</div>
+                  <div class="text-yellow-700">承認遅延時は全体工程に影響</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 承認履歴・コメント -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-comments text-indigo-600 mr-2"></i>
+            承認履歴・コメント
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- Rev.2の承認コメント -->
+            <div class="p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  田
+                </div>
+                <div>
+                  <div class="font-medium text-sm">田中修一 (Rev.2承認時)</div>
+                  <div class="text-xs text-gray-500">2025/05/15 16:30</div>
+                </div>
+              </div>
+              <div class="text-sm text-red-700">
+                バイパス弁の位置が保守性を考慮すると不適切。熱交換器追加も検討すべき。配管サイズも見直しが必要。
+              </div>
+            </div>
+            
+            <!-- 作成者コメント -->
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  鈴
+                </div>
+                <div>
+                  <div class="font-medium text-sm">鈴木一郎 (作成者)</div>
+                  <div class="text-xs text-gray-500">2025/05/20 09:15</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                前回指摘事項を全て反映しました。バイパス弁位置変更、熱交換器追加、配管サイズアップを実施。保守性と効率が向上します。
+              </div>
+            </div>
+            
+            <!-- Copilotコメント -->
+            <div class="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  AI
+                </div>
+                <div>
+                  <div class="font-medium text-sm">Copilot分析</div>
+                  <div class="text-xs text-gray-500">2025/05/20 10:45</div>
+                </div>
+              </div>
+              <div class="text-sm text-purple-700">
+                技術的整合性に問題なし。保守スペースの確保を推奨。総合評価A判定。
+              </div>
+            </div>
+            
+            <!-- システム履歴 -->
+            <div class="space-y-2">
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-check text-green-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">Copilot分析完了</span>
+                  <span class="text-gray-500 text-xs ml-2">10:45</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-upload text-blue-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">図面ファイル更新</span>
+                  <span class="text-gray-500 text-xs ml-2">09:30</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-paper-plane text-purple-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">承認申請提出</span>
+                  <span class="text-gray-500 text-xs ml-2">09:15</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- コメント入力 -->
+            <div class="border-t pt-4">
+              <textarea 
+                placeholder="承認コメントを入力..." 
+                class="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none"
+                rows="3"></textarea>
+              <div class="flex justify-end mt-2">
+                <button class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">
+                  <i class="fas fa-comment mr-1"></i>コメント追加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 承認アクションバー -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4">
+      <div class="container mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">図面:</span>
+            <span class="text-lg font-bold text-orange-600 ml-2">熱源装置廻り施工図 Rev.3</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">承認期限:</span>
+            <span class="text-red-600 font-bold ml-2">2025/05/22 17:00</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- 承認オプション -->
+          <div class="flex items-center space-x-2">
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>条件付き承認</span>
+            </label>
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>関連図面要更新</span>
+            </label>
+          </div>
+          
+          <!-- アクションボタン -->
+          <button class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            <i class="fas fa-download mr-2"></i>一括DL
+          </button>
+          <button class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+            <i class="fas fa-undo mr-2"></i>差戻し
+          </button>
+          <button class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <i class="fas fa-times mr-2"></i>却下
+          </button>
+          <button class="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
+            <i class="fas fa-check mr-2"></i>承認する
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 余白（固定バー用） -->
+    <div class="h-20"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 承認ボタンのクリック処理
+      const approveButton = document.querySelector('.bg-gradient-to-r.from-green-600');
+      if (approveButton) {
+        approveButton.addEventListener('click', function() {
+          if (confirm('この技術文書を承認しますか？\n\n文書: 熱源装置廻り施工図 Rev.3\n作成者: 鈴木一郎')) {
+            // 承認処理のシミュレーション
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              showNotification('技術文書承認が完了しました。次の承認者（技術部長）に通知されました。', 'success');
+              
+              // 承認ステップの更新
+              const currentStep = document.querySelector('.approval-step.current');
+              const nextStep = currentStep.parentElement.nextElementSibling.querySelector('.approval-step');
+              
+              currentStep.classList.remove('current');
+              currentStep.classList.add('completed');
+              currentStep.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+              currentStep.parentElement.querySelector('.text-blue-600').textContent = '承認済';
+              currentStep.parentElement.querySelector('.text-blue-600').className = 'text-xs text-green-600';
+              
+              if (nextStep) {
+                nextStep.classList.remove('pending');
+                nextStep.classList.add('current');
+                nextStep.parentElement.querySelector('.text-yellow-600').textContent = '承認待ち';
+                nextStep.parentElement.querySelector('.text-yellow-600').className = 'text-xs text-blue-600';
+              }
+              
+              // アクションバーを非表示
+              document.querySelector('.fixed.bottom-0').style.display = 'none';
+              
+            }, 2000);
+          }
+        });
+      }
+
+      // その他のイベントハンドラー
+      addEventHandlers();
+      
+      // 初期化処理
+      updateDeadlineCountdown();
+      setInterval(updateDeadlineCountdown, 60000);
+
+      // ページ読み込み時のアニメーション
+      animatePageLoad();
+
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('技術文書承認システムへようこそ。Copilot分析結果をご確認ください。', 'success');
+      }, 1000);
+    });
+
+    function addEventHandlers() {
+      // 差戻しボタン
+      const rejectButton = document.querySelector('.bg-yellow-600');
+      if (rejectButton) {
+        rejectButton.addEventListener('click', function() {
+          const reason = prompt('差戻し理由を入力してください：');
+          if (reason && reason.trim()) {
+            showNotification(`技術文書を差戻ししました。理由: ${reason}`, 'warning');
+          }
+        });
+      }
+
+      // 図面ビューアーコントロール
+      const zoomInBtn = document.querySelector('.fa-search-plus');
+      const zoomOutBtn = document.querySelector('.fa-search-minus');
+      const fitBtn = document.querySelector('.fa-expand');
+      const diffBtn = document.querySelector('.fa-code-compare');
+      
+      if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', function() {
+          showNotification('図面を拡大しました', 'info');
+        });
+      }
+      
+      if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', function() {
+          showNotification('図面を縮小しました', 'info');
+        });
+      }
+      
+      if (fitBtn) {
+        fitBtn.addEventListener('click', function() {
+          showNotification('図面を全体表示しました', 'info');
+        });
+      }
+      
+      if (diffBtn) {
+        diffBtn.addEventListener('click', function() {
+          showNotification('変更差分をハイライト表示しています', 'info');
+          // 差分アノテーションの点滅を強調
+          const annotations = document.querySelectorAll('.drawing-annotation');
+          annotations.forEach(annotation => {
+            annotation.style.animation = 'blink 1s infinite';
+          });
+        });
+      }
+
+      // ファイルプレビュー
+      const filePreviewButtons = document.querySelectorAll('.fa-eye');
+      filePreviewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const fileName = this.closest('.border-2').querySelector('.font-medium').textContent;
+          showNotification(`${fileName} をプレビューします`, 'info');
+        });
+      });
+
+      // ダウンロード機能
+      const downloadButtons = document.querySelectorAll('.fa-download');
+      downloadButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const fileName = this.closest('.border-2').querySelector('.font-medium').textContent;
+          showNotification(`${fileName} をダウンロードしました`, 'success');
+        });
+      });
+
+      // フォルダ連携ボタン
+      const folderButton = document.querySelector('.bg-purple-600');
+      if (folderButton) {
+        folderButton.addEventListener('click', function() {
+          showNotification('統合ファイル管理システムでプロジェクトフォルダを開いています...', 'info');
+        });
+      }
+
+      // 関連文書リンク
+      const relatedDocLinks = document.querySelectorAll('.fa-external-link-alt');
+      relatedDocLinks.forEach(link => {
+        link.addEventListener('click', function() {
+          const docName = this.closest('.flex').querySelector('.font-medium').textContent;
+          showNotification(`${docName} を開いています...`, 'info');
+        });
+      });
+
+      // Copilotアシスタント詳細分析
+      const detailAnalysisButton = document.querySelector('.bg-white.bg-opacity-20');
+      if (detailAnalysisButton && detailAnalysisButton.textContent.includes('詳細分析')) {
+        detailAnalysisButton.addEventListener('click', function() {
+          showNotification('Copilot詳細技術分析レポートを生成しています...', 'info');
+        });
+      }
+
+      // コメント追加機能
+      const commentButton = document.querySelector('.bg-gray-500');
+      const commentTextarea = document.querySelector('textarea');
+      if (commentButton && commentTextarea) {
+        commentButton.addEventListener('click', function() {
+          const comment = commentTextarea.value.trim();
+          if (comment) {
+            const commentSection = this.closest('.space-y-4');
+            const newComment = document.createElement('div');
+            newComment.className = 'p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400';
+            newComment.innerHTML = `
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  佐
+                </div>
+                <div>
+                  <div class="font-medium text-sm">佐藤主任 (設計管理責任者)</div>
+                  <div class="text-xs text-gray-500">${new Date().toLocaleString('ja-JP')}</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">${comment}</div>
+            `;
+            commentSection.insertBefore(newComment, commentSection.children[commentSection.children.length - 2]);
+            commentTextarea.value = '';
+            showNotification('承認コメントを追加しました', 'success');
+          }
+        });
+      }
+    }
+
+    function updateDeadlineCountdown() {
+      const deadlineText = document.querySelector('.text-red-600.font-bold');
+      if (deadlineText && deadlineText.textContent.includes('2025/05/22')) {
+        const deadline = new Date('2025-05-22T17:00:00');
+        const now = new Date();
+        const diff = deadline - now;
+        
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          
+          if (days > 0) {
+            deadlineText.textContent = `残り ${days}日${hours}時間`;
+          } else {
+            deadlineText.textContent = `残り ${hours}時間${minutes}分`;
+          }
+        }
+      }
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // 図面アノテーションクリック処理
+    document.querySelectorAll('.drawing-annotation').forEach(annotation => {
+      annotation.addEventListener('click', function() {
+        const annotationText = this.textContent;
+        showNotification(`変更箇所の詳細: ${annotationText}`, 'info');
+      });
+    });
+
+    // 技術評価指標の更新アニメーション
+    setTimeout(() => {
+      const progressBars = document.querySelectorAll('.bg-green-500, .bg-yellow-500');
+      progressBars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        bar.style.transition = 'width 1s ease-in-out';
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 100);
+      });
+    }, 1500);
+  </script>
+</body>
+</html>
