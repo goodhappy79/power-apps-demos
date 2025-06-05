@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>請求確認・発行システム - カスタマー部門</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .billing-status {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+    .billing-status::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, #10b981, #3b82f6, #8b5cf6);
+      z-index: 1;
+    }
+    .status-step {
+      position: relative;
+      z-index: 2;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 50%;
+      border: 3px solid #e5e7eb;
+      min-width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .status-step.completed {
+      border-color: #10b981;
+      background: #d1fae5;
+    }
+    .status-step.current {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      animation: pulse 2s infinite;
+    }
+    .status-step.pending {
+      border-color: #f59e0b;
+      background: #fef3c7;
+    }
+    .copilot-suggestion {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      color: white;
+      margin: 1rem 0;
+    }
+    .invoice-preview {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      background: white;
+      min-height: 500px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .invoice-header {
+      background: #f8fafc;
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .amount-highlight {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-weight: bold;
+      text-align: center;
+      animation: glow 2s infinite alternate;
+    }
+    @keyframes glow {
+      from { box-shadow: 0 0 5px rgba(245, 158, 11, 0.5); }
+      to { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+    }
+    .billing-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .billing-table th,
+    .billing-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .billing-table th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #374151;
+    }
+    .billing-table tr:hover {
+      background: #f8fafc;
+    }
+    .priority-high {
+      border-left: 4px solid #ef4444;
+      background: linear-gradient(90deg, #fef2f2 0%, white 100%);
+    }
+    .priority-medium {
+      border-left: 4px solid #f59e0b;
+      background: linear-gradient(90deg, #fffbeb 0%, white 100%);
+    }
+    .priority-low {
+      border-left: 4px solid #10b981;
+      background: linear-gradient(90deg, #f0fdf4 0%, white 100%);
+    }
+    .file-upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      background: #f9fafb;
+      transition: all 0.3s;
+    }
+    .file-upload-area:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring-circle {
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 251.2;
+      transition: stroke-dashoffset 0.35s;
+      transform-origin: 50% 50%;
+    }
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .stamped {
+      position: relative;
+    }
+    .stamped::after {
+      content: '承認済';
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #ef4444;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 14px;
+      transform: rotate(15deg);
+      border: 3px solid #ef4444;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-green-800 to-blue-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-file-invoice-dollar text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">請求確認・発行システム</h1>
+              <p class="text-green-200 text-sm">Customer Billing Management System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">カスタマー部門</span>
+            <div class="text-center">
+              <div class="text-xs text-green-200">処理効率</div>
+              <div class="text-lg font-bold text-white">95%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">5</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">鈴木 花子</div>
+              <div class="text-sm text-green-200">カスタマー部長</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-green-800 rounded-full flex items-center justify-center font-bold text-lg">
+              SK
+            </div>
+          </div>
+          <button class="text-green-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">カスタマーHUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">請求管理</span>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-green-600 font-semibold">請求確認・発行</span>
+    </nav>
+
+    <!-- ダッシュボードカード -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      <!-- 今月請求件数 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-600 text-sm">今月請求件数</p>
+            <p class="text-3xl font-bold text-blue-600">127</p>
+            <p class="text-sm text-green-600">
+              <i class="fas fa-arrow-up mr-1"></i>+8.3%
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-file-invoice text-blue-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 承認待ち -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-600 text-sm">承認待ち</p>
+            <p class="text-3xl font-bold text-orange-600">23</p>
+            <p class="text-sm text-orange-600">
+              <i class="fas fa-clock mr-1"></i>要対応
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-clock text-orange-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 今月請求額 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-600 text-sm">今月請求額</p>
+            <p class="text-3xl font-bold text-green-600">¥48.2M</p>
+            <p class="text-sm text-green-600">
+              <i class="fas fa-arrow-up mr-1"></i>+12.5%
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-yen-sign text-green-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 処理中件数 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-gray-600 text-sm">処理中</p>
+            <p class="text-3xl font-bold text-purple-600">15</p>
+            <p class="text-sm text-purple-600">
+              <i class="fas fa-spinner mr-1"></i>進行中
+            </p>
+          </div>
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <i class="fas fa-cogs text-purple-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインコンテンツ -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- 請求処理ワークフロー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-route text-green-600 mr-2"></i>
+              請求処理ワークフロー
+            </h3>
+            <div class="text-sm text-gray-500">
+              案件: 2025-CS0156 / DEF産業メンテナンス契約
+            </div>
+          </div>
+
+          <!-- ワークフロー表示 -->
+          <div class="bg-gray-50 rounded-xl p-4 mb-4">
+            <div class="billing-status">
+              <div class="flex-1 flex justify-between items-center">
+                <div class="text-center">
+                  <div class="status-step completed">
+                    <i class="fas fa-edit text-green-600"></i>
+                  </div>
+                  <div class="mt-2 text-xs font-medium">請求作成</div>
+                  <div class="text-xs text-gray-500">5/20 完了</div>
+                </div>
+                <div class="text-center">
+                  <div class="status-step completed">
+                    <i class="fas fa-calculator text-green-600"></i>
+                  </div>
+                  <div class="mt-2 text-xs font-medium">金額確認</div>
+                  <div class="text-xs text-gray-500">5/21 完了</div>
+                </div>
+                <div class="text-center">
+                  <div class="status-step current">
+                    <i class="fas fa-user-check text-blue-600"></i>
+                  </div>
+                  <div class="mt-2 text-xs font-medium">承認待ち</div>
+                  <div class="text-xs text-blue-600">部長確認</div>
+                </div>
+                <div class="text-center">
+                  <div class="status-step pending">
+                    <i class="fas fa-file-pdf text-gray-400"></i>
+                  </div>
+                  <div class="mt-2 text-xs font-medium">PDF生成</div>
+                  <div class="text-xs text-gray-500">待機中</div>
+                </div>
+                <div class="text-center">
+                  <div class="status-step pending">
+                    <i class="fas fa-paper-plane text-gray-400"></i>
+                  </div>
+                  <div class="mt-2 text-xs font-medium">送付</div>
+                  <div class="text-xs text-gray-500">待機中</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 請求額サマリー -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-blue-50 rounded-lg">
+              <div class="text-sm text-gray-600">基本保守料</div>
+              <div class="text-xl font-bold text-blue-600">¥850,000</div>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+              <div class="text-sm text-gray-600">追加作業費</div>
+              <div class="text-xl font-bold text-green-600">¥125,000</div>
+            </div>
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+              <div class="text-sm text-gray-600">合計（税込）</div>
+              <div class="text-xl font-bold text-purple-600">¥1,073,750</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Copilot請求チェック -->
+        <div class="copilot-suggestion card-hover">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-robot text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold">Copilot 請求チェック</h3>
+              <p class="text-white text-opacity-80 text-sm">AI支援による請求内容検証</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <!-- 金額妥当性チェック -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-calculator text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">金額妥当性チェック</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>✅ 契約単価との整合性: <span class="font-bold text-green-300">適合</span></div>
+                <div>✅ 追加作業時間: <span class="font-bold text-green-300">25時間 (妥当)</span></div>
+                <div>✅ 消費税計算: <span class="font-bold text-green-300">正確</span></div>
+              </div>
+            </div>
+            
+            <!-- 契約条件チェック -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-file-contract text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">契約条件確認</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 支払条件: <span class="font-bold text-green-300">月末締翌月末払い</span></div>
+                <div>• 請求タイミング: <span class="font-bold text-green-300">契約通り</span></div>
+                <div>• 特別条件: <span class="font-bold text-blue-300">なし</span></div>
+              </div>
+            </div>
+            
+            <!-- 過去実績比較 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-chart-line text-yellow-300 mr-2"></i>
+                <span class="text-white font-medium text-sm">過去実績比較</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 前月比: <span class="font-bold text-green-300">+15% (追加作業含む)</span></div>
+                <div>• 年平均比: <span class="font-bold text-green-300">+3% (正常範囲)</span></div>
+                <div>• 同業他社比: <span class="font-bold text-green-300">適正価格帯</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex space-x-2 mt-4">
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-search mr-1"></i>詳細分析
+            </button>
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-history mr-1"></i>履歴比較
+            </button>
+          </div>
+        </div>
+
+        <!-- 請求予定一覧 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+              請求予定一覧（今月）
+            </h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200">
+                <i class="fas fa-filter mr-1"></i>フィルター
+              </button>
+              <button class="px-3 py-1 bg-green-100 text-green-600 rounded text-sm hover:bg-green-200">
+                <i class="fas fa-plus mr-1"></i>新規作成
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="billing-table">
+              <thead>
+                <tr>
+                  <th>顧客名</th>
+                  <th>請求内容</th>
+                  <th>請求額</th>
+                  <th>期限</th>
+                  <th>ステータス</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="priority-high">
+                  <td>
+                    <div class="font-medium">ABC工場</div>
+                    <div class="text-sm text-gray-500">定期メンテナンス</div>
+                  </td>
+                  <td>
+                    <div class="text-sm">
+                      <div>月次保守</div>
+                      <div class="text-gray-500">2025年5月分</div>
+                    </div>
+                  </td>
+                  <td class="font-bold text-green-600">¥1,073,750</td>
+                  <td>
+                    <div class="text-red-600 font-medium">5/25</div>
+                    <div class="text-xs text-red-500">期限間近</div>
+                  </td>
+                  <td>
+                    <span class="px-2 py-1 bg-orange-100 text-orange-600 rounded text-xs">承認待ち</span>
+                  </td>
+                  <td>
+                    <div class="flex space-x-1">
+                      <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                        <i class="fas fa-eye text-sm"></i>
+                      </button>
+                      <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                        <i class="fas fa-edit text-sm"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="priority-medium">
+                  <td>
+                    <div class="font-medium">DEF産業</div>
+                    <div class="text-sm text-gray-500">エネルギー診断</div>
+                  </td>
+                  <td>
+                    <div class="text-sm">
+                      <div>診断レポート</div>
+                      <div class="text-gray-500">包括契約</div>
+                    </div>
+                  </td>
+                  <td class="font-bold text-green-600">¥650,000</td>
+                  <td>
+                    <div class="text-gray-700">5/28</div>
+                    <div class="text-xs text-gray-500">余裕あり</div>
+                  </td>
+                  <td>
+                    <span class="px-2 py-1 bg-blue-100 text-blue-600 rounded text-xs">作成中</span>
+                  </td>
+                  <td>
+                    <div class="flex space-x-1">
+                      <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                        <i class="fas fa-eye text-sm"></i>
+                      </button>
+                      <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                        <i class="fas fa-edit text-sm"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="priority-low">
+                  <td>
+                    <div class="font-medium">GHI商事</div>
+                    <div class="text-sm text-gray-500">設備更新工事</div>
+                  </td>
+                  <td>
+                    <div class="text-sm">
+                      <div>進捗支払</div>
+                      <div class="text-gray-500">第2回分</div>
+                    </div>
+                  </td>
+                  <td class="font-bold text-green-600">¥2,200,000</td>
+                  <td>
+                    <div class="text-gray-700">5/30</div>
+                    <div class="text-xs text-gray-500">余裕あり</div>
+                  </td>
+                  <td>
+                    <span class="px-2 py-1 bg-green-100 text-green-600 rounded text-xs">承認済</span>
+                  </td>
+                  <td>
+                    <div class="flex space-x-1">
+                      <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                        <i class="fas fa-eye text-sm"></i>
+                      </button>
+                      <button class="p-1 text-purple-600 hover:bg-purple-100 rounded">
+                        <i class="fas fa-paper-plane text-sm"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr class="priority-medium">
+                  <td>
+                    <div class="font-medium">JKL物流</div>
+                    <div class="text-sm text-gray-500">冷凍設備点検</div>
+                  </td>
+                  <td>
+                    <div class="text-sm">
+                      <div>緊急点検</div>
+                      <div class="text-gray-500">追加作業含む</div>
+                    </div>
+                  </td>
+                  <td class="font-bold text-green-600">¥180,000</td>
+                  <td>
+                    <div class="text-gray-700">5/31</div>
+                    <div class="text-xs text-gray-500">余裕あり</div>
+                  </td>
+                  <td>
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-600 rounded text-xs">確認中</span>
+                  </td>
+                  <td>
+                    <div class="flex space-x-1">
+                      <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                        <i class="fas fa-eye text-sm"></i>
+                      </button>
+                      <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                        <i class="fas fa-edit text-sm"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- ページネーション -->
+          <div class="flex items-center justify-between mt-4">
+            <div class="text-sm text-gray-500">
+              23件中 1-4件を表示
+            </div>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm hover:bg-gray-200">
+                <i class="fas fa-chevron-left mr-1"></i>前へ
+              </button>
+              <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                <i class="fas fa-chevron-right mr-1"></i>次へ
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 請求書プレビュー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-file-pdf text-red-600 mr-2"></i>
+              請求書プレビュー - ABC工場
+            </h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200" onclick="showPreview()">
+                <i class="fas fa-search mr-1"></i>プレビュー
+              </button>
+              <button class="px-3 py-1 bg-red-100 text-red-600 rounded text-sm hover:bg-red-200">
+                <i class="fas fa-file-pdf mr-1"></i>PDF生成
+              </button>
+            </div>
+          </div>
+
+          <!-- 請求書フォーム -->
+          <div class="invoice-preview">
+            <div class="invoice-header">
+              <div>
+                <h4 class="font-bold text-lg">請求書</h4>
+                <div class="text-sm text-gray-600">No. INV-2025-0521-ABC</div>
+              </div>
+              <div class="text-right">
+                <div class="text-sm text-gray-600">発行日</div>
+                <div class="font-bold">2025年5月21日</div>
+              </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+              <!-- 請求先・請求元 -->
+              <div class="grid grid-cols-2 gap-8">
+                <div>
+                  <h5 class="font-bold text-gray-800 mb-3">請求先</h5>
+                  <div class="space-y-1 text-sm">
+                    <div class="font-medium">株式会社ABC工場</div>
+                    <div>〒123-4567</div>
+                    <div>東京都千代田区○○1-2-3</div>
+                    <div>ABC工場ビル 5F</div>
+                    <div class="mt-2">
+                      <div>ご担当者: 山田 太郎 様</div>
+                      <div>TEL: 03-1234-5678</div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h5 class="font-bold text-gray-800 mb-3">請求元</h5>
+                  <div class="space-y-1 text-sm">
+                    <div class="font-medium">○○エネルギーサービス株式会社</div>
+                    <div>〒890-1234</div>
+                    <div>福岡県福岡市○○区××1-2-3</div>
+                    <div>○○ビル 10F</div>
+                    <div class="mt-2">
+                      <div>カスタマー部: 鈴木 花子</div>
+                      <div>TEL: 092-123-4567</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 請求内容 -->
+              <div>
+                <h5 class="font-bold text-gray-800 mb-3">請求内容</h5>
+                <table class="w-full border-collapse border border-gray-300">
+                  <thead>
+                    <tr class="bg-gray-50">
+                      <th class="border border-gray-300 px-4 py-2 text-left">項目</th>
+                      <th class="border border-gray-300 px-4 py-2 text-center">数量</th>
+                      <th class="border border-gray-300 px-4 py-2 text-right">単価</th>
+                      <th class="border border-gray-300 px-4 py-2 text-right">金額</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="border border-gray-300 px-4 py-2">
+                        <div class="font-medium">月次定期保守</div>
+                        <div class="text-sm text-gray-600">空調設備一式（2025年5月分）</div>
+                      </td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">1式</td>
+                      <td class="border border-gray-300 px-4 py-2 text-right">¥850,000</td>
+                      <td class="border border-gray-300 px-4 py-2 text-right font-medium">¥850,000</td>
+                    </tr>
+                    <tr>
+                      <td class="border border-gray-300 px-4 py-2">
+                        <div class="font-medium">追加作業</div>
+                        <div class="text-sm text-gray-600">フィルター交換・調整作業（25時間）</div>
+                      </td>
+                      <td class="border border-gray-300 px-4 py-2 text-center">25時間</td>
+                      <td class="border border-gray-300 px-4 py-2 text-right">¥5,000</td>
+                      <td class="border border-gray-300 px-4 py-2 text-right font-medium">¥125,000</td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <!-- 金額計算 -->
+                <div class="mt-4 flex justify-end">
+                  <div class="w-64 space-y-2">
+                    <div class="flex justify-between">
+                      <span>小計</span>
+                      <span class="font-medium">¥975,000</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>消費税（10%）</span>
+                      <span class="font-medium">¥97,500</span>
+                    </div>
+                    <div class="border-t pt-2 flex justify-between text-lg font-bold">
+                      <span>合計</span>
+                      <span class="text-green-600">¥1,072,500</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 支払条件 -->
+              <div class="bg-gray-50 p-4 rounded-lg">
+                <h6 class="font-bold text-gray-800 mb-2">お支払条件</h6>
+                <div class="text-sm space-y-1">
+                  <div>• お支払期限: 2025年6月20日</div>
+                  <div>• お支払方法: 銀行振込</div>
+                  <div>• 振込先: ○○銀行 ○○支店 普通 1234567</div>
+                  <div>• 振込手数料: お客様負担</div>
+                </div>
+              </div>
+
+              <!-- 備考 -->
+              <div>
+                <h6 class="font-bold text-gray-800 mb-2">備考</h6>
+                <div class="text-sm text-gray-600">
+                  <p>・追加作業については、事前にご承認いただいた作業内容となります。</p>
+                  <p>・次回定期点検予定: 2025年6月20日</p>
+                  <p>・ご不明な点がございましたら、担当者までお問い合わせください。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- 承認アクション -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-user-check text-purple-600 mr-2"></i>
+            承認アクション
+          </h3>
+          
+          <!-- 現在の承認段階 -->
+          <div class="p-4 bg-blue-50 rounded-lg mb-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-medium text-blue-800">現在の段階</span>
+              <span class="px-2 py-1 bg-blue-600 text-white rounded text-xs">承認待ち</span>
+            </div>
+            <div class="text-sm text-blue-700">
+              <div>担当者: 鈴木花子 (カスタマー部長)</div>
+              <div>期限: 2025年5月25日 17:00</div>
+            </div>
+          </div>
+
+          <!-- 承認オプション -->
+          <div class="space-y-3 mb-4">
+            <label class="flex items-center">
+              <input type="checkbox" class="mr-2">
+              <span class="text-sm">金額確認済み</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="mr-2">
+              <span class="text-sm">契約条件確認済み</span>
+            </label>
+            <label class="flex items-center">
+              <input type="checkbox" class="mr-2">
+              <span class="text-sm">追加作業承認済み</span>
+            </label>
+          </div>
+
+          <!-- コメント入力 -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">承認コメント</label>
+            <textarea 
+              placeholder="承認コメントを入力（任意）" 
+              class="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none"
+              rows="3"></textarea>
+          </div>
+
+          <!-- アクションボタン -->
+          <div class="space-y-2">
+            <button class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-medium">
+              <i class="fas fa-check mr-2"></i>承認する
+            </button>
+            <button class="w-full px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-all">
+              <i class="fas fa-edit mr-2"></i>修正して承認
+            </button>
+            <button class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all">
+              <i class="fas fa-times mr-2"></i>差戻し
+            </button>
+          </div>
+        </div>
+
+        <!-- ファイル管理 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-folder text-orange-600 mr-2"></i>
+            関連ファイル
+          </h3>
+          
+          <!-- アップロードエリア -->
+          <div class="file-upload-area mb-4">
+            <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+            <div class="text-sm text-gray-600">
+              <div>ファイルをドラッグ&ドロップ</div>
+              <div>または <button class="text-blue-600 hover:underline">ファイルを選択</button></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-2">
+              PDF, Excel, Word対応（最大10MB）
+            </div>
+          </div>
+
+          <!-- ファイル一覧 -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+              <div class="flex items-center">
+                <i class="fas fa-file-excel text-green-600 mr-2"></i>
+                <div>
+                  <div class="font-medium text-sm">保守実施報告書.xlsx</div>
+                  <div class="text-xs text-gray-500">2.3MB • 5/20 追加</div>
+                </div>
+              </div>
+              <button class="text-blue-600 hover:text-blue-800">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+              <div class="flex items-center">
+                <i class="fas fa-file-pdf text-red-600 mr-2"></i>
+                <div>
+                  <div class="font-medium text-sm">作業写真.pdf</div>
+                  <div class="text-xs text-gray-500">5.1MB • 5/20 追加</div>
+                </div>
+              </div>
+              <button class="text-blue-600 hover:text-blue-800">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+              <div class="flex items-center">
+                <i class="fas fa-file-word text-blue-600 mr-2"></i>
+                <div>
+                  <div class="font-medium text-sm">顧客承認書.docx</div>
+                  <div class="text-xs text-gray-500">1.2MB • 5/19 追加</div>
+                </div>
+              </div>
+              <button class="text-blue-600 hover:text-blue-800">
+                <i class="fas fa-download"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ファイル管理オプション -->
+          <div class="mt-4 flex space-x-2">
+            <button class="flex-1 px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+              <i class="fas fa-folder-open mr-1"></i>フォルダ表示
+            </button>
+            <button class="flex-1 px-3 py-2 bg-gray-600 text-white rounded text-sm hover:bg-gray-700">
+              <i class="fas fa-archive mr-1"></i>アーカイブ
+            </button>
+          </div>
+        </div>
+
+        <!-- 送付履歴 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-paper-plane text-indigo-600 mr-2"></i>
+            送付記録・履歴
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 過去の送付記録 -->
+            <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-green-800">2025年4月請求書</span>
+                <span class="px-2 py-1 bg-green-600 text-white rounded text-xs">送付済</span>
+              </div>
+              <div class="text-sm text-green-700 space-y-1">
+                <div>送付日: 2025/04/21 10:30</div>
+                <div>送付先: yamada@abc-factory.co.jp</div>
+                <div>方法: メール（PDF添付）</div>
+                <div>開封確認: 4/21 14:20</div>
+              </div>
+            </div>
+
+            <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-blue-800">2025年3月請求書</span>
+                <span class="px-2 py-1 bg-blue-600 text-white rounded text-xs">入金済</span>
+              </div>
+              <div class="text-sm text-blue-700 space-y-1">
+                <div>送付日: 2025/03/20 09:15</div>
+                <div>入金日: 2025/04/19</div>
+                <div>入金額: ¥987,500</div>
+              </div>
+            </div>
+
+            <!-- 送付予定 -->
+            <div class="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-yellow-800">今回送付予定</span>
+                <span class="px-2 py-1 bg-yellow-600 text-white rounded text-xs">準備中</span>
+              </div>
+              <div class="text-sm text-yellow-700 space-y-1">
+                <div>予定日: 承認後即座</div>
+                <div>送付先: yamada@abc-factory.co.jp</div>
+                <div>CC: suzuki-h@ourcompany.co.jp</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 送付設定 -->
+          <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+            <h6 class="font-bold text-gray-800 mb-2">送付設定</h6>
+            <div class="space-y-2">
+              <label class="flex items-center text-sm">
+                <input type="checkbox" class="mr-2" checked>
+                <span>メール送付</span>
+              </label>
+              <label class="flex items-center text-sm">
+                <input type="checkbox" class="mr-2">
+                <span>郵送併用</span>
+              </label>
+              <label class="flex items-center text-sm">
+                <input type="checkbox" class="mr-2" checked>
+                <span>開封確認要求</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 処理統計 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-pie text-emerald-600 mr-2"></i>
+            処理統計（今月）
+          </h3>
+          
+          <!-- 円グラフエリア -->
+          <div class="mb-4">
+            <canvas id="billingChart" width="200" height="200"></canvas>
+          </div>
+
+          <!-- 統計詳細 -->
+          <div class="space-y-2 text-sm">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                <span>送付完了</span>
+              </div>
+              <span class="font-bold">104件</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                <span>承認済</span>
+              </div>
+              <span class="font-bold">23件</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+                <span>承認待ち</span>
+              </div>
+              <span class="font-bold">15件</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                <span>作成中</span>
+              </div>
+              <span class="font-bold">8件</span>
+            </div>
+          </div>
+
+          <!-- 効率指標 -->
+          <div class="mt-4 p-3 bg-emerald-50 rounded-lg">
+            <div class="text-center">
+              <div class="text-2xl font-bold text-emerald-600">2.3日</div>
+              <div class="text-sm text-emerald-700">平均処理時間</div>
+              <div class="text-xs text-emerald-600">前月比 -0.5日改善</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- プレビューモーダル -->
+  <div id="previewModal" class="modal-overlay">
+    <div class="modal-content max-w-4xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold">請求書プレビュー</h3>
+        <button onclick="hidePreview()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="stamped">
+        <iframe src="about:blank" class="w-full h-96 border rounded"></iframe>
+      </div>
+      <div class="flex justify-end space-x-2 mt-4">
+        <button onclick="hidePreview()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
+          閉じる
+        </button>
+        <button class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">
+          <i class="fas fa-file-pdf mr-2"></i>PDF生成
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 円グラフ初期化
+      initializeBillingChart();
+      
+      // カードホバー効果
+      initializeCardHover();
+      
+      // イベントハンドラー設定
+      setupEventHandlers();
+      
+      // ページロードアニメーション
+      animatePageLoad();
+      
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('請求管理システムへようこそ。承認待ち案件が23件あります。', 'info');
+      }, 1000);
+    });
+
+    function initializeBillingChart() {
+      const ctx = document.getElementById('billingChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['送付完了', '承認済', '承認待ち', '作成中'],
+          datasets: [{
+            data: [104, 23, 15, 8],
+            backgroundColor: [
+              '#10b981',
+              '#3b82f6', 
+              '#f59e0b',
+              '#ef4444'
+            ],
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    function initializeCardHover() {
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+    }
+
+    function setupEventHandlers() {
+      // 承認ボタン
+      const approveButton = document.querySelector('.bg-green-600');
+      if (approveButton) {
+        approveButton.addEventListener('click', function() {
+          if (confirm('この請求書を承認しますか？\n\n顧客: ABC工場\n金額: ¥1,072,500')) {
+            handleApproval();
+          }
+        });
+      }
+
+      // 差戻しボタン
+      const rejectButton = document.querySelector('.bg-red-600');
+      if (rejectButton && rejectButton.textContent.includes('差戻し')) {
+        rejectButton.addEventListener('click', function() {
+          const reason = prompt('差戻し理由を入力してください：');
+          if (reason && reason.trim()) {
+            showNotification(`請求書を差戻ししました。理由: ${reason}`, 'warning');
+            updateWorkflowStatus('rejected');
+          }
+        });
+      }
+
+      // PDF生成ボタン
+      const pdfButtons = document.querySelectorAll('.bg-red-100, .bg-red-600');
+      pdfButtons.forEach(button => {
+        if (button.textContent.includes('PDF')) {
+          button.addEventListener('click', function() {
+            generatePDF();
+          });
+        }
+      });
+
+      // ファイルアップロード
+      const uploadArea = document.querySelector('.file-upload-area');
+      if (uploadArea) {
+        uploadArea.addEventListener('click', function() {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.multiple = true;
+          input.accept = '.pdf,.docx,.xlsx';
+          input.onchange = handleFileUpload;
+          input.click();
+        });
+
+        // ドラッグ&ドロップ
+        uploadArea.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          this.style.borderColor = '#3b82f6';
+          this.style.background = '#eff6ff';
+        });
+
+        uploadArea.addEventListener('dragleave', function(e) {
+          e.preventDefault();
+          this.style.borderColor = '#d1d5db';
+          this.style.background = '#f9fafb';
+        });
+
+        uploadArea.addEventListener('drop', function(e) {
+          e.preventDefault();
+          this.style.borderColor = '#d1d5db';
+          this.style.background = '#f9fafb';
+          handleFileUpload({ target: { files: e.dataTransfer.files } });
+        });
+      }
+
+      // テーブル行クリック
+      const tableRows = document.querySelectorAll('.billing-table tbody tr');
+      tableRows.forEach(row => {
+        row.addEventListener('click', function() {
+          const customerName = this.querySelector('.font-medium').textContent;
+          showNotification(`${customerName}の請求詳細を表示します`, 'info');
+        });
+      });
+    }
+
+    function handleApproval() {
+      const button = document.querySelector('.bg-green-600');
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>承認処理中...';
+      button.disabled = true;
+      
+      setTimeout(() => {
+        showNotification('請求書承認が完了しました。PDF生成を開始します。', 'success');
+        updateWorkflowStatus('approved');
+        
+        // 承認ステップ更新
+        const currentStep = document.querySelector('.status-step.current');
+        const nextStep = currentStep.parentElement.nextElementSibling?.querySelector('.status-step');
+        
+        if (currentStep) {
+          currentStep.classList.remove('current');
+          currentStep.classList.add('completed');
+          currentStep.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+        }
+        
+        if (nextStep) {
+          nextStep.classList.remove('pending');
+          nextStep.classList.add('current');
+        }
+        
+        // PDF生成開始
+        setTimeout(() => {
+          generatePDF();
+        }, 1000);
+        
+      }, 2000);
+    }
+
+    function generatePDF() {
+      showNotification('PDF生成を開始しています...', 'info');
+      
+      // プログレス表示（簡易実装）
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += 10;
+        if (progress <= 100) {
+          showNotification(`PDF生成中... ${progress}%`, 'info');
+        } else {
+          clearInterval(interval);
+          showNotification('PDF生成が完了しました。送付準備中...', 'success');
+          
+          // 送付処理
+          setTimeout(() => {
+            sendInvoice();
+          }, 1000);
+        }
+      }, 200);
+    }
+
+    function sendInvoice() {
+      showNotification('請求書を送付しています...', 'info');
+      
+      setTimeout(() => {
+        showNotification('請求書送付が完了しました。開封確認待ちです。', 'success');
+        updateWorkflowStatus('sent');
+        
+        // 最終ステップ更新
+        const steps = document.querySelectorAll('.status-step');
+        steps.forEach(step => {
+          if (!step.classList.contains('completed')) {
+            step.classList.add('completed');
+            step.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+          }
+        });
+        
+        // 送付記録更新
+        updateSendingHistory();
+        
+      }, 2000);
+    }
+
+    function handleFileUpload(event) {
+      const files = event.target.files;
+      Array.from(files).forEach(file => {
+        if (file.size > 10 * 1024 * 1024) {
+          showNotification(`${file.name}: ファイルサイズが大きすぎます（10MB以下）`, 'error');
+          return;
+        }
+        
+        showNotification(`${file.name} をアップロードしています...`, 'info');
+        
+        // 模擬アップロード処理
+        setTimeout(() => {
+          addFileToList(file);
+          showNotification(`${file.name} のアップロードが完了しました`, 'success');
+        }, 1500);
+      });
+    }
+
+    function addFileToList(file) {
+      const fileList = document.querySelector('.space-y-3');
+      const fileItem = document.createElement('div');
+      fileItem.className = 'flex items-center justify-between p-3 border border-gray-200 rounded-lg';
+      
+      const fileIcon = getFileIcon(file.name);
+      const fileSize = (file.size / 1024 / 1024).toFixed(1);
+      const currentDate = new Date().toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+      
+      fileItem.innerHTML = `
+        <div class="flex items-center">
+          <i class="${fileIcon} mr-2"></i>
+          <div>
+            <div class="font-medium text-sm">${file.name}</div>
+            <div class="text-xs text-gray-500">${fileSize}MB • ${currentDate} 追加</div>
+          </div>
+        </div>
+        <button class="text-blue-600 hover:text-blue-800">
+          <i class="fas fa-download"></i>
+        </button>
+      `;
+      
+      fileList.appendChild(fileItem);
+    }
+
+    function getFileIcon(filename) {
+      const extension = filename.split('.').pop().toLowerCase();
+      switch (extension) {
+        case 'pdf': return 'fas fa-file-pdf text-red-600';
+        case 'xlsx': case 'xls': return 'fas fa-file-excel text-green-600';
+        case 'docx': case 'doc': return 'fas fa-file-word text-blue-600';
+        case 'pptx': case 'ppt': return 'fas fa-file-powerpoint text-orange-600';
+        default: return 'fas fa-file text-gray-600';
+      }
+    }
+
+    function updateWorkflowStatus(status) {
+      const statusTexts = {
+        'approved': '承認済み',
+        'rejected': '差戻し',
+        'sent': '送付完了'
+      };
+      
+      // 統計更新
+      updateStatistics(status);
+    }
+
+    function updateStatistics(status) {
+      const chart = Chart.getChart('billingChart');
+      if (chart && status === 'approved') {
+        // 承認待ちを1件減らし、承認済を1件増やす
+        chart.data.datasets[0].data[1] += 1; // 承認済
+        chart.data.datasets[0].data[2] -= 1; // 承認待ち
+        chart.update();
+        
+        // 数値更新
+        document.querySelector('.text-orange-600.text-3xl').textContent = '22';
+      }
+    }
+
+    function updateSendingHistory() {
+      const historySection = document.querySelector('.space-y-4');
+      const newRecord = document.createElement('div');
+      newRecord.className = 'p-3 bg-green-50 rounded-lg border-l-4 border-green-400';
+      newRecord.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-medium text-green-800">2025年5月請求書</span>
+          <span class="px-2 py-1 bg-green-600 text-white rounded text-xs">送付済</span>
+        </div>
+        <div class="text-sm text-green-700 space-y-1">
+          <div>送付日: ${new Date().toLocaleString('ja-JP')}</div>
+          <div>送付先: yamada@abc-factory.co.jp</div>
+          <div>方法: メール（PDF添付）</div>
+          <div>ステータス: 開封確認待ち</div>
+        </div>
+      `;
+      
+      historySection.insertBefore(newRecord, historySection.firstChild);
+    }
+
+    function showPreview() {
+      const modal = document.getElementById('previewModal');
+      modal.style.display = 'flex';
+      
+      // 模擬プレビュー生成
+      const iframe = modal.querySelector('iframe');
+      const previewContent = generatePreviewContent();
+      iframe.srcdoc = previewContent;
+      
+      showNotification('請求書プレビューを生成しています...', 'info');
+    }
+
+    function hidePreview() {
+      const modal = document.getElementById('previewModal');
+      modal.style.display = 'none';
+    }
+
+    function generatePreviewContent() {
+      return `
+        <html>
+          <head>
+            <style>
+              body { font-family: 'MS Gothic', monospace; margin: 20px; }
+              .header { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 30px; }
+              .info { display: flex; justify-content: space-between; margin-bottom: 20px; }
+              .table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+              .table th, .table td { border: 1px solid #000; padding: 8px; text-align: left; }
+              .table th { background-color: #f0f0f0; }
+              .total { text-align: right; margin-top: 20px; font-size: 18px; }
+              .stamp { position: absolute; top: 50px; right: 50px; transform: rotate(15deg); 
+                       background: #dc3545; color: white; padding: 10px 20px; 
+                       border-radius: 50px; font-weight: bold; border: 3px solid #dc3545; }
+            </style>
+          </head>
+          <body>
+            <div class="stamp">承認済</div>
+            <div class="header">請 求 書</div>
+            <div class="info">
+              <div>
+                <strong>株式会社ABC工場 御中</strong><br>
+                〒123-4567<br>
+                東京都千代田区○○1-2-3<br>
+                ご担当者: 山田 太郎 様
+              </div>
+              <div>
+                請求書No: INV-2025-0521-ABC<br>
+                発行日: 2025年5月21日<br>
+                お支払期限: 2025年6月20日
+              </div>
+            </div>
+            <table class="table">
+              <tr>
+                <th>項目</th>
+                <th>数量</th>
+                <th>単価</th>
+                <th>金額</th>
+              </tr>
+              <tr>
+                <td>月次定期保守（2025年5月分）</td>
+                <td>1式</td>
+                <td>¥850,000</td>
+                <td>¥850,000</td>
+              </tr>
+              <tr>
+                <td>追加作業（フィルター交換等）</td>
+                <td>25時間</td>
+                <td>¥5,000</td>
+                <td>¥125,000</td>
+              </tr>
+            </table>
+            <div class="total">
+              小計: ¥975,000<br>
+              消費税: ¥97,500<br>
+              <strong>合計: ¥1,072,500</strong>
+            </div>
+          </body>
+        </html>
+      `;
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+
+      // ワークフローアニメーション
+      setTimeout(() => {
+        const steps = document.querySelectorAll('.status-step.completed');
+        steps.forEach((step, index) => {
+          setTimeout(() => {
+            const icon = step.querySelector('i');
+            if (icon) {
+              icon.style.transform = 'scale(1.2)';
+              setTimeout(() => {
+                icon.style.transform = 'scale(1)';
+              }, 200);
+            }
+          }, index * 300);
+        });
+      }, 1000);
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // リアルタイム処理状況更新（デモ用）
+    function startRealtimeUpdates() {
+      const updates = [
+        { message: '新規請求書が1件作成されました', type: 'info' },
+        { message: 'DEF産業の請求書が承認されました', type: 'success' },
+        { message: 'GHI商事への請求書送付が完了しました', type: 'success' },
+        { message: 'JKL物流の請求内容を確認してください', type: 'warning' }
+      ];
+
+      updates.forEach((update, index) => {
+        setTimeout(() => {
+          showNotification(update.message, update.type);
+        }, (index + 1) * 8000);
+      });
+    }
+
+    // 10秒後にリアルタイム更新開始
+    setTimeout(startRealtimeUpdates, 10000);
+
+    // モーダルクリック時の背景クリックで閉じる
+    document.getElementById('previewModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        hidePreview();
+      }
+    });
+
+    // エラーハンドリング
+    window.addEventListener('error', function(e) {
+      console.error('JavaScript Error:', e.error);
+    });
+
+    // パフォーマンス最適化
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function() {
+        // リサイズ後の処理
+        const chart = Chart.getChart('billingChart');
+        if (chart) {
+          chart.resize();
+        }
+      }, 250);
+    });
+
+    // キーボードショートカット
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'p':
+            e.preventDefault();
+            showPreview();
+            break;
+          case 's':
+            e.preventDefault();
+            showNotification('請求書を保存しました', 'success');
+            break;
+        }
+      }
+      
+      if (e.key === 'Escape') {
+        hidePreview();
+      }
+    });
+  </script>
+</body>
+</html>
