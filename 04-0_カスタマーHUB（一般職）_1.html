@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カスタマー部門HUB - 一般職版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .alert-pulse {
+      animation: alertPulse 2s infinite;
+    }
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+    .progress-bar {
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #e5e7eb;
+    }
+    .progress-fill {
+      height: 100%;
+      transition: width 0.3s ease;
+    }
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .emergency-glow {
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+      animation: emergencyPulse 1.5s infinite;
+    }
+    @keyframes emergencyPulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.5); }
+    }
+    .mobile-optimized {
+      min-height: 44px;
+      touch-action: manipulation;
+    }
+    .weather-icon {
+      background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-green-50 to-teal-100 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-green-700 to-green-800 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-tools text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">フィールドサービス</h1>
+              <p class="text-green-200 text-sm">Field Service Workspace</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-green-600 px-3 py-1 rounded-full text-sm font-medium">カスタマー部門</span>
+            <span class="bg-blue-600 px-3 py-1 rounded-full text-sm font-medium">一般職</span>
+            <div class="text-center">
+              <div class="text-xs text-green-200">顧客満足度</div>
+              <div class="text-lg font-bold text-white">4.8/5.0</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 緊急連絡 -->
+          <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition-colors mobile-optimized">
+            <i class="fas fa-phone text-sm mr-2"></i>
+            <span class="text-sm font-medium">緊急連絡</span>
+          </button>
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-green-600 rounded-full transition-colors mobile-optimized">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center alert-pulse">4</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">高橋 浩二</div>
+              <div class="text-sm text-green-200">保守サービス担当</div>
+            </div>
+            <div class="w-10 h-10 bg-gradient-to-br from-white to-gray-200 text-green-800 rounded-full flex items-center justify-center font-bold text-sm">
+              TK
+            </div>
+          </div>
+          <button class="text-green-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>
+          ホーム
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">
+          部門別機能
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-800 font-semibold">カスタマー部門HUB（一般職）</span>
+      </div>
+      
+      <!-- 関連画面への素早いアクセス -->
+      <div class="mt-3 pt-3 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-gray-500 font-medium">関連画面:</span>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-database mr-1"></i>設備管理台帳
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-mobile-alt mr-1"></i>モバイル点検
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-exclamation-triangle mr-1"></i>緊急対応履歴
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-file-alt mr-1"></i>点検報告書
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 現在の状況・天気情報 -->
+    <div class="bg-white rounded-xl shadow-md p-4 mb-6">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-6">
+          <div class="flex items-center">
+            <i class="fas fa-calendar-day text-green-600 mr-2"></i>
+            <span class="font-semibold text-gray-800">2025年5月19日（月）</span>
+          </div>
+          <div class="flex items-center">
+            <i class="fas fa-cloud-sun text-blue-500 mr-2"></i>
+            <span class="text-gray-700">晴れ 22°C</span>
+            <span class="weather-icon ml-2">現地作業適正</span>
+          </div>
+          <div class="flex items-center">
+            <i class="fas fa-car text-gray-600 mr-2"></i>
+            <span class="text-gray-700">車両No.3使用中</span>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-md transition-all mobile-optimized">
+            <i class="fas fa-mobile-alt"></i>
+            <span>モバイル点検</span>
+          </button>
+          <button class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-md transition-all mobile-optimized">
+            <i class="fas fa-plus"></i>
+            <span>対応記録</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 緊急対応・優先アクション -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+      <!-- 今日の緊急対応・優先作業（詳細版） -->
+      <div class="xl:col-span-2">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mr-3">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+              </div>
+              <div>
+                <h2 class="text-xl font-bold text-gray-800">今日の緊急対応・優先作業</h2>
+                <p class="text-sm text-gray-600">緊急度・期限順</p>
+              </div>
+              <span class="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm px-3 py-1 rounded-full font-semibold">6</span>
+            </div>
+            <div class="flex gap-2">
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center mobile-optimized">
+                <i class="fas fa-filter mr-1"></i> 担当エリア
+              </button>
+              <button class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center mobile-optimized">
+                <i class="fas fa-map-marker-alt mr-2"></i> MAP表示
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- 緊急故障対応 -->
+            <div class="border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-red-25 rounded-r-xl p-4 card-hover emergency-glow">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-bolt text-red-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">ABC工場 空調機異常停止</span>
+                    <span class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">緊急</span>
+                    <span class="status-badge ml-2 bg-red-500 text-white">高優先</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">製造ライン空調機No.3 | 制御盤アラーム発生</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-2">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>連絡受付: 13:30（45分経過）</span>
+                    <span class="mx-2">•</span>
+                    <span>現地到着予定: 14:30</span>
+                  </div>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-user mr-1"></i>
+                    <span>顧客：ABC工場 佐藤様 | 影響：製造ライン停止中</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    現地出発
+                  </button>
+                  <button class="bg-white border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    顧客連絡
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 定期点検 -->
+            <div class="border-l-4 border-amber-500 bg-gradient-to-r from-amber-50 to-amber-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-clipboard-check text-amber-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">DEF産業 月次定期点検</span>
+                    <span class="ml-2 bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">本日予定</span>
+                    <span class="status-badge ml-2 bg-green-500 text-white">計画作業</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">省エネシステム全体点検 | 運転データ収集</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-2">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>予定時間: 15:00-17:00</span>
+                    <span class="mx-2">•</span>
+                    <span>所要時間: 約2時間</span>
+                  </div>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-route mr-1"></i>
+                    <span>移動時間: 30分 | 準備完了: ✓点検機器 ✓記録シート</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    点検開始
+                  </button>
+                  <button class="bg-white border border-amber-300 text-amber-600 hover:bg-amber-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    準備確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 顧客問い合わせ対応 -->
+            <div class="border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-blue-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-phone text-blue-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">GHI商事 システム操作相談</span>
+                    <span class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">問い合わせ</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">省エネ制御システム操作方法について</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-user mr-1"></i>
+                    <span>連絡者：GHI商事 田中様 | 内容：季節切替操作手順</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    電話対応
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 点検報告書提出 -->
+            <div class="border-l-4 border-green-500 bg-gradient-to-r from-green-50 to-green-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-file-alt text-green-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">JKL工場 点検報告書作成</span>
+                    <span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">報告書</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">先週実施点検の報告書作成・提出</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-calendar mr-1"></i>
+                    <span>提出期限: 本日17:00 | 進捗: 写真整理済み</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    報告書作成
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 契約更新確認 -->
+            <div class="border-l-4 border-purple-500 bg-gradient-to-r from-purple-50 to-purple-25 rounded-r-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-contract text-purple-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">MNO社 保守契約更新確認</span>
+                    <span class="ml-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">契約業務</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">来月満了予定保守契約の更新意向確認</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-handshake mr-1"></i>
+                    <span>営業：山田部長と連携 | 現契約満了: 2025/6/30</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    顧客訪問
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 個人実績・今日のKPI -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-chart-line text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">今日の実績・KPI</h3>
+            <p class="text-sm text-gray-600">個人パフォーマンス</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 対応件数 -->
+          <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm text-gray-600">今日の対応件数</div>
+                <div class="text-2xl font-bold text-gray-800">8件</div>
+                <div class="text-xs text-green-600 flex items-center">
+                  <i class="fas fa-arrow-up mr-1"></i>
+                  <span>目標比 +33%</span>
+                </div>
+              </div>
+              <div class="relative w-16 h-16">
+                <svg class="w-16 h-16 transform -rotate-90">
+                  <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                  <circle cx="32" cy="32" r="28" stroke="#10b981" stroke-width="4" fill="none" 
+                          stroke-dasharray="175.93" stroke-dashoffset="43.98"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-green-600">
+                  8/6
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 対応種別内訳 -->
+          <div>
+            <div class="text-sm text-gray-600 mb-3">対応種別内訳</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">緊急対応</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-red-600">2件</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-red-500 h-2 rounded-full" style="width: 25%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">定期点検</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-blue-600">3件</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 37.5%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">問い合わせ</span>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-green-600">3件</span>
+                  <div class="w-16 bg-gray-200 rounded-full h-2 ml-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 37.5%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 顧客満足度 -->
+          <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-2">今月の顧客評価</div>
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-2xl font-bold text-blue-600">4.8</div>
+                <div class="text-xs text-gray-600">平均評価 (5点満点)</div>
+              </div>
+              <div class="flex space-x-1">
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star text-yellow-400"></i>
+                <i class="fas fa-star text-yellow-400"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- 今月の実績サマリー -->
+          <div>
+            <div class="text-sm text-gray-600 mb-3">今月累計実績</div>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-xs">対応完了</span>
+                <span class="text-xs font-semibold text-green-600">86件</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-xs">平均対応時間</span>
+                <span class="text-xs font-semibold text-blue-600">1.2時間</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-xs">初回解決率</span>
+                <span class="text-xs font-semibold text-purple-600">92%</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-xs">再訪問率</span>
+                <span class="text-xs font-semibold text-amber-600">8%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- スキル・資格情報 -->
+          <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-2">保有スキル・資格</div>
+            <div class="space-y-1">
+              <div class="flex items-center justify-between">
+                <span class="text-xs">第二種電気工事士</span>
+                <span class="status-badge bg-green-500 text-white">取得済</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs">冷凍機械責任者</span>
+                <span class="status-badge bg-green-500 text-white">取得済</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-xs">消防設備士</span>
+                <span class="status-badge bg-blue-500 text-white">学習中</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- フィールドサービス機能メニュー -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center mr-3">
+          <i class="fas fa-cogs text-white"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">フィールドサービス機能</h2>
+          <p class="text-sm text-gray-600">現場作業と顧客対応支援機能</p>
+        </div>
+      </div>
+
+      <!-- 現場作業機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-green-800 border-b-2 border-green-200 pb-2">
+          <i class="fas fa-tools mr-2"></i>現場作業・点検機能
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-blue-100">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">モバイル点検</h4>
+                <i class="fas fa-mobile-alt text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">現場での点検記録・写真撮影・データ収集をスマートフォン・タブレットで</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">今日: 3件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">オフライン対応</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                モバイル点検開始
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-green-100">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">設備台帳管理</h4>
+                <i class="fas fa-database text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">顧客設備情報・保守履歴・部品交換記録の確認と更新</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">管理設備: 245台</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">更新要: 12件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                設備台帳を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-red-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-red-100">
+            <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">緊急対応</h4>
+                <i class="fas fa-exclamation-triangle text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">24時間緊急対応・故障受付・初動対応記録</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">対応中: 1件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">24h受付</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                緊急対応記録
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 顧客サービス機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-blue-800 border-b-2 border-blue-200 pb-2">
+          <i class="fas fa-handshake mr-2"></i>顧客サービス・対応
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-purple-100">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">顧客対応履歴</h4>
+                <i class="fas fa-history text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">問い合わせ対応・クレーム処理・顧客コミュニケーション記録</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-medium">今月: 28件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">満足度4.8</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                対応履歴確認
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-orange-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-orange-100">
+            <div class="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">報告書作成</h4>
+                <i class="fas fa-file-alt text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">点検報告書・作業報告書の自動生成と顧客提出</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-orange-100 text-orange-800 text-xs px-3 py-1 rounded-full font-medium">作成待ち: 5件</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">自動生成</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-700 hover:to-orange-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                報告書作成
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-indigo-100">
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">契約管理</h4>
+                <i class="fas fa-contract text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">保守契約・サービス契約の確認と更新手続き</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">契約数: 45件</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">更新予定: 3件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                契約状況確認
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分析・改善機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-purple-800 border-b-2 border-purple-200 pb-2">
+          <i class="fas fa-chart-bar mr-2"></i>分析・改善機能
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-teal-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-teal-100">
+            <div class="bg-gradient-to-r from-teal-600 to-teal-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">効果検証</h4>
+                <i class="fas fa-chart-line text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">省エネ効果・設備改善効果の測定と分析</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-teal-100 text-teal-800 text-xs px-3 py-1 rounded-full font-medium">測定中: 8件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">効果実証</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                効果検証データ
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-cyan-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-cyan-100">
+            <div class="bg-gradient-to-r from-cyan-600 to-cyan-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">予防保全</h4>
+                <i class="fas fa-shield-alt text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">設備データ分析による故障予測と予防保全提案</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-cyan-100 text-cyan-800 text-xs px-3 py-1 rounded-full font-medium">要注意: 3台</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">AI予測</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-cyan-600 to-cyan-700 hover:from-cyan-700 hover:to-cyan-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                予防保全計画
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-rose-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-rose-100">
+            <div class="bg-gradient-to-r from-rose-600 to-rose-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">改善提案</h4>
+                <i class="fas fa-lightbulb text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">運用改善・効率化・コスト削減提案の作成</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-rose-100 text-rose-800 text-xs px-3 py-1 rounded-full font-medium">提案準備: 2件</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">営業連携</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white py-3 rounded-xl font-medium transition-all shadow-md mobile-optimized">
+                改善提案作成
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 担当顧客・設備状況 -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <div class="flex items-center">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-building text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">担当顧客・設備状況</h3>
+            <p class="text-sm text-gray-600">保守管理中の設備とステータス</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex border border-gray-300 rounded-lg overflow-hidden">
+            <button class="px-4 py-2 bg-blue-600 text-white text-sm font-medium mobile-optimized">全体表示</button>
+            <button class="px-4 py-2 hover:bg-gray-100 text-sm font-medium mobile-optimized">要注意</button>
+            <button class="px-4 py-2 hover:bg-gray-100 text-sm font-medium mobile-optimized">緊急</button>
+          </div>
+          <button class="text-blue-600 hover:text-blue-800 text-sm font-medium mobile-optimized">
+            <i class="fas fa-map mr-1"></i>MAP表示
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <!-- 顧客1：ABC工場 -->
+        <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <h4 class="font-bold text-gray-800">ABC工場（製造業）</h4>
+                <span class="ml-3 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">緊急対応中</span>
+                <span class="status-badge ml-2 bg-blue-500 text-white">メイン顧客</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-2">省エネシステム・空調設備・受変電設備</p>
+              <div class="flex items-center text-xs text-gray-500 mb-3">
+                <i class="fas fa-map-marker-alt mr-1"></i>
+                <span>所在地: 市内工業団地A区画 | 車で15分</span>
+                <span class="mx-2">•</span>
+                <span>契約: 総合保守契約（2027年まで）</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-red-600">異常</div>
+              <div class="text-xs text-gray-500">設備状況</div>
+            </div>
+          </div>
+
+          <!-- 設備詳細ステータス -->
+          <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <h5 class="text-sm font-semibold text-gray-800 mb-2">管理設備ステータス</h5>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="text-center p-2 bg-red-100 rounded-lg">
+                <div class="text-xs text-gray-600">空調機No.3</div>
+                <div class="text-sm font-bold text-red-600">異常停止</div>
+              </div>
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">空調機No.1,2</div>
+                <div class="text-sm font-bold text-green-600">正常運転</div>
+              </div>
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">受変電設備</div>
+                <div class="text-sm font-bold text-green-600">正常</div>
+              </div>
+              <div class="text-center p-2 bg-blue-100 rounded-lg">
+                <div class="text-xs text-gray-600">制御システム</div>
+                <div class="text-sm font-bold text-blue-600">監視中</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 次のアクション -->
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium text-gray-800">次のアクション</div>
+              <div class="text-xs text-gray-600">緊急修理完了 → 運転確認 → 原因調査報告</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm mobile-optimized">現地急行</button>
+              <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm mobile-optimized">顧客連絡</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 顧客2：DEF産業 -->
+        <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <h4 class="font-bold text-gray-800">DEF産業（食品製造）</h4>
+                <span class="ml-3 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">点検予定</span>
+                <span class="status-badge ml-2 bg-green-500 text-white">優良顧客</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-2">冷凍冷蔵設備・省エネシステム</p>
+              <div class="flex items-center text-xs text-gray-500 mb-3">
+                <i class="fas fa-map-marker-alt mr-1"></i>
+                <span>所在地: 市内工業団地B区画 | 車で25分</span>
+                <span class="mx-2">•</span>
+                <span>契約: 冷凍設備保守契約（2026年まで）</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-green-600">正常</div>
+              <div class="text-xs text-gray-500">設備状況</div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <h5 class="text-sm font-semibold text-gray-800 mb-2">管理設備ステータス</h5>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">冷凍機No.1</div>
+                <div class="text-sm font-bold text-green-600">正常運転</div>
+              </div>
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">冷凍機No.2</div>
+                <div class="text-sm font-bold text-green-600">正常運転</div>
+              </div>
+              <div class="text-center p-2 bg-amber-100 rounded-lg">
+                <div class="text-xs text-gray-600">冷却塔</div>
+                <div class="text-sm font-bold text-amber-600">要注意</div>
+              </div>
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">省エネ制御</div>
+                <div class="text-sm font-bold text-green-600">効果確認</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium text-gray-800">次のアクション</div>
+              <div class="text-xs text-gray-600">15:00定期点検 → 冷却塔水質確認 → 月次報告書作成</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm mobile-optimized">点検開始</button>
+              <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm mobile-optimized">履歴確認</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 顧客3：GHI商事 -->
+        <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <div class="flex items-center mb-2">
+                <h4 class="font-bold text-gray-800">GHI商事（オフィスビル）</h4>
+                <span class="ml-3 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">相談対応</span>
+                <span class="status-badge ml-2 bg-purple-500 text-white">サービス向上</span>
+              </div>
+              <p class="text-sm text-gray-600 mb-2">ビル管理システム・省エネ制御</p>
+              <div class="flex items-center text-xs text-gray-500 mb-3">
+                <i class="fas fa-map-marker-alt mr-1"></i>
+                <span>所在地: 市内中心部 | 車で20分</span>
+                <span class="mx-2">•</span>
+                <span>契約: ビル管理契約（2025年まで）</span>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-blue-600">安定</div>
+              <div class="text-xs text-gray-500">設備状況</div>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-3 mb-3">
+            <h5 class="text-sm font-semibold text-gray-800 mb-2">管理設備ステータス</h5>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">空調システム</div>
+                <div class="text-sm font-bold text-green-600">最適運転</div>
+              </div>
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">照明制御</div>
+                <div class="text-sm font-bold text-green-600">省エネ運転</div>
+              </div>
+              <div class="text-center p-2 bg-blue-100 rounded-lg">
+                <div class="text-xs text-gray-600">BMS</div>
+                <div class="text-sm font-bold text-blue-600">データ収集</div>
+              </div>
+              <div class="text-center p-2 bg-green-100 rounded-lg">
+                <div class="text-xs text-gray-600">エレベーター</div>
+                <div class="text-sm font-bold text-green-600">正常</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-sm font-medium text-gray-800">次のアクション</div>
+              <div class="text-xs text-gray-600">操作説明対応 → 季節切替サポート → 契約更新相談</div>
+            </div>
+            <div class="flex gap-2">
+              <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm mobile-optimized">電話対応</button>
+              <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-sm mobile-optimized">訪問予約</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 最近の活動履歴・部門連携 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+      <!-- 個人活動履歴 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-history mr-2 text-blue-600"></i>
+          最近の個人活動履歴
+        </h3>
+        
+        <div class="space-y-3">
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-bolt text-red-600 text-sm"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">ABC工場緊急対応受付・現地急行中</div>
+              <div class="text-xs text-gray-500">2025/05/19 13:30 • 空調機No.3異常停止 • 製造ライン影響あり</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">緊急対応</span>
+              <span class="status-badge bg-red-500 text-white">進行中</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-clipboard-check text-green-600 text-sm"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">JKL工場月次点検完了・報告書作成中</div>
+              <div class="text-xs text-gray-500">2025/05/19 11:45 • 全設備正常確認 • 省エネ効果良好</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">定期点検</span>
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">報告書作成中</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-phone text-blue-600 text-sm"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">MNO社システム操作説明・電話サポート完了</div>
+              <div class="text-xs text-gray-500">2025/05/19 10:20 • 夏季運転切替操作 • 15分間対応</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">電話対応</span>
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">解決済</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-file-alt text-purple-600 text-sm"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">PQR工場点検報告書提出・顧客承認取得</div>
+              <div class="text-xs text-gray-500">2025/05/19 09:15 • 先週実施点検分 • 改善提案3件含む</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">報告書</span>
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">承認済</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg">
+            <div class="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-tools text-orange-600 text-sm"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium">STU社冷凍機部品交換作業完了</div>
+              <div class="text-xs text-gray-500">2025/05/18 16:30 • 膨張弁交換 • 試運転正常確認</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">部品交換</span>
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">完了</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center mt-4">
+          <button class="text-blue-600 hover:text-blue-800 text-sm font-medium mobile-optimized">
+            すべての活動履歴を表示
+          </button>
+        </div>
+      </div>
+
+      <!-- 部門連携・情報共有 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-users mr-2 text-green-600"></i>
+          部門連携・情報共有
+        </h3>
+        
+        <div class="space-y-4">
+          <!-- 営業部門連携 -->
+          <div class="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-400">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-medium text-sm text-blue-800">営業部門連携</div>
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">2件</span>
+            </div>
+            <div class="text-xs text-blue-700 space-y-1">
+              <div>• MNO社契約更新：顧客満足度報告（4.9/5.0）</div>
+              <div>• VWX工場新規提案：現地調査結果を営業へ報告</div>
+            </div>
+            <div class="mt-2">
+              <button class="text-xs text-blue-600 hover:text-blue-800 font-medium mobile-optimized">連携詳細</button>
+            </div>
+          </div>
+
+          <!-- 技術部門連携 -->
+          <div class="bg-green-50 rounded-lg p-3 border-l-4 border-green-400">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-medium text-sm text-green-800">技術部門連携</div>
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">1件</span>
+            </div>
+            <div class="text-xs text-green-700 space-y-1">
+              <div>• ABC工場故障原因：制御盤設計変更の提案要請</div>
+              <div>• 技術改善案：冷却水系統の効率化検討依頼</div>
+            </div>
+            <div class="mt-2">
+              <button class="text-xs text-green-600 hover:text-green-800 font-medium mobile-optimized">技術相談</button>
+            </div>
+          </div>
+
+          <!-- 管理部門連携 -->
+          <div class="bg-purple-50 rounded-lg p-3 border-l-4 border-purple-400">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-medium text-sm text-purple-800">管理部門連携</div>
+              <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">要対応</span>
+            </div>
+            <div class="text-xs text-purple-700 space-y-1">
+              <div>• 緊急対応費用申請：ABC工場部品代・作業費</div>
+              <div>• 月次実績報告：顧客満足度・対応件数集計</div>
+            </div>
+            <div class="mt-2">
+              <button class="text-xs text-purple-600 hover:text-purple-800 font-medium mobile-optimized">申請処理</button>
+            </div>
+          </div>
+
+          <!-- 外部協力会社連携 -->
+          <div class="bg-orange-50 rounded-lg p-3 border-l-4 border-orange-400">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-medium text-sm text-orange-800">協力会社連携</div>
+              <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">調整中</span>
+            </div>
+            <div class="text-xs text-orange-700 space-y-1">
+              <div>• ABC工場緊急対応：専門業者への応援要請</div>
+              <div>• 大型機器点検：クレーン作業協力会社手配</div>
+            </div>
+            <div class="mt-2">
+              <button class="text-xs text-orange-600 hover:text-orange-800 font-medium mobile-optimized">協力要請</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 学習・スキルアップと今後の予定 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <!-- 今後の予定 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-calendar-week text-indigo-600 mr-2"></i>
+          今後の予定
+        </h4>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">明日（5/20）</div>
+              <div class="text-xs text-gray-600">YZ社月次点検・新人同行指導</div>
+            </div>
+            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">教育</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">5/22（木）</div>
+              <div class="text-xs text-gray-600">冷凍機械責任者講習会受講</div>
+            </div>
+            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">研修</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">5/25（日）</div>
+              <div class="text-xs text-gray-600">設備点検技能競技会参加</div>
+            </div>
+            <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">競技会</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">5/28（水）</div>
+              <div class="text-xs text-gray-600">顧客安全衛生委員会参加</div>
+            </div>
+            <span class="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">会議</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- スキル・資格状況 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-medal text-yellow-600 mr-2"></i>
+          スキル・資格状況
+        </h4>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">第二種電気工事士</div>
+              <div class="text-xs text-gray-500">電気設備保守対応</div>
+            </div>
+            <span class="status-badge bg-green-500 text-white">取得済</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">冷凍機械責任者</div>
+              <div class="text-xs text-gray-500">冷凍設備管理</div>
+            </div>
+            <span class="status-badge bg-green-500 text-white">取得済</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">消防設備士</div>
+              <div class="text-xs text-gray-500">消防設備点検</div>
+            </div>
+            <span class="status-badge bg-blue-500 text-white">学習中</span>
+          </div>
+          
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium text-sm">エネルギー管理士</div>
+              <div class="text-xs text-gray-500">省エネ提案・分析</div>
+            </div>
+            <span class="status-badge bg-yellow-500 text-white">準備中</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- システム連携状況 -->
+      <div class="bg-white rounded-lg shadow-md p-4">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-link text-blue-600 mr-2"></i>
+          システム連携状況
+        </h4>
+        <div class="space-y-3">
+          <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <div class="font-medium text-sm text-blue-800">モバイル点検アプリ</div>
+            <div class="text-xs text-blue-600 mt-1">現地作業データ同期</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 13:45</div>
+          </div>
+          
+          <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+            <div class="font-medium text-sm text-green-800">設備台帳システム</div>
+            <div class="text-xs text-green-600 mt-1">設備情報・履歴管理</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 13:50</div>
+          </div>
+          
+          <div class="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+            <div class="font-medium text-sm text-purple-800">顧客管理システム</div>
+            <div class="text-xs text-purple-600 mt-1">契約・対応履歴連携</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 13:40</div>
+          </div>
+          
+          <div class="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+            <div class="font-medium text-sm text-orange-800">報告書システム</div>
+            <div class="text-xs text-orange-600 mt-1">自動生成・顧客送信</div>
+            <div class="text-xs text-gray-500">最終同期: 2025/05/19 13:30</div>
+          </div>
+          
+          <div class="text-center">
+            <button class="text-blue-600 hover:text-blue-800 text-xs font-medium mobile-optimized">
+              <i class="fas fa-sync mr-1"></i>システム連携確認
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顧客からのフィードバック・評価 -->
+    <div class="bg-white rounded-lg shadow-md p-4 mt-6">
+      <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-star mr-2 text-yellow-600"></i>
+        顧客からのフィードバック・評価
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-lg p-4">
+          <div class="flex items-center mb-2">
+            <div class="flex space-x-1 mr-3">
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+            </div>
+            <span class="font-semibold text-gray-800">ABC工場 佐藤様</span>
+          </div>
+          <p class="text-sm text-gray-700">"いつも迅速な対応をありがとうございます。緊急時の対応が特に素晴らしく、製造ラインの停止時間を最小限に抑えていただいています。"</p>
+          <div class="text-xs text-gray-500 mt-2">2025/05/15 • 緊急対応満足度調査</div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+          <div class="flex items-center mb-2">
+            <div class="flex space-x-1 mr-3">
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-gray-300"></i>
+            </div>
+            <span class="font-semibold text-gray-800">DEF産業 田中様</span>
+          </div>
+          <p class="text-sm text-gray-700">"定期点検の説明が丁寧で分かりやすく、設備の状況を把握しやすいです。省エネ提案も具体的で助かっています。"</p>
+          <div class="text-xs text-gray-500 mt-2">2025/05/12 • 月次点検評価</div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+          <div class="flex items-center mb-2">
+            <div class="flex space-x-1 mr-3">
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+            </div>
+            <span class="font-semibold text-gray-800">GHI商事 鈴木様</span>
+          </div>
+          <p class="text-sm text-gray-700">"電話での操作説明が非常に分かりやすく、すぐに問題を解決できました。技術的な知識が豊富で信頼できます。"</p>
+          <div class="text-xs text-gray-500 mt-2">2025/05/18 • 電話サポート評価</div>
+        </div>
+        
+        <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+          <div class="flex items-center mb-2">
+            <div class="flex space-x-1 mr-3">
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+              <i class="fas fa-star text-yellow-400"></i>
+            </div>
+            <span class="font-semibold text-gray-800">JKL工場 山田様</span>
+          </div>
+          <p class="text-sm text-gray-700">"点検報告書が詳細で分かりやすく、設備の現状と今後の対応方針が明確に示されています。改善提案も実用的です。"</p>
+          <div class="text-xs text-gray-500 mt-2">2025/05/16 • 点検報告書評価</div>
+        </div>
+      </div>
+      
+      <div class="text-center mt-4">
+        <div class="flex justify-center items-center space-x-6 text-sm">
+          <div class="text-center">
+            <div class="text-lg font-bold text-green-600">4.8</div>
+            <div class="text-xs text-gray-600">平均評価</div>
+          </div>
+          <div class="text-center">
+            <div class="text-lg font-bold text-blue-600">96%</div>
+            <div class="text-xs text-gray-600">満足度</div>
+          </div>
+          <div class="text-center">
+            <div class="text-lg font-bold text-purple-600">98%</div>
+            <div class="text-xs text-gray-600">推奨度</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // インタラクション機能
+    document.addEventListener('DOMContentLoaded', function() {
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 通知表示関数
+      function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = {
+          'success': 'bg-green-500',
+          'warning': 'bg-yellow-500',
+          'error': 'bg-red-500',
+          'info': 'bg-blue-500',
+          'emergency': 'bg-red-600'
+        }[type] || 'bg-blue-500';
+        
+        const icon = {
+          'success': 'fas fa-check',
+          'warning': 'fas fa-exclamation-triangle',
+          'error': 'fas fa-times',
+          'info': 'fas fa-info-circle',
+          'emergency': 'fas fa-exclamation-triangle'
+        }[type] || 'fas fa-info-circle';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+        notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+        notification.style.transform = 'translateX(100%)';
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
+
+      // 緊急連絡ボタン
+      const emergencyButton = document.querySelector('.bg-red-600');
+      if (emergencyButton && emergencyButton.textContent.includes('緊急連絡')) {
+        emergencyButton.addEventListener('click', function() {
+          showNotification('緊急連絡センターに接続中...', 'emergency');
+          setTimeout(() => {
+            showNotification('緊急連絡が完了しました', 'success');
+          }, 2000);
+        });
+      }
+
+      // メイン機能ボタンの処理
+      const mainButtons = document.querySelectorAll('.bg-gradient-to-r');
+      mainButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const text = this.textContent.trim();
+          
+          if (text.includes('モバイル点検')) {
+            showNotification('モバイル点検アプリを起動中...', 'info');
+          } else if (text.includes('対応記録')) {
+            showNotification('対応記録画面を開いています...', 'info');
+          } else if (text.includes('現地出発')) {
+            showNotification('現地出発を記録しました', 'warning');
+          } else if (text.includes('顧客連絡')) {
+            showNotification('顧客連絡画面を開いています...', 'info');
+          } else if (text.includes('点検開始')) {
+            showNotification('点検作業を開始しました', 'success');
+          } else if (text.includes('準備確認')) {
+            showNotification('点検準備チェックリストを表示中...', 'info');
+          } else if (text.includes('電話対応')) {
+            showNotification('顧客への電話連絡を開始...', 'info');
+          } else if (text.includes('報告書作成')) {
+            showNotification('報告書作成画面を開いています...', 'info');
+          } else if (text.includes('現地急行')) {
+            showNotification('緊急出動を記録しました', 'emergency');
+          }
+        });
+      });
+
+      // 機能カードのクリック処理
+      const functionCards = document.querySelectorAll('.bg-gradient-to-br.from-white');
+      functionCards.forEach(card => {
+        const button = card.querySelector('button');
+        if (button) {
+          button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const title = card.querySelector('h4').textContent;
+            showNotification(`${title}機能を開いています...`, 'info');
+          });
+        }
+      });
+
+      // タブ切り替え機能
+      const tabButtons = document.querySelectorAll('.border.border-gray-300 button');
+      tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          tabButtons.forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('hover:bg-gray-100');
+          });
+          
+          this.classList.add('bg-blue-600', 'text-white');
+          this.classList.remove('hover:bg-gray-100');
+          
+          const filterName = this.textContent.trim();
+          showNotification(`フィルター "${filterName}" を適用しました`, 'info');
+        });
+      });
+
+      // 顧客カードのアクションボタン
+      const actionButtons = document.querySelectorAll('.bg-red-500, .bg-blue-500, .bg-green-500, .bg-gray-100, .bg-purple-500');
+      actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const buttonText = this.textContent.trim();
+          const customerCard = this.closest('.border.border-gray-200');
+          const customerName = customerCard ? customerCard.querySelector('h4').textContent : '顧客';
+          
+          showNotification(`${customerName}：${buttonText}を実行中...`, 'info');
+        });
+      });
+
+      // 活動履歴項目のクリック
+      const activityItems = document.querySelectorAll('.flex.items-center.p-3.hover\\:bg-gray-50');
+      activityItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const activity = this.querySelector('.text-sm.font-medium').textContent;
+          showNotification(`活動詳細を表示: ${activity}`, 'info');
+        });
+      });
+
+      // 部門連携ボタン
+      const collaborationButtons = document.querySelectorAll('button[class*="text-"][class*="600"]');
+      collaborationButtons.forEach(button => {
+        if (button.textContent.includes('連携') || button.textContent.includes('相談') || button.textContent.includes('申請')) {
+          button.addEventListener('click', function() {
+            const text = this.textContent.trim();
+            showNotification(`${text}画面を開いています...`, 'info');
+          });
+        }
+      });
+
+      // システム連携確認
+      const syncButton = document.querySelector('button');
+      if (syncButton && syncButton.textContent.includes('システム連携確認')) {
+        syncButton.addEventListener('click', function() {
+          showNotification('システム連携状況を確認中...', 'info');
+          
+          setTimeout(() => {
+            const syncTimes = document.querySelectorAll('.text-xs.text-gray-500');
+            const now = new Date();
+            const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            syncTimes.forEach(time => {
+              if (time.textContent.includes('最終同期:')) {
+                time.textContent = `最終同期: 2025/05/19 ${timeString}`;
+              }
+            });
+            
+            showNotification('システム連携が正常に確認されました', 'success');
+          }, 1500);
+        });
+      }
+
+      // 緊急対応の自動更新シミュレーション
+      function updateEmergencyStatus() {
+        const emergencyCards = document.querySelectorAll('.emergency-glow');
+        emergencyCards.forEach(card => {
+          const timeElement = card.querySelector('.text-xs.text-gray-500');
+          if (timeElement && timeElement.textContent.includes('分経過')) {
+            const match = timeElement.textContent.match(/(\d+)分経過/);
+            if (match) {
+              let minutes = parseInt(match[1]);
+              minutes += Math.floor(Math.random() * 3) + 1;
+              timeElement.textContent = timeElement.textContent.replace(/\d+分経過/, `${minutes}分経過`);
+              
+              // 時間が経過したら色を変更
+              if (minutes > 60) {
+                card.classList.add('border-red-600');
+                card.querySelector('.border-red-500').classList.replace('border-red-500', 'border-red-600');
+              }
+            }
+          }
+        });
+      }
+
+      // 顧客満足度の更新
+      function updateCustomerSatisfaction() {
+        const satisfactionElement = document.querySelector('.text-2xl.font-bold.text-blue-600');
+        if (satisfactionElement && satisfactionElement.textContent.includes('4.8')) {
+          if (Math.random() > 0.9) { // 10%の確率で更新
+            const currentRating = parseFloat(satisfactionElement.textContent);
+            const change = (Math.random() - 0.5) * 0.2; // -0.1 to +0.1の変化
+            const newRating = Math.max(4.0, Math.min(5.0, currentRating + change));
+            satisfactionElement.textContent = newRating.toFixed(1);
+          }
+        }
+      }
+
+      // 対応件数の更新
+      function updateResponseCount() {
+        const countElement = document.querySelector('.text-2xl.font-bold.text-gray-800');
+        if (countElement && countElement.textContent.includes('8')) {
+          if (Math.random() > 0.85) { // 15%の確率で件数追加
+            let currentCount = parseInt(countElement.textContent);
+            currentCount++;
+            countElement.textContent = `${currentCount}件`;
+            
+            // 目標比も更新
+            const targetElement = countElement.nextElementSibling.querySelector('.text-green-600');
+            if (targetElement) {
+              const newPercentage = Math.round((currentCount / 6 - 1) * 100);
+              targetElement.textContent = `目標比 +${newPercentage}%`;
+            }
+            
+            showNotification('新しい対応案件が追加されました', 'info');
+          }
+        }
+      }
+
+      // 設備ステータスの更新
+      function updateEquipmentStatus() {
+        const statusElements = document.querySelectorAll('.text-sm.font-bold');
+        statusElements.forEach(element => {
+          if (element.textContent === '要注意' && Math.random() > 0.95) {
+            element.textContent = '正常';
+            element.className = element.className.replace('text-amber-600', 'text-green-600');
+            const parent = element.closest('.bg-amber-100');
+            if (parent) {
+              parent.className = parent.className.replace('bg-amber-100', 'bg-green-100');
+            }
+            showNotification('設備状況が改善されました', 'success');
+          }
+        });
+      }
+
+      // リアルタイム天気情報の更新
+      function updateWeatherInfo() {
+        const weatherElement = document.querySelector('.text-gray-700');
+        if (weatherElement && weatherElement.textContent.includes('°C')) {
+          if (Math.random() > 0.9) {
+            const temperatures = ['21°C', '22°C', '23°C', '24°C'];
+            const conditions = ['晴れ', '曇り', '薄曇り'];
+            const randomTemp = temperatures[Math.floor(Math.random() * temperatures.length)];
+            const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
+            weatherElement.textContent = `${randomCondition} ${randomTemp}`;
+          }
+        }
+      }
+
+      // 新しい通知の自動生成
+      function generateRandomNotifications() {
+        const notifications = [
+          { message: '新しい緊急対応要請が入りました', type: 'emergency' },
+          { message: '点検スケジュールが更新されました', type: 'info' },
+          { message: '顧客から高評価をいただきました', type: 'success' },
+          { message: '設備の予防保全アラートです', type: 'warning' },
+          { message: '営業部門から連携依頼があります', type: 'info' }
+        ];
+        
+        if (Math.random() > 0.8) { // 20%の確率で通知
+          const randomNotification = notifications[Math.floor(Math.random() * notifications.length)];
+          showNotification(randomNotification.message, randomNotification.type);
+          
+          // 通知カウンターを更新
+          const bellCounter = document.querySelector('.alert-pulse');
+          if (bellCounter) {
+            let count = parseInt(bellCounter.textContent) || 0;
+            count++;
+            bellCounter.textContent = count;
+          }
+        }
+      }
+
+      // 作業効率の計算
+      function updateWorkEfficiency() {
+        const progressBars = document.querySelectorAll('.progress-fill');
+        progressBars.forEach(bar => {
+          if (Math.random() > 0.9) { // 10%の確率で進捗更新
+            let currentWidth = parseInt(bar.style.width) || 0;
+            if (currentWidth < 100) {
+              currentWidth = Math.min(currentWidth + Math.floor(Math.random() * 5) + 1, 100);
+              bar.style.width = `${currentWidth}%`;
+            }
+          }
+        });
+      }
+
+      // モバイル最適化：タッチイベントの追加
+      if ('ontouchstart' in window) {
+        const touchButtons = document.querySelectorAll('.mobile-optimized');
+        touchButtons.forEach(button => {
+          button.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.95)';
+          });
+          
+          button.addEventListener('touchend', function() {
+            this.style.transform = 'scale(1)';
+          });
+        });
+      }
+
+      // 定期更新タイマー
+      setInterval(updateEmergencyStatus, 60000); // 1分ごと
+      setInterval(updateCustomerSatisfaction, 300000); // 5分ごと
+      setInterval(updateResponseCount, 900000); // 15分ごと
+      setInterval(updateEquipmentStatus, 120000); // 2分ごと
+      setInterval(updateWeatherInfo, 600000); // 10分ごと
+      setInterval(generateRandomNotifications, 180000); // 3分ごと
+      setInterval(updateWorkEfficiency, 240000); // 4分ごと
+
+      // 緊急対応シミュレーション
+      function simulateEmergencyResponse() {
+        setTimeout(() => {
+          showNotification('新しい緊急対応要請: XYZ工場冷凍機アラーム', 'emergency');
+          
+          // 新しい緊急対応カードを追加
+          const emergencyContainer = document.querySelector('.space-y-4');
+          if (emergencyContainer) {
+            const newEmergencyCard = document.createElement('div');
+            newEmergencyCard.className = 'border-l-4 border-red-500 bg-gradient-to-r from-red-50 to-red-25 rounded-r-xl p-4 card-hover emergency-glow';
+            newEmergencyCard.innerHTML = `
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-snowflake text-red-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">XYZ工場 冷凍機アラーム発生</span>
+                    <span class="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">緊急</span>
+                    <span class="status-badge ml-2 bg-red-500 text-white">新規</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">冷凍機No.1 | 高圧アラーム発生</p>
+                  <div class="flex items-center text-xs text-gray-500">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>連絡受付: たった今 | 冷凍食品保管に影響</span>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors mobile-optimized">
+                    緊急出動
+                  </button>
+                </div>
+              </div>
+            `;
+            emergencyContainer.insertBefore(newEmergencyCard, emergencyContainer.firstChild);
+          }
+        }, 300000); // 5分後に新しい緊急対応を追加
+      }
+
+      simulateEmergencyResponse();
+
+      // ページ読み込み時のアニメーション
+      const elements = document.querySelectorAll('.card-hover, .bg-white');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 50);
+      });
+
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('フィールドサービスワークスペースへようこそ、高橋さん', 'success');
+      }, 1000);
+
+      // 設備監視データの更新
+      function updateEquipmentMonitoring() {
+        const monitoringData = [
+          { equipment: '空調機No.1', status: '正常', temp: '22°C' },
+          { equipment: '冷凍機No.1', status: '正常', temp: '-18°C' },
+          { equipment: '受変電設備', status: '正常', load: '85%' }
+        ];
+        
+        // 設備ステータスの動的更新をシミュレート
+        if (Math.random() > 0.95) { // 5%の確率でアラート
+          showNotification('設備監視アラート: 温度上昇を検知しました', 'warning');
+        }
+      }
+
+      setInterval(updateEquipmentMonitoring, 30000); // 30秒ごと
+
+      // 顧客満足度フィードバックの追加
+      function addCustomerFeedback() {
+        const feedbacks = [
+          { customer: 'RST工場', rating: 5, comment: '迅速な対応で助かりました' },
+          { customer: 'UVW商事', rating: 4, comment: '説明が分かりやすかった' },
+          { customer: 'XYZ製作所', rating: 5, comment: '技術力が高く信頼できます' }
+        ];
+        
+        if (Math.random() > 0.9) { // 10%の確率で新しいフィードバック
+          const randomFeedback = feedbacks[Math.floor(Math.random() * feedbacks.length)];
+          showNotification(`${randomFeedback.customer}様から★${randomFeedback.rating}の評価をいただきました`, 'success');
+        }
+      }
+
+      setInterval(addCustomerFeedback, 600000); // 10分ごと
+
+      // カスタマーサービス効率の計算
+      function calculateServiceEfficiency() {
+        const responseTime = 1.2; // 平均対応時間
+        const satisfactionRate = 4.8; // 顧客満足度
+        const firstCallResolution = 0.92; // 初回解決率
+        
+        const efficiency = ((satisfactionRate / 5.0) * 0.4 + 
+                          (firstCallResolution) * 0.3 + 
+                          (Math.max(0, (2.0 - responseTime) / 2.0)) * 0.3) * 100;
+        
+        // 効率スコアの表示更新
+        const efficiencyElements = document.querySelectorAll('.text-lg.font-bold');
+        efficiencyElements.forEach(element => {
+          if (element.closest('.text-center') && element.textContent.includes('%')) {
+            element.textContent = `${Math.round(efficiency)}%`;
+          }
+        });
+      }
+
+      calculateServiceEfficiency();
+      setInterval(calculateServiceEfficiency, 300000); // 5分ごと
+
+      // 地図表示シミュレーション
+      const mapButtons = document.querySelectorAll('button');
+      mapButtons.forEach(button => {
+        if (button.textContent.includes('MAP表示')) {
+          button.addEventListener('click', function() {
+            showNotification('顧客所在地マップを表示しています...', 'info');
+            setTimeout(() => {
+              showNotification('GPS連携により最適ルートを計算中...', 'info');
+            }, 1500);
+          });
+        }
+      });
+
+      // 省エネ効果の監視
+      function monitorEnergyEfficiency() {
+        const energyData = {
+          'ABC工場': { saving: '15%', status: '目標達成' },
+          'DEF産業': { saving: '22%', status: '目標超過' },
+          'GHI商事': { saving: '18%', status: '目標達成' }
+        };
+        
+        if (Math.random() > 0.95) { // 5%の確率で省エネ効果更新
+          const customers = Object.keys(energyData);
+          const randomCustomer = customers[Math.floor(Math.random() * customers.length)];
+          const data = energyData[randomCustomer];
+          showNotification(`${randomCustomer}: 省エネ効果${data.saving} (${data.status})`, 'success');
+        }
+      }
+
+      setInterval(monitorEnergyEfficiency, 900000); // 15分ごと
+
+      // 安全作業の確認
+      function safetyCheck() {
+        const safetyItems = [
+          '安全具着用確認',
+          '作業エリア安全確認',
+          '緊急連絡先確認',
+          '作業手順確認'
+        ];
+        
+        if (Math.random() > 0.9) { // 10%の確率で安全確認
+          const randomItem = safetyItems[Math.floor(Math.random() * safetyItems.length)];
+          showNotification(`安全確認: ${randomItem}を忘れずに`, 'warning');
+        }
+      }
+
+      setInterval(safetyCheck, 1200000); // 20分ごと
+
+      // システム初期化完了のログ
+      console.log('カスタマー部門HUB（一般職版）が正常に初期化されました');
+      
+      // 初期化完了後の自動保存
+      setTimeout(() => {
+        showNotification('作業データが自動保存されました', 'success');
+      }, 600000); // 10分後
+    });
+
+    // 外部から呼び出し可能な関数
+    window.customerFieldHub = {
+      startEmergencyResponse: function(customerName, issue) {
+        showNotification(`緊急対応開始: ${customerName} - ${issue}`, 'emergency');
+      },
+      
+      completeInspection: function(customerName) {
+        showNotification(`${customerName}の点検作業が完了しました`, 'success');
+      },
+      
+      updateEquipmentStatus: function(equipment, status) {
+        showNotification(`${equipment}のステータスが${status}に更新されました`, 'info');
+      },
+      
+      recordCustomerFeedback: function(customerName, rating) {
+        showNotification(`${customerName}様から★${rating}の評価をいただきました`, 'success');
+      },
+      
+      scheduleMaintenace: function(customerName, date) {
+        showNotification(`${customerName}の保守作業を${date}にスケジュールしました`, 'info');
+      },
+      
+      reportIssue: function(issue, severity) {
+        const type = severity === 'high' ? 'emergency' : 'warning';
+        showNotification(`問題報告: ${issue}`, type);
+      }
+    };
+  </script>
+</body>
+</html>
+              

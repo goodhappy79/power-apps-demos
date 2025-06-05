@@ -1,0 +1,1701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>実務対応モバイル点検システム - 日常点検</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    .inspection-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .inspection-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.15);
+    }
+    .status-indicator {
+      animation: statusPulse 2s infinite;
+    }
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .camera-overlay {
+      position: relative;
+      background: linear-gradient(45deg, #1f2937, #374151);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .qr-scanner {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border-radius: 12px;
+    }
+    .touch-target {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    .modal-backdrop {
+      backdrop-filter: blur(8px);
+      background: rgba(0, 0, 0, 0.5);
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring circle {
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.35s;
+    }
+    .equipment-badge {
+      background: linear-gradient(45deg, #059669, #047857);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    .inspection-step {
+      border-left: 4px solid #e5e7eb;
+      transition: border-color 0.3s;
+    }
+    .inspection-step.active {
+      border-left-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .inspection-step.completed {
+      border-left-color: #10b981;
+      background: #f0fdf4;
+    }
+    .measurement-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .measurement-item {
+      background: #f9fafb;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+    .photo-required {
+      position: relative;
+    }
+    .photo-required::after {
+      content: "📷";
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+    }
+    .slide-up {
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .vibrate {
+      animation: vibrate 0.3s ease-in-out;
+    }
+    @keyframes vibrate {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-2px); }
+      75% { transform: translateX(2px); }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <!-- モバイルヘッダー -->
+  <header class="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-lg sticky top-0 z-50">
+    <div class="px-4 py-3">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <button class="mr-3 p-2 hover:bg-emerald-700 rounded-lg touch-target" onclick="goBack()">
+            <i class="fas fa-arrow-left text-xl"></i>
+          </button>
+          <div>
+            <h1 class="text-lg font-bold">日常点検システム</h1>
+            <p class="text-emerald-200 text-sm">設備台帳連動点検</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <!-- オンライン状態 -->
+          <div class="flex items-center">
+            <div class="w-2 h-2 bg-green-400 rounded-full status-indicator mr-1"></div>
+            <span class="text-xs">同期済</span>
+          </div>
+          <!-- バッテリー状態 -->
+          <div class="flex items-center">
+            <i class="fas fa-battery-three-quarters text-lg"></i>
+            <span class="text-xs ml-1">78%</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 現在の作業状況 -->
+      <div class="mt-3 bg-emerald-700 rounded-lg p-3" id="workStatus">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-sm font-medium">待機中</div>
+            <div class="text-emerald-200 text-xs">QRコードをスキャンして開始</div>
+          </div>
+          <div class="text-right">
+            <div class="text-lg font-bold" id="workTimer">--:--</div>
+            <div class="text-emerald-200 text-xs">作業時間</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- メイン画面 -->
+  <div class="px-4 py-4">
+    <!-- フェーズ1: QRコード読取 -->
+    <div class="qr-scanner p-6 mb-6 text-white" id="qrPhase">
+      <div class="text-center">
+        <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-qrcode text-2xl"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-2">設備QRコード読取</h2>
+        <p class="text-blue-100 text-sm mb-4">設備台帳に登録されたQRコードをスキャンしてください</p>
+        <button class="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold flex items-center justify-center w-full touch-target" onclick="startQRScan()">
+          <i class="fas fa-camera mr-2"></i>
+          設備QRコードをスキャン
+        </button>
+      </div>
+    </div>
+
+    <!-- フェーズ2: 設備情報確認・点検開始 -->
+    <div class="bg-white rounded-xl shadow-lg p-4 mb-6 hidden" id="equipmentInfoPhase">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center">
+          <i class="fas fa-cogs text-emerald-600 mr-2"></i>
+          設備情報確認
+        </h3>
+        <span class="equipment-badge" id="equipmentCode">--</span>
+      </div>
+      
+      <div class="bg-gray-50 rounded-lg p-4 mb-4">
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <div class="text-gray-600">設備名称</div>
+            <div class="font-semibold" id="equipmentName">--</div>
+          </div>
+          <div>
+            <div class="text-gray-600">型式・仕様</div>
+            <div class="font-semibold" id="equipmentModel">--</div>
+          </div>
+          <div>
+            <div class="text-gray-600">設置場所</div>
+            <div class="font-semibold" id="equipmentLocation">--</div>
+          </div>
+          <div>
+            <div class="text-gray-600">管理分類</div>
+            <div class="font-semibold" id="equipmentCategory">--</div>
+          </div>
+          <div class="col-span-2">
+            <div class="text-gray-600">前回点検日</div>
+            <div class="font-semibold" id="lastInspectionDate">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 点検開始ボタン -->
+      <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold flex items-center justify-center touch-target" onclick="startInspection()">
+        <i class="fas fa-play mr-2"></i>
+        日常点検開始
+      </button>
+    </div>
+
+    <!-- フェーズ3: 詳細点検項目 -->
+    <div class="hidden" id="inspectionPhase">
+      
+      <!-- 1. 外観点検（必須写真あり） -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-4 inspection-step photo-required" id="visualInspection">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800 flex items-center">
+            <i class="fas fa-eye text-blue-600 mr-2"></i>
+            1. 外観点検
+          </h3>
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full" id="visualStatus">未実施</span>
+        </div>
+
+        <div class="space-y-3">
+          <!-- 外観チェック項目 -->
+          <div class="grid grid-cols-1 gap-2">
+            <label class="flex items-center p-2 border rounded-lg">
+              <input type="checkbox" class="mr-3 inspection-checkbox" data-category="visual" data-item="corrosion">
+              <span class="text-sm">腐食・錆の有無</span>
+              <select class="ml-auto text-xs border rounded px-2 py-1">
+                <option value="良好">良好</option>
+                <option value="軽微">軽微</option>
+                <option value="要注意">要注意</option>
+                <option value="要対策">要対策</option>
+              </select>
+            </label>
+            
+            <label class="flex items-center p-2 border rounded-lg">
+              <input type="checkbox" class="mr-3 inspection-checkbox" data-category="visual" data-item="damage">
+              <span class="text-sm">損傷・変形の有無</span>
+              <select class="ml-auto text-xs border rounded px-2 py-1">
+                <option value="良好">良好</option>
+                <option value="軽微">軽微</option>
+                <option value="要注意">要注意</option>
+                <option value="要対策">要対策</option>
+              </select>
+            </label>
+            
+            <label class="flex items-center p-2 border rounded-lg">
+              <input type="checkbox" class="mr-3 inspection-checkbox" data-category="visual" data-item="mounting">
+              <span class="text-sm">取付状態・固定状態</span>
+              <select class="ml-auto text-xs border rounded px-2 py-1">
+                <option value="良好">良好</option>
+                <option value="緩み">緩み</option>
+                <option value="要増締">要増締</option>
+                <option value="要交換">要交換</option>
+              </select>
+            </label>
+            
+            <label class="flex items-center p-2 border rounded-lg">
+              <input type="checkbox" class="mr-3 inspection-checkbox" data-category="visual" data-item="cleanliness">
+              <span class="text-sm">清掃状態・汚れ</span>
+              <select class="ml-auto text-xs border rounded px-2 py-1">
+                <option value="良好">良好</option>
+                <option value="軽微">軽微</option>
+                <option value="要清掃">要清掃</option>
+                <option value="重汚染">重汚染</option>
+              </select>
+            </label>
+          </div>
+
+          <!-- 必須写真撮影 -->
+          <div class="border-t pt-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-red-700">📷 必須写真撮影</span>
+              <span class="text-xs text-gray-500" id="visualPhotoCount">0/3枚</span>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <button class="bg-blue-600 text-white p-2 rounded-lg text-xs touch-target" onclick="takeRequiredPhoto('visual', 'nameplate')">
+                銘板撮影
+              </button>
+              <button class="bg-blue-600 text-white p-2 rounded-lg text-xs touch-target" onclick="takeRequiredPhoto('visual', 'overview')">
+                全景撮影
+              </button>
+              <button class="bg-blue-600 text-white p-2 rounded-lg text-xs touch-target" onclick="takeRequiredPhoto('visual', 'detail')">
+                詳細撮影
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. 運転状況確認 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-4 inspection-step" id="operationInspection">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800 flex items-center">
+            <i class="fas fa-play-circle text-green-600 mr-2"></i>
+            2. 運転状況確認
+          </h3>
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full" id="operationStatus">未実施</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 運転状態確認 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">運転状態</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="radio" name="operationState" value="normal" class="mr-2">
+                <span class="text-sm">正常運転</span>
+              </label>
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="radio" name="operationState" value="abnormal" class="mr-2">
+                <span class="text-sm">異常あり</span>
+              </label>
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="radio" name="operationState" value="stopped" class="mr-2">
+                <span class="text-sm">停止中</span>
+              </label>
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="radio" name="operationState" value="maintenance" class="mr-2">
+                <span class="text-sm">保守中</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 音・振動確認 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">音・振動確認</h4>
+            <div class="measurement-grid">
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">運転音</label>
+                <select class="w-full text-sm border rounded px-2 py-1">
+                  <option value="正常">正常</option>
+                  <option value="やや大">やや大</option>
+                  <option value="異音">異音あり</option>
+                  <option value="要点検">要点検</option>
+                </select>
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">振動状態</label>
+                <select class="w-full text-sm border rounded px-2 py-1">
+                  <option value="正常">正常</option>
+                  <option value="やや大">やや大</option>
+                  <option value="異常振動">異常振動</option>
+                  <option value="要点検">要点検</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 測定値入力 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">測定値（機械系）</h4>
+            <div class="measurement-grid">
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">振動値 (mm/s)</label>
+                <input type="number" step="0.1" class="w-full text-sm border rounded px-2 py-1" placeholder="2.0">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">温度 (℃)</label>
+                <input type="number" step="0.1" class="w-full text-sm border rounded px-2 py-1" placeholder="45.0">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">圧力 (MPa)</label>
+                <input type="number" step="0.01" class="w-full text-sm border rounded px-2 py-1" placeholder="0.50">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">流量 (L/min)</label>
+                <input type="number" step="1" class="w-full text-sm border rounded px-2 py-1" placeholder="150">
+              </div>
+            </div>
+          </div>
+
+          <!-- 写真撮影オプション -->
+          <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm touch-target" onclick="takePhoto('operation')">
+            <i class="fas fa-camera mr-2"></i>
+            運転状況写真撮影
+          </button>
+        </div>
+      </div>
+
+      <!-- 3. 電気系統点検 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-4 inspection-step" id="electricalInspection">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800 flex items-center">
+            <i class="fas fa-bolt text-yellow-600 mr-2"></i>
+            3. 電気系統点検
+          </h3>
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full" id="electricalStatus">未実施</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 電気測定値 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">電気測定値</h4>
+            <div class="measurement-grid">
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">電圧 R-S (V)</label>
+                <input type="number" step="1" class="w-full text-sm border rounded px-2 py-1" placeholder="400">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">電圧 S-T (V)</label>
+                <input type="number" step="1" class="w-full text-sm border rounded px-2 py-1" placeholder="400">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">電圧 T-R (V)</label>
+                <input type="number" step="1" class="w-full text-sm border rounded px-2 py-1" placeholder="400">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">不平衡率 (%)</label>
+                <input type="number" step="0.1" class="w-full text-sm border rounded px-2 py-1" placeholder="1.5">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">電流 R相 (A)</label>
+                <input type="number" step="0.1" class="w-full text-sm border rounded px-2 py-1" placeholder="12.0">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">電流 S相 (A)</label>
+                <input type="number" step="0.1" class="w-full text-sm border rounded px-2 py-1" placeholder="12.0">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">電流 T相 (A)</label>
+                <input type="number" step="0.1" class="w-full text-sm border rounded px-2 py-1" placeholder="12.0">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">力率</label>
+                <input type="number" step="0.01" class="w-full text-sm border rounded px-2 py-1" placeholder="0.85">
+              </div>
+            </div>
+          </div>
+
+          <!-- 絶縁測定 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">絶縁測定</h4>
+            <div class="measurement-grid">
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">絶縁抵抗 R-E (MΩ)</label>
+                <input type="number" step="1" class="w-full text-sm border rounded px-2 py-1" placeholder="500">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">絶縁抵抗 S-E (MΩ)</label>
+                <input type="number" step="1" class="w-full text-sm border rounded px-2 py-1" placeholder="500">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">絶縁抵抗 T-E (MΩ)</label>
+                <input type="number" step="1" class="w-full text-sm border rounded px-2 py-1" placeholder="500">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">接地抵抗 (Ω)</label>
+                <input type="number" step="0.1" class="w-full text-sm border rounded px-2 py-1" placeholder="10.0">
+              </div>
+            </div>
+          </div>
+
+          <!-- 制御盤・配電盤確認 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">制御盤・配電盤確認</h4>
+            <div class="grid grid-cols-1 gap-2">
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="electrical" data-item="panel_temp">
+                <span class="text-sm">盤内温度</span>
+                <select class="ml-auto text-xs border rounded px-2 py-1">
+                  <option value="正常">正常</option>
+                  <option value="やや高">やや高</option>
+                  <option value="高温">高温</option>
+                  <option value="要対策">要対策</option>
+                </select>
+              </label>
+              
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="electrical" data-item="connections">
+                <span class="text-sm">接続部状態</span>
+                <select class="ml-auto text-xs border rounded px-2 py-1">
+                  <option value="良好">良好</option>
+                  <option value="軽微な緩み">軽微な緩み</option>
+                  <option value="要増締">要増締</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </label>
+              
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="electrical" data-item="indicators">
+                <span class="text-sm">表示灯・計器類</span>
+                <select class="ml-auto text-xs border rounded px-2 py-1">
+                  <option value="正常">正常</option>
+                  <option value="一部不良">一部不良</option>
+                  <option value="要交換">要交換</option>
+                  <option value="動作不良">動作不良</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <!-- 写真撮影 -->
+          <button class="w-full bg-yellow-600 hover:bg-yellow-700 text-white py-2 rounded-lg text-sm touch-target" onclick="takePhoto('electrical')">
+            <i class="fas fa-camera mr-2"></i>
+            電気設備写真撮影
+          </button>
+        </div>
+      </div>
+
+      <!-- 4. 潤滑・消耗品確認 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-4 inspection-step" id="lubricationInspection">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800 flex items-center">
+            <i class="fas fa-oil-can text-orange-600 mr-2"></i>
+            4. 潤滑・消耗品確認
+          </h3>
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full" id="lubricationStatus">未実施</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- オイル関連 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">オイル・潤滑油</h4>
+            <div class="measurement-grid">
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">オイル量 (%)</label>
+                <input type="number" step="5" min="0" max="100" class="w-full text-sm border rounded px-2 py-1" placeholder="80">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">オイル状態</label>
+                <select class="w-full text-sm border rounded px-2 py-1">
+                  <option value="良好">良好</option>
+                  <option value="やや劣化">やや劣化</option>
+                  <option value="要交換">要交換</option>
+                  <option value="汚染">汚染あり</option>
+                </select>
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">オイル漏れ</label>
+                <select class="w-full text-sm border rounded px-2 py-1">
+                  <option value="なし">なし</option>
+                  <option value="軽微">軽微</option>
+                  <option value="中程度">中程度</option>
+                  <option value="要対策">要対策</option>
+                </select>
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">次回交換予定</label>
+                <input type="number" step="1" min="1" max="24" class="w-full text-sm border rounded px-2 py-1" placeholder="6">
+                <span class="text-xs text-gray-500">ヶ月後</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- グリス・ベアリング -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">グリス・ベアリング</h4>
+            <div class="measurement-grid">
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">グリス状態</label>
+                <select class="w-full text-sm border rounded px-2 py-1">
+                  <option value="良好">良好</option>
+                  <option value="やや劣化">やや劣化</option>
+                  <option value="要補充">要補充</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">ベアリング音</label>
+                <select class="w-full text-sm border rounded px-2 py-1">
+                  <option value="正常">正常</option>
+                  <option value="やや異音">やや異音</option>
+                  <option value="異音">異音あり</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">最終グリス補充日</label>
+                <input type="date" class="w-full text-sm border rounded px-2 py-1">
+              </div>
+              <div class="measurement-item">
+                <label class="block text-xs text-gray-600 mb-1">次回補充予定</label>
+                <input type="number" step="1" min="1" max="12" class="w-full text-sm border rounded px-2 py-1" placeholder="3">
+                <span class="text-xs text-gray-500">ヶ月後</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- フィルタ・消耗品 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">フィルタ・消耗品</h4>
+            <div class="space-y-2">
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="lubrication" data-item="air_filter">
+                <span class="text-sm flex-1">エアフィルタ</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="良好">良好</option>
+                  <option value="やや汚れ">やや汚れ</option>
+                  <option value="要清掃">要清掃</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="lubrication" data-item="oil_filter">
+                <span class="text-sm flex-1">オイルフィルタ</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="良好">良好</option>
+                  <option value="やや汚れ">やや汚れ</option>
+                  <option value="要清掃">要清掃</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="lubrication" data-item="strainer">
+                <span class="text-sm flex-1">ストレーナ</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="良好">良好</option>
+                  <option value="やや汚れ">やや汚れ</option>
+                  <option value="要清掃">要清掃</option>
+                  <option value="詰まり">詰まり</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. 安全装置・保護装置確認 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-4 inspection-step" id="safetyInspection">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800 flex items-center">
+            <i class="fas fa-shield-alt text-red-600 mr-2"></i>
+            5. 安全装置・保護装置確認
+          </h3>
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full" id="safetyStatus">未実施</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 保護装置動作確認 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">保護装置動作確認</h4>
+            <div class="space-y-2">
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="safety" data-item="overload">
+                <span class="text-sm flex-1">過負荷保護装置</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="正常">正常</option>
+                  <option value="設定要確認">設定要確認</option>
+                  <option value="動作不良">動作不良</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="safety" data-item="emergency_stop">
+                <span class="text-sm flex-1">非常停止装置</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="正常">正常</option>
+                  <option value="動作確認要">動作確認要</option>
+                  <option value="動作不良">動作不良</option>
+                  <option value="要修理">要修理</option>
+                </select>
+              </div>
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="safety" data-item="thermal_relay">
+                <span class="text-sm flex-1">サーマルリレー</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="正常">正常</option>
+                  <option value="設定値要確認">設定値要確認</option>
+                  <option value="要調整">要調整</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="safety" data-item="pressure_switch">
+                <span class="text-sm flex-1">圧力スイッチ</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="正常">正常</option>
+                  <option value="設定値要確認">設定値要確認</option>
+                  <option value="動作不良">動作不良</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 安全設備確認 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">安全設備確認</h4>
+            <div class="space-y-2">
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="safety" data-item="safety_guard">
+                <span class="text-sm flex-1">安全カバー・ガード</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="正常">正常</option>
+                  <option value="緩み">緩み</option>
+                  <option value="損傷">損傷</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+              <div class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3 inspection-checkbox" data-category="safety" data-item="warning_signs">
+                <span class="text-sm flex-1">警告表示・注意喚起</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="良好">良好</option>
+                  <option value="色あせ">色あせ</option>
+                  <option value="剥がれ">剥がれ</option>
+                  <option value="要交換">要交換</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. 技術者気づき・特記事項 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-4 inspection-step" id="observationInspection">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-gray-800 flex items-center">
+            <i class="fas fa-lightbulb text-purple-600 mr-2"></i>
+            6. 技術者気づき・特記事項
+          </h3>
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full" id="observationStatus">未実施</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 技術者の気づき -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">技術者の気づき・所見</h4>
+            <textarea 
+              class="w-full p-3 border border-gray-300 rounded-lg h-24 resize-none text-sm" 
+              placeholder="技術者として気づいた点、将来的な課題、改善提案などを記入してください。
+例：
+・ベアリング音が微妙に変化している（3ヶ月後要注意）
+・配管振動が以前より大きい（支持金具の緩み可能性）
+・制御盤内温度が設計値より高め（換気改善検討要）
+・効率低下の兆候（半年後詳細診断推奨）"
+              id="technicalObservation"></textarea>
+          </div>
+
+          <!-- 改善提案 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">改善提案・予防保全提案</h4>
+            <div class="space-y-2">
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3">
+                <span class="text-sm flex-1">部品交換時期の前倒し検討</span>
+                <input type="text" class="text-xs border rounded px-2 py-1 ml-2 w-20" placeholder="部品名">
+              </label>
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3">
+                <span class="text-sm flex-1">運転条件・設定値の見直し</span>
+                <input type="text" class="text-xs border rounded px-2 py-1 ml-2 w-20" placeholder="項目">
+              </label>
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3">
+                <span class="text-sm flex-1">点検頻度の変更検討</span>
+                <select class="text-xs border rounded px-2 py-1 ml-2">
+                  <option value="頻度増加">頻度増加</option>
+                  <option value="頻度減少">頻度減少</option>
+                  <option value="項目追加">項目追加</option>
+                </select>
+              </label>
+              <label class="flex items-center p-2 border rounded-lg">
+                <input type="checkbox" class="mr-3">
+                <span class="text-sm flex-1">設備更新・改修の検討</span>
+                <input type="text" class="text-xs border rounded px-2 py-1 ml-2 w-20" placeholder="時期">
+              </label>
+            </div>
+          </div>
+
+          <!-- 次回点検での重点確認事項 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">次回点検での重点確認事項</h4>
+            <textarea 
+              class="w-full p-3 border border-gray-300 rounded-lg h-20 resize-none text-sm" 
+              placeholder="次回点検時に特に注意して確認すべき項目を記入してください。"
+              id="nextInspectionFocus"></textarea>
+          </div>
+
+          <!-- 緊急対応要否 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">緊急対応要否</h4>
+            <div class="grid grid-cols-1 gap-2">
+              <label class="flex items-center p-3 border-2 rounded-lg border-green-300 bg-green-50">
+                <input type="radio" name="urgencyLevel" value="normal" class="mr-3" checked>
+                <div>
+                  <span class="text-sm font-medium text-green-800">正常（緊急対応不要）</span>
+                  <div class="text-xs text-green-600">次回定期点検まで継続運転可能</div>
+                </div>
+              </label>
+              <label class="flex items-center p-3 border-2 rounded-lg border-yellow-300 bg-yellow-50">
+                <input type="radio" name="urgencyLevel" value="attention" class="mr-3">
+                <div>
+                  <span class="text-sm font-medium text-yellow-800">要注意（経過観察）</span>
+                  <div class="text-xs text-yellow-600">1週間以内に再点検が必要</div>
+                </div>
+              </label>
+              <label class="flex items-center p-3 border-2 rounded-lg border-red-300 bg-red-50">
+                <input type="radio" name="urgencyLevel" value="urgent" class="mr-3">
+                <div>
+                  <span class="text-sm font-medium text-red-800">緊急対応要（即座対応）</span>
+                  <div class="text-xs text-red-600">24時間以内に技術部門連携が必要</div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. 異常・不具合報告 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-4 inspection-step" id="abnormalityReport">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-bold text-red-800 flex items-center">
+            <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+            7. 異常・不具合報告
+          </h3>
+          <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full" id="abnormalityStatus">未実施</span>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 異常の有無 -->
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-2">異常・不具合の有無</h4>
+            <div class="grid grid-cols-2 gap-2">
+              <label class="flex items-center p-3 border-2 rounded-lg border-green-300 bg-green-50">
+                <input type="radio" name="abnormalityExists" value="none" class="mr-3" checked onchange="toggleAbnormalityDetails(false)">
+                <span class="text-sm font-medium text-green-800">異常なし</span>
+              </label>
+              <label class="flex items-center p-3 border-2 rounded-lg border-red-300 bg-red-50">
+                <input type="radio" name="abnormalityExists" value="exists" class="mr-3" onchange="toggleAbnormalityDetails(true)">
+                <span class="text-sm font-medium text-red-800">異常あり</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- 異常詳細（初期は非表示） -->
+          <div id="abnormalityDetails" class="hidden space-y-4">
+            <!-- 異常種別 -->
+            <div>
+              <h4 class="font-semibold text-red-700 mb-2">異常種別</h4>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center p-2 border rounded-lg">
+                  <input type="checkbox" class="mr-2" value="abnormal_sound">
+                  <span class="text-xs">異音・異常振動</span>
+                </label>
+                <label class="flex items-center p-2 border rounded-lg">
+                  <input type="checkbox" class="mr-2" value="leakage">
+                  <span class="text-xs">オイル・水漏れ</span>
+                </label>
+                <label class="flex items-center p-2 border rounded-lg">
+                  <input type="checkbox" class="mr-2" value="electrical">
+                  <span class="text-xs">電気系統異常</span>
+                </label>
+                <label class="flex items-center p-2 border rounded-lg">
+                  <input type="checkbox" class="mr-2" value="temperature">
+                  <span class="text-xs">温度異常</span>
+                </label>
+                <label class="flex items-center p-2 border rounded-lg">
+                  <input type="checkbox" class="mr-2" value="control">
+                  <span class="text-xs">制御・動作不良</span>
+                </label>
+                <label class="flex items-center p-2 border rounded-lg">
+                  <input type="checkbox" class="mr-2" value="safety">
+                  <span class="text-xs">安全装置異常</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- 詳細説明 -->
+            <div>
+              <h4 class="font-semibold text-red-700 mb-2">異常の詳細説明</h4>
+              <textarea 
+                class="w-full p-3 border border-red-300 rounded-lg h-24 resize-none text-sm" 
+                placeholder="発見した異常について詳しく記入してください。
+・いつから（推定）
+・どのような状況で
+・どの程度の異常か
+・影響範囲
+・一時的な対応の有無など"></textarea>
+            </div>
+
+            <!-- 緊急度設定 -->
+            <div>
+              <h4 class="font-semibold text-red-700 mb-2">緊急度</h4>
+              <div class="space-y-2">
+                <label class="flex items-center p-2 border-2 border-red-500 rounded-lg bg-red-100">
+                  <input type="radio" name="abnormalityUrgency" value="emergency" class="mr-3">
+                  <div>
+                    <span class="text-sm font-medium text-red-800">緊急（即座停止・対応要）</span>
+                    <div class="text-xs text-red-600">安全上の問題・重大故障の可能性</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-2 border-2 border-yellow-500 rounded-lg bg-yellow-100">
+                  <input type="radio" name="abnormalityUrgency" value="urgent" class="mr-3">
+                  <div>
+                    <span class="text-sm font-medium text-yellow-800">要注意（24時間以内対応）</span>
+                    <div class="text-xs text-yellow-600">故障進行の可能性・性能低下</div>
+                  </div>
+                </label>
+                <label class="flex items-center p-2 border-2 border-blue-500 rounded-lg bg-blue-100">
+                  <input type="radio" name="abnormalityUrgency" value="observation" class="mr-3">
+                  <div>
+                    <span class="text-sm font-medium text-blue-800">経過観察（1週間以内対応）</span>
+                    <div class="text-xs text-blue-600">軽微な異常・予兆段階</div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- 証拠写真撮影 -->
+            <div>
+              <h4 class="font-semibold text-red-700 mb-2">証拠写真</h4>
+              <button class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-medium touch-target" onclick="takeAbnormalityPhoto()">
+                <i class="fas fa-camera mr-2"></i>
+                異常箇所の写真撮影
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 点検完了・報告書生成 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center mb-4">
+          <i class="fas fa-check-circle text-emerald-600 mr-2"></i>
+          点検完了・報告書生成
+        </h3>
+
+        <!-- 点検進捗確認 -->
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium">点検進捗</span>
+            <span class="text-sm text-gray-600" id="overallProgress">0/7項目完了</span>
+          </div>
+          <div class="bg-gray-200 rounded-full h-3">
+            <div class="bg-emerald-600 h-3 rounded-full transition-all duration-300" style="width: 0%" id="progressBar"></div>
+          </div>
+        </div>
+
+        <!-- 必須項目チェック -->
+        <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+          <h4 class="font-semibold text-gray-700 mb-2">完了確認項目</h4>
+          <div class="space-y-1 text-sm">
+            <div class="flex items-center" id="checkVisual">
+              <i class="fas fa-circle text-gray-400 mr-2"></i>
+              <span>外観点検・必須写真撮影</span>
+            </div>
+            <div class="flex items-center" id="checkOperation">
+              <i class="fas fa-circle text-gray-400 mr-2"></i>
+              <span>運転状況確認・測定値入力</span>
+            </div>
+            <div class="flex items-center" id="checkElectrical">
+              <i class="fas fa-circle text-gray-400 mr-2"></i>
+              <span>電気系統点検</span>
+            </div>
+            <div class="flex items-center" id="checkLubrication">
+              <i class="fas fa-circle text-gray-400 mr-2"></i>
+              <span>潤滑・消耗品確認</span>
+            </div>
+            <div class="flex items-center" id="checkSafety">
+              <i class="fas fa-circle text-gray-400 mr-2"></i>
+              <span>安全装置確認</span>
+            </div>
+            <div class="flex items-center" id="checkObservation">
+              <i class="fas fa-circle text-gray-400 mr-2"></i>
+              <span>技術者気づき入力</span>
+            </div>
+            <div class="flex items-center" id="checkAbnormality">
+              <i class="fas fa-circle text-gray-400 mr-2"></i>
+              <span>異常有無確認</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 点検終了・報告書生成 -->
+        <div class="space-y-3">
+          <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-bold touch-target" onclick="completeInspection()" id="completeButton" disabled>
+            <i class="fas fa-check-circle mr-2"></i>
+            点検完了・報告書自動生成
+          </button>
+          <div class="grid grid-cols-2 gap-3">
+            <button class="bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-sm touch-target" onclick="saveAsDraft()">
+              <i class="fas fa-save mr-2"></i>
+              下書き保存
+            </button>
+            <button class="bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm touch-target" onclick="previewReport()">
+              <i class="fas fa-file-alt mr-2"></i>
+              レポート確認
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 本日の点検実績 -->
+    <div class="bg-white rounded-xl shadow-lg p-4">
+      <h3 class="text-lg font-bold text-gray-800 flex items-center mb-4">
+        <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+        本日の点検実績
+      </h3>
+      
+      <div class="grid grid-cols-3 gap-4 text-center">
+        <div class="bg-blue-50 p-3 rounded-lg">
+          <div class="text-2xl font-bold text-blue-600" id="todayCompleted">0</div>
+          <div class="text-xs text-gray-600">完了</div>
+        </div>
+        <div class="bg-yellow-50 p-3 rounded-lg">
+          <div class="text-2xl font-bold text-yellow-600" id="todayInProgress">1</div>
+          <div class="text-xs text-gray-600">進行中</div>
+        </div>
+        <div class="bg-gray-50 p-3 rounded-lg">
+          <div class="text-2xl font-bold text-gray-600" id="todayRemaining">7</div>
+          <div class="text-xs text-gray-600">予定</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル：QRスキャナー -->
+  <div id="qrModal" class="fixed inset-0 modal-backdrop hidden z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <div class="bg-white rounded-2xl w-full max-w-sm slide-up">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800">設備QRスキャン</h3>
+            <button class="text-gray-500 hover:text-gray-700 touch-target" onclick="closeQRModal()">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- カメラプレビュー -->
+          <div class="bg-gray-800 rounded-xl h-64 flex items-center justify-center mb-4">
+            <div class="text-white text-center">
+              <i class="fas fa-camera text-4xl mb-2"></i>
+              <p class="text-sm">設備台帳QRコードを中央に配置</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-medium touch-target" onclick="simulateQRScan()">
+              <i class="fas fa-qrcode mr-2"></i>
+              スキャン開始
+            </button>
+            <button class="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-xl font-medium touch-target" onclick="closeQRModal()">
+              キャンセル
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- モーダル：写真撮影 -->
+  <div id="photoModal" class="fixed inset-0 modal-backdrop hidden z-50">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <div class="bg-white rounded-2xl w-full max-w-md slide-up">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold text-gray-800">写真撮影</h3>
+            <button class="text-gray-500 hover:text-gray-700 touch-target" onclick="closePhotoModal()">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          
+          <!-- カメラプレビュー -->
+          <div class="bg-gray-800 rounded-xl h-64 flex items-center justify-center mb-4">
+            <div class="text-white text-center">
+              <i class="fas fa-camera text-4xl mb-2"></i>
+              <p class="text-sm" id="photoInstructions">写真を撮影してください</p>
+            </div>
+          </div>
+          
+          <!-- 撮影分類 -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">撮影分類</label>
+            <select class="w-full p-2 border border-gray-300 rounded-lg" id="photoCategory">
+              <option value="nameplate">銘板</option>
+              <option value="overview">全景</option>
+              <option value="detail">詳細部分</option>
+              <option value="operation">運転状況</option>
+              <option value="electrical">電気設備</option>
+              <option value="abnormality">異常箇所</option>
+              <option value="maintenance">保守部位</option>
+            </select>
+          </div>
+          
+          <div class="space-y-3">
+            <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium touch-target" onclick="capturePhoto()">
+              <i class="fas fa-camera mr-2"></i>
+              撮影
+            </button>
+            <button class="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-xl font-medium touch-target" onclick="closePhotoModal()">
+              キャンセル
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フローティングアクションボタン -->
+  <div class="fixed bottom-6 right-6 z-40">
+    <div class="flex flex-col space-y-3">
+      <!-- 同期ボタン -->
+      <button class="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center touch-target" onclick="syncData()">
+        <i class="fas fa-sync-alt text-lg"></i>
+      </button>
+      <!-- 緊急連絡ボタン -->
+      <button class="w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg flex items-center justify-center touch-target" onclick="emergencyContact()">
+        <i class="fas fa-phone text-lg"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- トースト通知エリア -->
+  <div id="toastContainer" class="fixed top-20 left-4 right-4 z-50"></div>
+
+  <script>
+    // グローバル変数
+    let currentEquipment = null;
+    let inspectionStartTime = null;
+    let inspectionTimer = null;
+    let completedSections = 0;
+    let totalSections = 7;
+    let photoCount = 0;
+    let requiredPhotos = {
+      visual: { nameplate: false, overview: false, detail: false }
+    };
+
+    // 設備データベース（シミュレーション）
+    const equipmentDatabase = {
+      'ME-001': {
+        code: 'ME-001',
+        name: '冷却塔ポンプ#1',
+        model: 'KMP-150-3P-22kW',
+        location: '屋上機械室',
+        category: '機械設備（ポンプ）',
+        lastInspection: '2025-04-19',
+        type: 'pump'
+      },
+      'EL-003': {
+        code: 'EL-003', 
+        name: '低圧配電盤#3',
+        model: 'PD-300A-20回路',
+        location: '地下電気室',
+        category: '電気設備（配電盤）',
+        lastInspection: '2025-04-18',
+        type: 'electrical'
+      },
+      'AC-005': {
+        code: 'AC-005',
+        name: 'パッケージエアコン#5',
+        model: 'PAC-50HP-R410A',
+        location: '3階会議室',
+        category: '空調設備',
+        lastInspection: '2025-04-20',
+        type: 'hvac'
+      }
+    };
+
+    // ページ読み込み時の初期化
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeInspectionSystem();
+      setupEventListeners();
+    });
+
+    // システム初期化
+    function initializeInspectionSystem() {
+      showToast('日常点検システムを起動しました', 'info');
+      updateWorkStatus('待機中', 'QRコードをスキャンして開始');
+      
+      // オフライン/オンライン状態監視
+      window.addEventListener('online', function() {
+        showToast('オンライン復帰：データ同期中...', 'success');
+        updateConnectionStatus(true);
+      });
+      
+      window.addEventListener('offline', function() {
+        showToast('オフライン：ローカル保存で継続', 'warning');
+        updateConnectionStatus(false);
+      });
+    }
+
+    // イベントリスナー設定
+    function setupEventListeners() {
+      // チェックボックス変更時の処理
+      document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('inspection-checkbox')) {
+          updateSectionProgress(e.target);
+        }
+        
+        if (e.target.name === 'abnormalityExists') {
+          updateAbnormalityStatus();
+        }
+      });
+
+      // 入力値変更時の自動保存
+      document.addEventListener('input', debounce(function(e) {
+        if (e.target.type === 'number' || e.target.type === 'date' || e.target.tagName === 'TEXTAREA') {
+          autoSaveData();
+        }
+      }, 1000));
+    }
+
+    // QRコードスキャン開始
+    function startQRScan() {
+      document.getElementById('qrModal').classList.remove('hidden');
+      showToast('設備台帳QRコードをスキャンしてください', 'info');
+    }
+
+    // QRスキャンシミュレーション
+    function simulateQRScan() {
+      showToast('QRコード読取中...', 'info');
+      
+      // ランダムに設備を選択（実際はQRコードから取得）
+      const equipmentIds = Object.keys(equipmentDatabase);
+      const randomId = equipmentIds[Math.floor(Math.random() * equipmentIds.length)];
+      
+      setTimeout(() => {
+        loadEquipmentData(randomId);
+        closeQRModal();
+        showToast(`設備 ${randomId} を識別しました`, 'success');
+        vibrate();
+      }, 2000);
+    }
+
+    // 設備データ読み込み
+    function loadEquipmentData(equipmentId) {
+      const equipment = equipmentDatabase[equipmentId];
+      if (!equipment) {
+        showToast('設備が見つかりません', 'error');
+        return;
+      }
+
+      currentEquipment = equipment;
+      
+      // 設備情報を画面に反映
+      document.getElementById('equipmentCode').textContent = equipment.code;
+      document.getElementById('equipmentName').textContent = equipment.name;
+      document.getElementById('equipmentModel').textContent = equipment.model;
+      document.getElementById('equipmentLocation').textContent = equipment.location;
+      document.getElementById('equipmentCategory').textContent = equipment.category;
+      document.getElementById('lastInspectionDate').textContent = equipment.lastInspection;
+
+      // QRフェーズを非表示、設備情報フェーズを表示
+      document.getElementById('qrPhase').classList.add('hidden');
+      document.getElementById('equipmentInfoPhase').classList.remove('hidden');
+      
+      updateWorkStatus('設備確認中', `${equipment.name} の情報を確認`);
+    }
+
+    // 点検開始
+    function startInspection() {
+      if (!currentEquipment) {
+        showToast('設備情報を先に読み込んでください', 'error');
+        return;
+      }
+
+      inspectionStartTime = new Date();
+      startInspectionTimer();
+      
+      // 設備情報フェーズを非表示、点検フェーズを表示
+      document.getElementById('equipmentInfoPhase').classList.add('hidden');
+      document.getElementById('inspectionPhase').classList.remove('hidden');
+      
+      updateWorkStatus('点検中', currentEquipment.name);
+      showToast('日常点検を開始しました', 'success');
+      vibrate();
+
+      // 最初のセクションをアクティブに
+      document.getElementById('visualInspection').classList.add('active');
+    }
+
+    // 点検タイマー管理
+    function startInspectionTimer() {
+      inspectionTimer = setInterval(() => {
+        if (inspectionStartTime) {
+          const elapsed = new Date() - inspectionStartTime;
+          const hours = Math.floor(elapsed / 3600000);
+          const minutes = Math.floor((elapsed % 3600000) / 60000);
+          
+          document.getElementById('workTimer').textContent = 
+            `${hours}:${minutes.toString().padStart(2, '0')}`;
+        }
+      }, 60000);
+    }
+
+    // セクション進捗更新
+    function updateSectionProgress(checkbox) {
+      const section = checkbox.closest('.inspection-step');
+      const category = checkbox.dataset.category;
+      const sectionCheckboxes = section.querySelectorAll('.inspection-checkbox');
+      const checkedBoxes = section.querySelectorAll('.inspection-checkbox:checked');
+      
+      // セクション完了状態を更新
+      if (checkedBoxes.length === sectionCheckboxes.length && sectionCheckboxes.length > 0) {
+        section.classList.remove('active');
+        section.classList.add('completed');
+        
+        const statusElement = section.querySelector('[id$="Status"]');
+        if (statusElement) {
+          statusElement.textContent = '完了';
+          statusElement.className = 'text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full';
+        }
+        
+        // 完了確認項目を更新
+        updateCompletionCheck(category, true);
+        
+        showToast(`${section.querySelector('h3').textContent.split('.')[1]} が完了しました`, 'success');
+        vibrate();
+      } else if (checkedBoxes.length > 0) {
+        section.classList.add('active');
+        section.classList.remove('completed');
+        
+        const statusElement = section.querySelector('[id$="Status"]');
+        if (statusElement) {
+          statusElement.textContent = '進行中';
+          statusElement.className = 'text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full';
+        }
+      }
+      
+      updateOverallProgress();
+    }
+
+    // 全体進捗更新
+    function updateOverallProgress() {
+      const completedSections = document.querySelectorAll('.inspection-step.completed').length;
+      const progress = (completedSections / totalSections) * 100;
+      
+      document.getElementById('progressBar').style.width = `${progress}%`;
+      document.getElementById('overallProgress').textContent = `${completedSections}/${totalSections}項目完了`;
+      
+      // 完了ボタンの有効化判定
+      const requiredSections = ['visual', 'operation', 'electrical', 'lubrication', 'safety', 'observation', 'abnormality'];
+      const allCompleted = requiredSections.every(section => {
+        const element = document.querySelector(`#check${section.charAt(0).toUpperCase() + section.slice(1)} i`);
+        return element && element.classList.contains('fa-check-circle');
+      });
+      
+      document.getElementById('completeButton').disabled = !allCompleted;
+      if (allCompleted) {
+        document.getElementById('completeButton').classList.remove('opacity-50');
+      } else {
+        document.getElementById('completeButton').classList.add('opacity-50');
+      }
+    }
+
+    // 完了確認項目更新
+    function updateCompletionCheck(category, completed) {
+      const checkElement = document.querySelector(`#check${category.charAt(0).toUpperCase() + category.slice(1)} i`);
+      if (checkElement) {
+        if (completed) {
+          checkElement.className = 'fas fa-check-circle text-green-600 mr-2';
+        } else {
+          checkElement.className = 'fas fa-circle text-gray-400 mr-2';
+        }
+      }
+    }
+
+    // 異常状態切り替え
+    function toggleAbnormalityDetails(show) {
+      const details = document.getElementById('abnormalityDetails');
+      if (show) {
+        details.classList.remove('hidden');
+      } else {
+        details.classList.add('hidden');
+      }
+      updateAbnormalityStatus();
+    }
+
+    function updateAbnormalityStatus() {
+      const hasAbnormality = document.querySelector('input[name="abnormalityExists"]:checked').value === 'exists';
+      updateCompletionCheck('abnormality', true); // 異常有無の確認は完了とみなす
+    }
+
+    // 必須写真撮影
+    function takeRequiredPhoto(category, type) {
+      document.getElementById('photoModal').classList.remove('hidden');
+      document.getElementById('photoInstructions').textContent = `${type === 'nameplate' ? '銘板' : type === 'overview' ? '全景' : '詳細部分'}を撮影してください`;
+      
+      // 撮影分類を設定
+      const categorySelect = document.getElementById('photoCategory');
+      categorySelect.value = type;
+      
+      // 現在の撮影コンテキストを保存
+      window.currentPhotoContext = { category, type, required: true };
+    }
+
+    // 一般写真撮影
+    function takePhoto(category) {
+      document.getElementById('photoModal').classList.remove('hidden');
+      document.getElementById('photoInstructions').textContent = '写真を撮影してください';
+      
+      window.currentPhotoContext = { category, required: false };
+    }
+
+    // 異常箇所写真撮影
+    function takeAbnormalityPhoto() {
+      document.getElementById('photoModal').classList.remove('hidden');
+      document.getElementById('photoInstructions').textContent = '異常箇所を撮影してください';
+      document.getElementById('photoCategory').value = 'abnormality';
+      
+      window.currentPhotoContext = { category: 'abnormality', required: true };
+    }
+
+    // 写真撮影実行
+    function capturePhoto() {
+      const context = window.currentPhotoContext;
+      if (!context) return;
+      
+      photoCount++;
+      
+      if (context.required && context.category === 'visual') {
+        requiredPhotos.visual[context.type] = true;
+        updateRequiredPhotoCount();
+        
+        // 必須写真が全て撮影されたかチェック
+        const allRequired = Object.values(requiredPhotos.visual).every(taken => taken);
+        if (allRequired) {
+          updateCompletionCheck('visual', true);
+        }
+      }
+      
+      showToast('写真を保存しました', 'success');
+      vibrate();
+      closePhotoModal();
+    }
+
+    // 必須写真カウント更新
+    function updateRequiredPhotoCount() {
+      const taken = Object.values(requiredPhotos.visual).filter(x => x).length;
+      document.getElementById('visualPhotoCount').textContent = `${taken}/3枚`;
+    }
+
+    // 作業状況更新
+    function updateWorkStatus(status, description) {
+      const workStatus = document.getElementById('workStatus');
+      workStatus.querySelector('.text-sm.font-medium').textContent = status;
+      workStatus.querySelector('.text-emerald-200.text-xs').textContent = description;
+    }
+
+    // 点検完了
+    function completeInspection() {
+      if (inspectionTimer) {
+        clearInterval(inspectionTimer);
+      }
+      
+      showToast('点検報告書を生成中...', 'info');
+      
+      setTimeout(() => {
+        // 今日の実績を更新
+        const completed = parseInt(document.getElementById('todayCompleted').textContent) + 1;
+        const inProgress = parseInt(document.getElementById('todayInProgress').textContent) - 1;
+        const remaining = parseInt(document.getElementById('todayRemaining').textContent) - 1;
+        
+        document.getElementById('todayCompleted').textContent = completed;
+        document.getElementById('todayInProgress').textContent = Math.max(0, inProgress);
+        document.getElementById('todayRemaining').textContent = Math.max(0, remaining);
+        
+        showToast('点検完了！報告書を生成しました', 'success');
+        vibrate();
+        
+        // 完了後の処理選択
+        setTimeout(() => {
+          if (confirm('次の設備の点検を開始しますか？')) {
+            resetInspection();
+          } else {
+            updateWorkStatus('完了', '点検お疲れ様でした');
+          }
+        }, 2000);
+      }, 3000);
+    }
+
+    // 点検リセット
+    function resetInspection() {
+      // 変数初期化
+      currentEquipment = null;
+      inspectionStartTime = null;
+      completedSections = 0;
+      photoCount = 0;
+      requiredPhotos = { visual: { nameplate: false, overview: false, detail: false } };
+      
+      // UI初期化
+      document.getElementById('inspectionPhase').classList.add('hidden');
+      document.getElementById('equipmentInfoPhase').classList.add('hidden');
+      document.getElementById('qrPhase').classList.remove('hidden');
+      
+      // チェックボックス・セレクト初期化
+      document.querySelectorAll('.inspection-checkbox').forEach(cb => cb.checked = false);
+      document.querySelectorAll('input[type="radio"]').forEach(radio => radio.checked = false);
+      document.querySelectorAll('input[type="number"], input[type="date"], textarea').forEach(input => input.value = '');
+      
+      // セクション状態初期化
+      document.querySelectorAll('.inspection-step').forEach(step => {
+        step.classList.remove('active', 'completed');
+        const status = step.querySelector('[id$="Status"]');
+        if (status) {
+          status.textContent = '未実施';
+          status.className = 'text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full';
+        }
+      });
+      
+      // 進捗初期化
+      document.getElementById('progressBar').style.width = '0%';
+      document.getElementById('overallProgress').textContent = '0/7項目完了';
+      document.getElementById('completeButton').disabled = true;
+      document.getElementById('completeButton').classList.add('opacity-50');
+      
+      updateWorkStatus('待機中', 'QRコードをスキャンして開始');
+      showToast('新しい点検を開始できます', 'info');
+    }
+
+    // 下書き保存
+    function saveAsDraft() {
+      showToast('下書きを保存中...', 'info');
+      setTimeout(() => {
+        showToast('下書きを保存しました', 'success');
+      }, 1500);
+    }
+
+    // レポートプレビュー
+    function previewReport() {
+      showToast('点検レポートプレビューを表示します', 'info');
+    }
+
+    // データ同期
+    function syncData() {
+      showToast('データを同期中...', 'info');
+      const syncButton = event.target.closest('button');
+      syncButton.querySelector('i').classList.add('fa-spin');
+      
+      setTimeout(() => {
+        showToast('データ同期が完了しました', 'success');
+        syncButton.querySelector('i').classList.remove('fa-spin');
+        updateConnectionStatus(true);
+      }, 2000);
+    }
+
+    // 緊急連絡
+    function emergencyContact() {
+      if (confirm('技術部門に緊急連絡しますか？\n\n緊急時は以下に連絡されます：\n・技術部門管理者\n・当直責任者\n・施設管理者')) {
+        showToast('緊急連絡を発信中...', 'warning');
+        vibrate();
+        
+        setTimeout(() => {
+          showToast('緊急連絡を送信しました', 'success');
+        }, 2000);
+      }
+    }
+
+    // 自動保存
+    function autoSaveData() {
+      if (!currentEquipment) return;
+      
+      // ローカルストレージに保存（実際はサーバー同期）
+      const inspectionData = {
+        equipment: currentEquipment,
+        startTime: inspectionStartTime,
+        progress: completedSections,
+        lastSaved: new Date().toISOString()
+      };
+      
+      localStorage.setItem('currentInspection', JSON.stringify(inspectionData));
+      
+      // 控えめな保存通知
+      const existingToast = document.querySelector('.bg-gray-500');
+      if (!existingToast) {
+        showToast('自動保存しました', 'info', 1500);
+      }
+    }
+
+    // 接続状態更新
+    function updateConnectionStatus(isOnline) {
+      const statusIndicator = document.querySelector('.status-indicator');
+      const statusText = statusIndicator.nextElementSibling;
+      
+      if (isOnline) {
+        statusIndicator.className = 'w-2 h-2 bg-green-400 rounded-full status-indicator mr-1';
+        statusText.textContent = '同期済';
+      } else {
+        statusIndicator.className = 'w-2 h-2 bg-orange-400 rounded-full status-indicator mr-1';
+        statusText.textContent = 'オフライン';
+      }
+    }
+
+    // モーダル制御
+    function closeQRModal() {
+      document.getElementById('qrModal').classList.add('hidden');
+    }
+
+    function closePhotoModal() {
+      document.getElementById('photoModal').classList.add('hidden');
+      window.currentPhotoContext = null;
+    }
+
+    // 戻るボタン
+    function goBack() {
+      if (inspectionStartTime) {
+        if (confirm('点検を中断して戻りますか？\n進行中のデータは下書きとして保存されます。')) {
+          autoSaveData();
+          showToast('下書きを保存してカスタマーHUBに戻ります', 'info');
+        }
+      } else {
+        showToast('カスタマーHUBに戻ります', 'info');
+      }
+    }
+
+    // バイブレーション
+    function vibrate() {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+    }
+
+    // デバウンス関数
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
+    // トースト通知システム
+    function showToast(message, type = 'info', duration = 3000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check-circle',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-exclamation-circle',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg mb-2 flex items-center slide-up`;
+      toast.innerHTML = `<i class="${icon} mr-2"></i><span class="text-sm font-medium">${message}</span>`;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transform = 'translateY(-100%)';
+        toast.style.opacity = '0';
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, duration);
+    }
+
+    // 外部から呼び出し可能な関数
+    window.mobileInspection = {
+      loadEquipment: function(equipmentId) {
+        loadEquipmentData(equipmentId);
+      },
+      
+      quickComplete: function() {
+        // 全項目を完了状態にする（テスト用）
+        document.querySelectorAll('.inspection-checkbox').forEach(cb => {
+          cb.checked = true;
+          updateSectionProgress(cb);
+        });
+        
+        // 必須写真を完了状態に
+        Object.keys(requiredPhotos.visual).forEach(key => {
+          requiredPhotos.visual[key] = true;
+        });
+        updateRequiredPhotoCount();
+        
+        showToast('全項目を完了としてマークしました', 'success');
+      },
+      
+      exportData: function() {
+        const data = {
+          equipment: currentEquipment,
+          startTime: inspectionStartTime,
+          progress: completedSections,
+          exportTime: new Date().toISOString()
+        };
+        
+        console.log('点検データ:', data);
+        showToast('点検データをエクスポートしました', 'success');
+      }
+    };
+
+    console.log('実務対応モバイル点検システムが正常に初期化されました');
+  </script>
+</body>
+</html>

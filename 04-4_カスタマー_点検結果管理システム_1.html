@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>点検結果管理システム - ABC製鉄所省エネ設備</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .status-normal { background: linear-gradient(135deg, #10b981, #059669); }
+    .status-warning { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .status-critical { background: linear-gradient(135deg, #ef4444, #dc2626); }
+    .status-maintenance { background: linear-gradient(135deg, #6366f1, #4f46e5); }
+    
+    .trend-up { color: #10b981; }
+    .trend-down { color: #ef4444; }
+    .trend-stable { color: #6b7280; }
+    
+    .photo-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 8px;
+    }
+    
+    .photo-item {
+      aspect-ratio: 1;
+      background: #f3f4f6;
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .photo-item:hover {
+      transform: scale(1.05);
+    }
+    
+    .inspection-timeline {
+      position: relative;
+    }
+    
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e5e7eb;
+    }
+    
+    .timeline-dot {
+      position: absolute;
+      left: 15px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid;
+      z-index: 1;
+    }
+    
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    
+    .equipment-card {
+      border-left: 4px solid;
+      transition: all 0.3s ease;
+    }
+    
+    .equipment-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .filter-chip {
+      transition: all 0.2s ease;
+    }
+    
+    .filter-chip:hover {
+      transform: translateY(-1px);
+    }
+    
+    .modal-backdrop {
+      backdrop-filter: blur(4px);
+    }
+    
+    .slide-in {
+      animation: slideIn 0.3s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-emerald-800 to-green-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <i class="fas fa-clipboard-check text-2xl mr-3"></i>
+          <div>
+            <h1 class="text-2xl font-bold">点検結果管理システム</h1>
+            <p class="text-green-200 text-sm">Inspection Result Management System</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="text-center">
+            <div class="text-xs text-green-200">今月点検完了</div>
+            <div class="text-lg font-bold text-white">24/28</div>
+          </div>
+          <div class="relative">
+            <button class="p-2 hover:bg-green-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-lg"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-right">
+              <div class="font-semibold text-sm">鈴木 花子</div>
+              <div class="text-xs text-green-200">カスタマー部長</div>
+            </div>
+            <div class="w-8 h-8 bg-white text-green-800 rounded-full flex items-center justify-center font-bold text-sm">
+              SH
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>ホーム
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">カスタマーHUB</a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">点検管理</a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-blue-600 font-semibold">ABC製鉄所 点検結果管理</span>
+      </div>
+      
+      <div class="mt-3 pt-3 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <span class="text-xs text-gray-500 font-medium">関連画面:</span>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-calendar-alt mr-1"></i>点検計画
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-mobile-alt mr-1"></i>モバイル点検業務
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-exclamation-triangle mr-1"></i>緊急対応管理
+          </a>
+          <a href="#" class="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+            <i class="fas fa-file-alt mr-1"></i>統合ファイル管理
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- サマリーダッシュボード -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-2xl font-bold text-green-600">24</div>
+            <div class="text-sm text-gray-600">今月完了</div>
+            <div class="text-xs text-green-600 mt-1">
+              <i class="fas fa-arrow-up mr-1"></i>前月比 +3件
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-2xl font-bold text-yellow-600">3</div>
+            <div class="text-sm text-gray-600">要注意設備</div>
+            <div class="text-xs text-yellow-600 mt-1">
+              <i class="fas fa-exclamation-triangle mr-1"></i>要対応
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-2xl font-bold text-blue-600">4</div>
+            <div class="text-sm text-gray-600">今週予定</div>
+            <div class="text-xs text-blue-600 mt-1">
+              <i class="fas fa-calendar mr-1"></i>6/3-6/7
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-calendar-check text-blue-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="text-2xl font-bold text-purple-600">96%</div>
+            <div class="text-sm text-gray-600">設備稼働率</div>
+            <div class="text-xs text-green-600 mt-1">
+              <i class="fas fa-arrow-up mr-1"></i>+2.3%
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- フィルター・検索セクション -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 card-hover">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <input type="text" placeholder="設備名・型式で検索..." 
+                   class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+          </div>
+          
+          <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option>全設備</option>
+            <option>空調設備</option>
+            <option>電気設備</option>
+            <option>制御設備</option>
+            <option>ポンプ設備</option>
+          </select>
+          
+          <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            <option>全状態</option>
+            <option>正常</option>
+            <option>要注意</option>
+            <option>異常</option>
+            <option>メンテナンス中</option>
+          </select>
+        </div>
+        
+        <div class="flex items-center space-x-2">
+          <span class="text-sm text-gray-600">表示:</span>
+          <div class="flex space-x-1">
+            <button class="px-3 py-1 bg-blue-600 text-white rounded filter-chip" onclick="setView('list')">
+              <i class="fas fa-list mr-1"></i>一覧
+            </button>
+            <button class="px-3 py-1 bg-gray-200 text-gray-700 rounded filter-chip" onclick="setView('grid')">
+              <i class="fas fa-th mr-1"></i>カード
+            </button>
+            <button class="px-3 py-1 bg-gray-200 text-gray-700 rounded filter-chip" onclick="setView('timeline')">
+              <i class="fas fa-history mr-1"></i>履歴
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- クイックフィルター -->
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm filter-chip">
+          <i class="fas fa-exclamation-circle mr-1"></i>要対応 (3)
+        </button>
+        <button class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm filter-chip">
+          <i class="fas fa-clock mr-1"></i>期限間近 (2)
+        </button>
+        <button class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm filter-chip">
+          <i class="fas fa-calendar mr-1"></i>今週実施 (4)
+        </button>
+        <button class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm filter-chip">
+          <i class="fas fa-check mr-1"></i>完了済み (24)
+        </button>
+      </div>
+    </div>
+
+    <!-- メイン設備一覧 -->
+    <div id="equipmentList" class="space-y-4">
+      <!-- 空調設備 -->
+      <div class="bg-white rounded-2xl shadow-lg card-hover equipment-card border-blue-500" onclick="showEquipmentDetail('air-conditioning')">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-4">
+              <div class="w-16 h-16 bg-blue-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-wind text-blue-600 text-2xl"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">空調設備システム</h3>
+                <div class="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                  <span><i class="fas fa-tag mr-1"></i>AHU-001～005</span>
+                  <span><i class="fas fa-calendar mr-1"></i>最終点検: 2025/5/28</span>
+                  <span><i class="fas fa-user mr-1"></i>担当: 高橋浩二</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="status-normal text-white px-3 py-1 rounded-full text-sm font-medium">
+                正常稼働
+              </div>
+              <div class="text-2xl font-bold text-blue-600 mt-2">98%</div>
+              <div class="text-sm text-gray-500">稼働率</div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-4 gap-4 mb-4">
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <div class="text-lg font-bold text-green-600">5/5</div>
+              <div class="text-xs text-gray-500">完了設備</div>
+            </div>
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <div class="text-lg font-bold text-blue-600">15</div>
+              <div class="text-xs text-gray-500">点検項目</div>
+            </div>
+            <div class="text-center p-3 bg-yellow-50 rounded-lg">
+              <div class="text-lg font-bold text-yellow-600">0</div>
+              <div class="text-xs text-gray-500">要注意</div>
+            </div>
+            <div class="text-center p-3 bg-purple-50 rounded-lg">
+              <div class="text-lg font-bold text-purple-600">8</div>
+              <div class="text-xs text-gray-500">写真記録</div>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-4">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center space-x-4">
+                <span class="text-gray-600">次回予定:</span>
+                <span class="font-medium text-gray-800">2025/8/28 (3ヶ月点検)</span>
+              </div>
+              <div class="flex space-x-2">
+                <button class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                  詳細表示
+                </button>
+                <button class="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                  報告書出力
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 電気設備 -->
+      <div class="bg-white rounded-2xl shadow-lg card-hover equipment-card border-yellow-500" onclick="showEquipmentDetail('electrical')">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-4">
+              <div class="w-16 h-16 bg-yellow-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-bolt text-yellow-600 text-2xl"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">電気設備システム</h3>
+                <div class="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                  <span><i class="fas fa-tag mr-1"></i>DIST-001～003</span>
+                  <span><i class="fas fa-calendar mr-1"></i>最終点検: 2025/5/25</span>
+                  <span><i class="fas fa-user mr-1"></i>担当: 佐藤太郎</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="status-warning text-white px-3 py-1 rounded-full text-sm font-medium">
+                要注意
+              </div>
+              <div class="text-2xl font-bold text-yellow-600 mt-2">94%</div>
+              <div class="text-sm text-gray-500">稼働率</div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-4 gap-4 mb-4">
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <div class="text-lg font-bold text-green-600">2/3</div>
+              <div class="text-xs text-gray-500">完了設備</div>
+            </div>
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <div class="text-lg font-bold text-blue-600">12</div>
+              <div class="text-xs text-gray-500">点検項目</div>
+            </div>
+            <div class="text-center p-3 bg-yellow-50 rounded-lg">
+              <div class="text-lg font-bold text-yellow-600">1</div>
+              <div class="text-xs text-gray-500">要注意</div>
+            </div>
+            <div class="text-center p-3 bg-purple-50 rounded-lg">
+              <div class="text-lg font-bold text-purple-600">5</div>
+              <div class="text-xs text-gray-500">写真記録</div>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-4">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center space-x-4">
+                <span class="text-gray-600">次回予定:</span>
+                <span class="font-medium text-gray-800">2025/6/5 (配電盤2号点検)</span>
+              </div>
+              <div class="flex space-x-2">
+                <button class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                  詳細表示
+                </button>
+                <button class="px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700">
+                  対応検討
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 制御設備 -->
+      <div class="bg-white rounded-2xl shadow-lg card-hover equipment-card border-green-500" onclick="showEquipmentDetail('control')">
+        <div class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-4">
+              <div class="w-16 h-16 bg-green-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-microchip text-green-600 text-2xl"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">制御システム</h3>
+                <div class="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                  <span><i class="fas fa-tag mr-1"></i>PLC-001～002</span>
+                  <span><i class="fas fa-calendar mr-1"></i>最終点検: 2025/5/30</span>
+                  <span><i class="fas fa-user mr-1"></i>担当: 田中修一</span>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="status-normal text-white px-3 py-1 rounded-full text-sm font-medium">
+                正常稼働
+              </div>
+              <div class="text-2xl font-bold text-green-600 mt-2">99%</div>
+              <div class="text-sm text-gray-500">稼働率</div>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-4 gap-4 mb-4">
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <div class="text-lg font-bold text-green-600">2/2</div>
+              <div class="text-xs text-gray-500">完了設備</div>
+            </div>
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <div class="text-lg font-bold text-blue-600">8</div>
+              <div class="text-xs text-gray-500">点検項目</div>
+            </div>
+            <div class="text-center p-3 bg-yellow-50 rounded-lg">
+              <div class="text-lg font-bold text-yellow-600">0</div>
+              <div class="text-xs text-gray-500">要注意</div>
+            </div>
+            <div class="text-center p-3 bg-purple-50 rounded-lg">
+              <div class="text-lg font-bold text-purple-600">4</div>
+              <div class="text-xs text-gray-500">写真記録</div>
+            </div>
+          </div>
+          
+          <div class="border-t border-gray-200 pt-4">
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center space-x-4">
+                <span class="text-gray-600">次回予定:</span>
+                <span class="font-medium text-gray-800">2025/8/30 (6ヶ月点検)</span>
+              </div>
+              <div class="flex space-x-2">
+                <button class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                  詳細表示
+                </button>
+                <button class="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700">
+                  報告書出力
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 設備詳細モーダル -->
+    <div id="equipmentModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop flex items-center justify-center z-50 hidden">
+      <div class="bg-white rounded-2xl w-full max-w-4xl max-h-90vh overflow-y-auto slide-in">
+        <div class="sticky top-0 bg-white border-b border-gray-200 p-6 rounded-t-2xl">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-wind text-blue-600 text-xl"></i>
+              </div>
+              <div>
+                <h2 class="text-2xl font-bold text-gray-800">空調設備システム詳細</h2>
+                <p class="text-sm text-gray-600">AHU-001～005 | 最終更新: 2025/5/30 14:30</p>
+              </div>
+            </div>
+            <button onclick="closeEquipmentModal()" class="p-2 hover:bg-gray-100 rounded-full">
+              <i class="fas fa-times text-gray-500 text-xl"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <!-- タブナビゲーション -->
+          <div class="flex space-x-4 mb-6 border-b border-gray-200">
+            <button class="tab-button active px-4 py-2 font-medium border-b-2 border-blue-600 text-blue-600" onclick="showTab('overview')">
+              概要・実績
+            </button>
+            <button class="tab-button px-4 py-2 font-medium text-gray-500 hover:text-gray-700" onclick="showTab('details')">
+              詳細結果
+            </button>
+            <button class="tab-button px-4 py-2 font-medium text-gray-500 hover:text-gray-700" onclick="showTab('photos')">
+              写真・エビデンス
+            </button>
+            <button class="tab-button px-4 py-2 font-medium text-gray-500 hover:text-gray-700" onclick="showTab('history')">
+              履歴・分析
+            </button>
+            <button class="tab-button px-4 py-2 font-medium text-gray-500 hover:text-gray-700" onclick="showTab('actions')">
+              是正措置
+            </button>
+          </div>
+
+          <!-- 概要タブ -->
+          <div id="overviewTab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- 設備概要 -->
+              <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <h3 class="font-bold text-gray-800 mb-3">設備基本情報</h3>
+                  <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">設備名:</span>
+                      <span class="font-medium">空調設備システム</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">設備番号:</span>
+                      <span class="font-medium">AHU-001～005</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">設置場所:</span>
+                      <span class="font-medium">機械室1F～3F</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">製造年:</span>
+                      <span class="font-medium">2023年</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">メーカー:</span>
+                      <span class="font-medium">○○空調機器</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">定格能力:</span>
+                      <span class="font-medium">50kW × 5台</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">運転時間:</span>
+                      <span class="font-medium">18,540時間</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-blue-50 rounded-lg p-4">
+                  <h3 class="font-bold text-gray-800 mb-3">点検実績サマリー</h3>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-blue-600">5/5</div>
+                      <div class="text-xs text-gray-600">完了設備数</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-green-600">100%</div>
+                      <div class="text-xs text-gray-600">合格率</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-purple-600">8</div>
+                      <div class="text-xs text-gray-600">写真記録</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-orange-600">0</div>
+                      <div class="text-xs text-gray-600">要対応</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 点検結果概要 -->
+              <div class="space-y-4">
+                <div class="bg-green-50 rounded-lg p-4">
+                  <h3 class="font-bold text-gray-800 mb-3">最新点検結果 (2025/5/28)</h3>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                      <span class="text-sm font-medium">総合判定</span>
+                      <span class="px-3 py-1 bg-green-600 text-white rounded-full text-sm">正常</span>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex justify-between text-sm">
+                        <span>外観点検</span>
+                        <span class="text-green-600"><i class="fas fa-check"></i> 合格</span>
+                      </div>
+                      <div class="flex justify-between text-sm">
+                        <span>運転確認</span>
+                        <span class="text-green-600"><i class="fas fa-check"></i> 合格</span>
+                      </div>
+                      <div class="flex justify-between text-sm">
+                        <span>絶縁測定</span>
+                        <span class="text-green-600"><i class="fas fa-check"></i> 合格</span>
+                      </div>
+                      <div class="flex justify-between text-sm">
+                        <span>フィルター交換</span>
+                        <span class="text-blue-600"><i class="fas fa-wrench"></i> 実施済</span>
+                      </div>
+                      <div class="flex justify-between text-sm">
+                        <span>ベルト調整</span>
+                        <span class="text-blue-600"><i class="fas fa-wrench"></i> 実施済</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="bg-yellow-50 rounded-lg p-4">
+                  <h3 class="font-bold text-gray-800 mb-3">次回点検予定</h3>
+                  <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">種別:</span>
+                      <span class="font-medium">3ヶ月定期点検</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">予定日:</span>
+                      <span class="font-medium">2025/8/28</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">担当者:</span>
+                      <span class="font-medium">高橋浩二</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span class="text-gray-600">所要時間:</span>
+                      <span class="font-medium">約4時間</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 詳細結果タブ -->
+          <div id="detailsTab" class="tab-content hidden">
+            <div class="space-y-6">
+              <h3 class="text-lg font-bold text-gray-800">点検項目詳細結果</h3>
+              
+              <!-- AHU-001 -->
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h4 class="font-bold text-gray-800 mb-3">AHU-001 (1号機)</h4>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-3 py-2 text-left">点検項目</th>
+                        <th class="px-3 py-2 text-center">基準値</th>
+                        <th class="px-3 py-2 text-center">実測値</th>
+                        <th class="px-3 py-2 text-center">判定</th>
+                        <th class="px-3 py-2 text-center">備考</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                      <tr>
+                        <td class="px-3 py-2">送風量</td>
+                        <td class="px-3 py-2 text-center">5,000 m³/h</td>
+                        <td class="px-3 py-2 text-center">4,950 m³/h</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">良好</td>
+                      </tr>
+                      <tr class="bg-gray-50">
+                        <td class="px-3 py-2">電流値</td>
+                        <td class="px-3 py-2 text-center">12.5 A</td>
+                        <td class="px-3 py-2 text-center">12.1 A</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">正常範囲</td>
+                      </tr>
+                      <tr>
+                        <td class="px-3 py-2">振動値</td>
+                        <td class="px-3 py-2 text-center">< 3.0 mm/s</td>
+                        <td class="px-3 py-2 text-center">1.8 mm/s</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">良好</td>
+                      </tr>
+                      <tr class="bg-gray-50">
+                        <td class="px-3 py-2">絶縁抵抗</td>
+                        <td class="px-3 py-2 text-center">≥ 1.0 MΩ</td>
+                        <td class="px-3 py-2 text-center">15.2 MΩ</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">良好</td>
+                      </tr>
+                      <tr>
+                        <td class="px-3 py-2">フィルター圧損</td>
+                        <td class="px-3 py-2 text-center">< 200 Pa</td>
+                        <td class="px-3 py-2 text-center">180 Pa</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">交換実施</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- AHU-002 -->
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h4 class="font-bold text-gray-800 mb-3">AHU-002 (2号機)</h4>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead class="bg-gray-50">
+                      <tr>
+                        <th class="px-3 py-2 text-left">点検項目</th>
+                        <th class="px-3 py-2 text-center">基準値</th>
+                        <th class="px-3 py-2 text-center">実測値</th>
+                        <th class="px-3 py-2 text-center">判定</th>
+                        <th class="px-3 py-2 text-center">備考</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                      <tr>
+                        <td class="px-3 py-2">送風量</td>
+                        <td class="px-3 py-2 text-center">5,000 m³/h</td>
+                        <td class="px-3 py-2 text-center">5,020 m³/h</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">良好</td>
+                      </tr>
+                      <tr class="bg-gray-50">
+                        <td class="px-3 py-2">電流値</td>
+                        <td class="px-3 py-2 text-center">12.5 A</td>
+                        <td class="px-3 py-2 text-center">12.3 A</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">正常範囲</td>
+                      </tr>
+                      <tr>
+                        <td class="px-3 py-2">振動値</td>
+                        <td class="px-3 py-2 text-center">< 3.0 mm/s</td>
+                        <td class="px-3 py-2 text-center">2.1 mm/s</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">良好</td>
+                      </tr>
+                      <tr class="bg-gray-50">
+                        <td class="px-3 py-2">絶縁抵抗</td>
+                        <td class="px-3 py-2 text-center">≥ 1.0 MΩ</td>
+                        <td class="px-3 py-2 text-center">12.8 MΩ</td>
+                        <td class="px-3 py-2 text-center"><span class="text-green-600">○</span></td>
+                        <td class="px-3 py-2 text-center">良好</td>
+                      </tr>
+                      <tr>
+                        <td class="px-3 py-2">ベルト張力</td>
+                        <td class="px-3 py-2 text-center">適正</td>
+                        <td class="px-3 py-2 text-center">調整実施</td>
+                        <td class="px-3 py-2 text-center"><span class="text-blue-600">調</span></td>
+                        <td class="px-3 py-2 text-center">張力調整</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 写真・エビデンスタブ -->
+          <div id="photosTab" class="tab-content hidden">
+            <div class="space-y-6">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-800">点検写真・エビデンス</h3>
+                <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                  <i class="fas fa-download mr-2"></i>一括ダウンロード
+                </button>
+              </div>
+
+              <!-- Before/After比較 -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-medium text-gray-800 mb-3">点検前</h4>
+                  <div class="photo-gallery">
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('before-1')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('before-2')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('before-3')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('before-4')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-2">フィルター交換前 (汚れ確認)</p>
+                </div>
+
+                <div>
+                  <h4 class="font-medium text-gray-800 mb-3">点検後・メンテナンス実施後</h4>
+                  <div class="photo-gallery">
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('after-1')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('after-2')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('after-3')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                    <div class="photo-item bg-gray-300 flex items-center justify-center text-white cursor-pointer" onclick="showPhotoModal('after-4')">
+                      <i class="fas fa-image text-2xl"></i>
+                    </div>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-2">フィルター交換後・ベルト調整後</p>
+                </div>
+              </div>
+
+              <!-- 測定データ証跡 -->
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h4 class="font-bold text-gray-800 mb-3">測定データ・証跡</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div class="border rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-sm font-medium">絶縁測定記録</span>
+                      <i class="fas fa-file-pdf text-red-500"></i>
+                    </div>
+                    <p class="text-xs text-gray-600">AHU-001～005絶縁抵抗測定</p>
+                    <button class="text-blue-600 text-xs hover:underline mt-1">ダウンロード</button>
+                  </div>
+                  
+                  <div class="border rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-sm font-medium">振動測定データ</span>
+                      <i class="fas fa-file-excel text-green-500"></i>
+                    </div>
+                    <p class="text-xs text-gray-600">各機器振動値測定結果</p>
+                    <button class="text-blue-600 text-xs hover:underline mt-1">ダウンロード</button>
+                  </div>
+                  
+                  <div class="border rounded-lg p-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="text-sm font-medium">交換部品明細</span>
+                      <i class="fas fa-file-alt text-blue-500"></i>
+                    </div>
+                    <p class="text-xs text-gray-600">フィルター・消耗品交換記録</p>
+                    <button class="text-blue-600 text-xs hover:underline mt-1">ダウンロード</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 履歴・分析タブ -->
+          <div id="historyTab" class="tab-content hidden">
+            <div class="space-y-6">
+              <h3 class="text-lg font-bold text-gray-800">点検履歴・傾向分析</h3>
+              
+              <!-- 履歴タイムライン -->
+              <div class="inspection-timeline">
+                <div class="space-y-4">
+                  <div class="timeline-item relative pl-12">
+                    <div class="timeline-dot border-green-500"></div>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-green-800">2025/5/28 - 3ヶ月定期点検</h4>
+                        <span class="text-sm text-green-600">正常</span>
+                      </div>
+                      <p class="text-sm text-gray-600 mb-2">全5台とも正常動作確認。フィルター交換・ベルト調整実施。</p>
+                      <div class="text-xs text-gray-500">
+                        担当: 高橋浩二 | 所要時間: 4.5時間 | 交換部品: エアフィルター×5
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="timeline-item relative pl-12">
+                    <div class="timeline-dot border-blue-500"></div>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-blue-800">2025/2/28 - 3ヶ月定期点検</h4>
+                        <span class="text-sm text-blue-600">正常</span>
+                      </div>
+                      <p class="text-sm text-gray-600 mb-2">全設備正常。振動値がわずかに上昇傾向、経過観察とする。</p>
+                      <div class="text-xs text-gray-500">
+                        担当: 高橋浩二 | 所要時間: 4.0時間 | 交換部品: なし
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="timeline-item relative pl-12">
+                    <div class="timeline-dot border-yellow-500"></div>
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-yellow-800">2024/11/28 - 3ヶ月定期点検</h4>
+                        <span class="text-sm text-yellow-600">要注意</span>
+                      </div>
+                      <p class="text-sm text-gray-600 mb-2">AHU-003のベルト張力低下で調整実施。ドレンパン清掃実施。</p>
+                      <div class="text-xs text-gray-500">
+                        担当: 佐藤太郎 | 所要時間: 5.0時間 | 交換部品: Vベルト×1
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="timeline-item relative pl-12">
+                    <div class="timeline-dot border-green-500"></div>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-green-800">2024/8/28 - 3ヶ月定期点検</h4>
+                        <span class="text-sm text-green-600">正常</span>
+                      </div>
+                      <p class="text-sm text-gray-600 mb-2">全設備正常動作確認。夏期負荷における性能確認実施。</p>
+                      <div class="text-xs text-gray-500">
+                        担当: 高橋浩二 | 所要時間: 4.2時間 | 交換部品: エアフィルター×5
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 傾向分析 -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <h4 class="font-bold text-gray-800 mb-3">振動値推移</h4>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2024/8月</span>
+                      <span>1.5 mm/s <span class="trend-stable">→</span></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2024/11月</span>
+                      <span>1.8 mm/s <span class="trend-up">↑</span></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2025/2月</span>
+                      <span>2.0 mm/s <span class="trend-up">↑</span></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2025/5月</span>
+                      <span>1.8 mm/s <span class="trend-down">↓</span></span>
+                    </div>
+                  </div>
+                  <p class="text-xs text-yellow-600 mt-2">
+                    <i class="fas fa-info-circle mr-1"></i>ベルト調整により改善傾向
+                  </p>
+                </div>
+
+                <div class="border border-gray-200 rounded-lg p-4">
+                  <h4 class="font-bold text-gray-800 mb-3">電流値推移</h4>
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2024/8月</span>
+                      <span>12.8 A <span class="trend-stable">→</span></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2024/11月</span>
+                      <span>12.5 A <span class="trend-down">↓</span></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2025/2月</span>
+                      <span>12.3 A <span class="trend-down">↓</span></span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <span>2025/5月</span>
+                      <span>12.1 A <span class="trend-down">↓</span></span>
+                    </div>
+                  </div>
+                  <p class="text-xs text-green-600 mt-2">
+                    <i class="fas fa-check-circle mr-1"></i>省エネ効果継続中
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 是正措置タブ -->
+          <div id="actionsTab" class="tab-content hidden">
+            <div class="space-y-6">
+              <div class="flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-800">是正措置・改善提案</h3>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                  <i class="fas fa-plus mr-2"></i>新規措置登録
+                </button>
+              </div>
+
+              <!-- 進行中の是正措置 -->
+              <div class="space-y-4">
+                <div class="border border-yellow-200 bg-yellow-50 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-bold text-yellow-800">振動値監視強化</h4>
+                    <span class="px-3 py-1 bg-yellow-600 text-white rounded-full text-sm">進行中</span>
+                  </div>
+                  <p class="text-sm text-gray-700 mb-3">
+                    振動値上昇傾向を受け、次回点検時に軸受確認とベルト交換を実施予定。
+                  </p>
+                  <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span class="text-gray-600">対象設備:</span>
+                      <span class="font-medium ml-2">AHU-001, 003</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">完了予定:</span>
+                      <span class="font-medium ml-2">2025/8/28</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">担当者:</span>
+                      <span class="font-medium ml-2">高橋浩二</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">予算:</span>
+                      <span class="font-medium ml-2">50,000円</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 pt-3 border-t border-yellow-200">
+                    <div class="flex space-x-2">
+                      <button class="px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700">
+                        進捗更新
+                      </button>
+                      <button class="px-3 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700">
+                        詳細確認
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 完了済み是正措置 -->
+                <div class="border border-green-200 bg-green-50 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-bold text-green-800">フィルター交換間隔短縮</h4>
+                    <span class="px-3 py-1 bg-green-600 text-white rounded-full text-sm">完了</span>
+                  </div>
+                  <p class="text-sm text-gray-700 mb-3">
+                    圧損上昇を受け、フィルター交換間隔を4ヶ月から3ヶ月に短縮。効果確認済み。
+                  </p>
+                  <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span class="text-gray-600">実施日:</span>
+                      <span class="font-medium ml-2">2025/2/28</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">効果確認:</span>
+                      <span class="font-medium ml-2">2025/5/28</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">圧損改善:</span>
+                      <span class="font-medium ml-2">220Pa → 180Pa</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">省エネ効果:</span>
+                      <span class="font-medium ml-2">3.2kW削減</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 改善提案 -->
+                <div class="border border-blue-200 bg-blue-50 rounded-lg p-4">
+                  <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-bold text-blue-800">IoT監視システム導入検討</h4>
+                    <span class="px-3 py-1 bg-blue-600 text-white rounded-full text-sm">提案</span>
+                  </div>
+                  <p class="text-sm text-gray-700 mb-3">
+                    振動・電流値のリアルタイム監視により、異常の早期発見と予防保全の向上を図る。
+                  </p>
+                  <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <span class="text-gray-600">提案者:</span>
+                      <span class="font-medium ml-2">田中修一 (技術部)</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">提案日:</span>
+                      <span class="font-medium ml-2">2025/5/30</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">導入費用:</span>
+                      <span class="font-medium ml-2">約800,000円</span>
+                    </div>
+                    <div>
+                      <span class="text-gray-600">削減効果:</span>
+                      <span class="font-medium ml-2">年間300時間削減</span>
+                    </div>
+                  </div>
+                  <div class="mt-3 pt-3 border-t border-blue-200">
+                    <div class="flex space-x-2">
+                      <button class="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700">
+                        検討開始
+                      </button>
+                      <button class="px-3 py-1 bg-gray-600 text-white rounded text-xs hover:bg-gray-700">
+                        詳細資料
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- モーダルフッター -->
+        <div class="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-6 rounded-b-2xl">
+          <div class="flex items-center justify-between">
+            <div class="flex space-x-3">
+              <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                <i class="fas fa-file-pdf mr-2"></i>報告書出力
+              </button>
+              <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                <i class="fas fa-share mr-2"></i>共有・連携
+              </button>
+              <button class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">
+                <i class="fas fa-calendar-plus mr-2"></i>次回計画
+              </button>
+            </div>
+            <div class="text-sm text-gray-500">
+              最終更新: 2025/5/30 14:30 | 担当: 高橋浩二
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- アクションパネル -->
+    <div class="bg-white rounded-2xl shadow-lg mt-6 p-6 card-hover">
+      <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+        <i class="fas fa-tasks text-purple-500 mr-2"></i>
+        今週のアクション・重要事項
+      </h3>
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- 今週の点検予定 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3">今週の点検予定</h4>
+          <div class="space-y-2">
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-medium text-blue-800">制御盤点検</div>
+                <span class="text-xs text-blue-600">6/5</span>
+              </div>
+              <div class="text-xs text-gray-600">
+                PLC制御盤の定期点検実施
+              </div>
+            </div>
+            
+            <div class="p-3 bg-green-50 border border-green-200 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-medium text-green-800">ポンプ設備点検</div>
+                <span class="text-xs text-green-600">6/7</span>
+              </div>
+              <div class="text-xs text-gray-600">
+                冷却水ポンプ3台の点検
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 要対応事項 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3">要対応事項</h4>
+          <div class="space-y-2">
+            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-medium text-yellow-800">振動値監視</div>
+                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">中</span>
+              </div>
+              <div class="text-xs text-gray-600">
+                AHU-001,003の振動値推移確認
+              </div>
+            </div>
+            
+            <div class="p-3 bg-red-50 border border-red-200 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-medium text-red-800">配電盤2号異常</div>
+                <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">高</span>
+              </div>
+              <div class="text-xs text-gray-600">
+                電流値異常の原因調査必要
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 部門間連携 -->
+        <div>
+          <h4 class="font-medium text-gray-700 mb-3">部門間連携</h4>
+          <div class="space-y-2">
+            <div class="p-3 bg-purple-50 border border-purple-200 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-medium text-purple-800">技術部門連携</div>
+                <button class="text-xs text-purple-600 hover:text-purple-800">確認</button>
+              </div>
+              <div class="text-xs text-gray-600">
+                IoT監視システム導入の技術検討
+              </div>
+            </div>
+            
+            <div class="p-3 bg-orange-50 border border-orange-200 rounded">
+              <div class="flex items-center justify-between mb-1">
+                <div class="font-medium text-orange-800">営業部門連携</div>
+                <button class="text-xs text-orange-600 hover:text-orange-800">回答</button>
+              </div>
+              <div class="text-xs text-gray-600">
+                顧客からの追加点検要望対応
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 写真表示モーダル -->
+  <div id="photoModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg max-w-2xl max-h-90vh overflow-hidden">
+      <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+        <h3 class="font-bold text-gray-800">点検写真詳細</h3>
+        <button onclick="closePhotoModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fas fa-times text-xl"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="w-full h-96 bg-gray-200 flex items-center justify-center mb-4">
+          <i class="fas fa-image text-gray-400 text-6xl"></i>
+        </div>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-gray-600">撮影日時:</span>
+            <span class="font-medium">2025/5/28 10:30</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">撮影者:</span>
+            <span class="font-medium">高橋浩二</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600">対象:</span>
+            <span class="font-medium">AHU-001 フィルター交換前</span>
+          </div>
+          <div>
+            <span class="text-gray-600">メモ:</span>
+            <p class="text-gray-800 mt-1">フィルターの汚れが顕著。圧損上昇の原因と判断。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初期化
+      initializeInspectionSystem();
+      
+      // ページロードアニメーション
+      animatePageElements();
+      
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('ABC製鉄所の点検結果管理システムが準備完了しました', 'success');
+      }, 1000);
+    });
+
+    function initializeInspectionSystem() {
+      // 設備カードのクリックイベント
+      const equipmentCards = document.querySelectorAll('.equipment-card');
+      equipmentCards.forEach(card => {
+        card.addEventListener('click', function() {
+          const equipmentType = this.getAttribute('onclick').match(/'([^']+)'/)[1];
+          showEquipmentDetail(equipmentType);
+        });
+      });
+
+      // フィルターチップのクリックイベント
+      const filterChips = document.querySelectorAll('.filter-chip');
+      filterChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+          applyFilter(this.textContent.trim());
+        });
+      });
+
+      // その他のボタンイベント
+      addButtonEventHandlers();
+    }
+
+    function addButtonEventHandlers() {
+      // アクションボタンのイベント
+      const actionButtons = document.querySelectorAll('button');
+      actionButtons.forEach(button => {
+        const buttonText = button.textContent.trim();
+        
+        if (buttonText.includes('報告書出力')) {
+          button.addEventListener('click', function() {
+            generateInspectionReport();
+          });
+        }
+        
+        if (buttonText.includes('対応検討')) {
+          button.addEventListener('click', function() {
+            showNotification('対応策検討画面を開いています...', 'info');
+          });
+        }
+        
+        if (buttonText.includes('次回計画')) {
+          button.addEventListener('click', function() {
+            showNotification('次回点検計画画面を開いています...', 'info');
+          });
+        }
+        
+        if (buttonText.includes('進捗更新')) {
+          button.addEventListener('click', function() {
+            updateActionProgress();
+          });
+        }
+      });
+    }
+
+    function showEquipmentDetail(equipmentType) {
+      const modal = document.getElementById('equipmentModal');
+      modal.classList.remove('hidden');
+      
+      // モーダル内容を設備タイプに応じて更新
+      updateModalContent(equipmentType);
+      
+      showNotification(`${getEquipmentName(equipmentType)}の詳細情報を表示しています`, 'info');
+    }
+
+    function getEquipmentName(type) {
+      const names = {
+        'air-conditioning': '空調設備システム',
+        'electrical': '電気設備システム',
+        'control': '制御システム'
+      };
+      return names[type] || '設備';
+    }
+
+    function updateModalContent(equipmentType) {
+      // 実際の実装では、equipmentTypeに基づいてAPI呼び出しで詳細データを取得
+      console.log(`Loading detailed data for ${equipmentType}`);
+    }
+
+    function closeEquipmentModal() {
+      const modal = document.getElementById('equipmentModal');
+      modal.classList.add('hidden');
+    }
+
+    function showTab(tabName) {
+      // 全タブを隠す
+      const tabs = document.querySelectorAll('.tab-content');
+      tabs.forEach(tab => tab.classList.add('hidden'));
+      
+      // タブボタンのアクティブ状態を更新
+      const buttons = document.querySelectorAll('.tab-button');
+      buttons.forEach(button => {
+        button.classList.remove('active', 'border-blue-600', 'text-blue-600');
+        button.classList.add('text-gray-500');
+      });
+      
+      // 選択されたタブを表示
+      const selectedTab = document.getElementById(tabName + 'Tab');
+      if (selectedTab) {
+        selectedTab.classList.remove('hidden');
+      }
+      
+      // 選択されたボタンをアクティブに
+      const activeButton = event.target;
+      activeButton.classList.add('active', 'border-blue-600', 'text-blue-600');
+      activeButton.classList.remove('text-gray-500');
+      
+      showNotification(`${getTabName(tabName)}タブを表示しました`, 'info');
+    }
+
+    function getTabName(tabName) {
+      const names = {
+        'overview': '概要・実績',
+        'details': '詳細結果',
+        'photos': '写真・エビデンス',
+        'history': '履歴・分析',
+        'actions': '是正措置'
+      };
+      return names[tabName] || 'タブ';
+    }
+
+    function setView(viewType) {
+      // ビュー切替ボタンの状態更新
+      const viewButtons = document.querySelectorAll('.filter-chip');
+      viewButtons.forEach(button => {
+        if (button.textContent.includes('一覧') || 
+            button.textContent.includes('カード') || 
+            button.textContent.includes('履歴')) {
+          button.classList.remove('bg-blue-600', 'text-white');
+          button.classList.add('bg-gray-200', 'text-gray-700');
+        }
+      });
+      
+      // クリックされたボタンをアクティブに
+      event.target.classList.remove('bg-gray-200', 'text-gray-700');
+      event.target.classList.add('bg-blue-600', 'text-white');
+      
+      showNotification(`${getViewName(viewType)}表示に切り替えました`, 'info');
+    }
+
+    function getViewName(viewType) {
+      const names = {
+        'list': '一覧',
+        'grid': 'カード',
+        'timeline': '履歴'
+      };
+      return names[viewType] || '表示';
+    }
+
+    function applyFilter(filterText) {
+      showNotification(`フィルター「${filterText}」を適用しています...`, 'info');
+      
+      // フィルター適用のシミュレーション
+      setTimeout(() => {
+        showNotification(`フィルター適用完了: ${filterText}`, 'success');
+      }, 1000);
+    }
+
+    function showPhotoModal(photoId) {
+      const modal = document.getElementById('photoModal');
+      modal.classList.remove('hidden');
+      
+      showNotification('写真詳細を表示しています...', 'info');
+    }
+
+    function closePhotoModal() {
+      const modal = document.getElementById('photoModal');
+      modal.classList.add('hidden');
+    }
+
+    function generateInspectionReport() {
+      const button = event.target;
+      const originalText = button.innerHTML;
+      
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>生成中...';
+      button.disabled = true;
+      
+      setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        showNotification('点検報告書PDFのダウンロードが開始されました', 'success');
+      }, 2500);
+    }
+
+    function updateActionProgress() {
+      showNotification('是正措置の進捗を更新しました', 'success');
+      
+      // 進捗バーの更新をシミュレート
+      const progressElements = document.querySelectorAll('[class*="bg-yellow-"]');
+      setTimeout(() => {
+        if (progressElements.length > 0) {
+          showNotification('振動値監視の進捗が30%に更新されました', 'info');
+        }
+      }, 1000);
+    }
+
+    function animatePageElements() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.5s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i><span>${message}</span>`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // リアルタイム更新シミュレーション
+    function simulateRealTimeUpdates() {
+      const notifications = [
+        { message: '新規点検結果が登録されました', type: 'info' },
+        { message: '制御盤点検の予定変更通知', type: 'warning' },
+        { message: '振動値改善が確認されました', type: 'success' },
+        { message: '写真エビデンスがアップロードされました', type: 'info' },
+        { message: '是正措置が完了しました', type: 'success' }
+      ];
+      
+      let notificationIndex = 0;
+      setInterval(() => {
+        if (Math.random() > 0.7) { // 30%の確率で通知
+          const notification = notifications[notificationIndex % notifications.length];
+          showNotification(notification.message, notification.type);
+          notificationIndex++;
+        }
+      }, 30000); // 30秒ごと
+    }
+
+    // モーダル外クリックで閉じる
+    document.addEventListener('click', function(event) {
+      const equipmentModal = document.getElementById('equipmentModal');
+      const photoModal = document.getElementById('photoModal');
+      
+      if (event.target === equipmentModal) {
+        closeEquipmentModal();
+      }
+      
+      if (event.target === photoModal) {
+        closePhotoModal();
+      }
+    });
+
+    // リアルタイム更新開始
+    simulateRealTimeUpdates();
+  </script>
+</body>
+</html>
