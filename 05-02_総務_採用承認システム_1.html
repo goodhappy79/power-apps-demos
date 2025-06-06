@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>採用承認システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .approval-flow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+    .approval-flow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      z-index: 1;
+    }
+    .approval-step {
+      position: relative;
+      z-index: 2;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 50%;
+      border: 3px solid #10b981;
+      min-width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .approval-step.pending {
+      border-color: #f59e0b;
+      background: #fef3c7;
+    }
+    .approval-step.completed {
+      border-color: #10b981;
+      background: #d1fae5;
+    }
+    .approval-step.current {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      animation: pulse 2s infinite;
+    }
+    .copilot-suggestion {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      color: white;
+      margin: 1rem 0;
+    }
+    .skill-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin: 0.125rem;
+    }
+    .skill-technical {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+    .skill-certification {
+      background-color: #dcfce7;
+      color: #15803d;
+    }
+    .skill-software {
+      background-color: #fef3c7;
+      color: #d97706;
+    }
+    .skill-management {
+      background-color: #fce7f3;
+      color: #be185d;
+    }
+    .evaluation-meter {
+      background: #e5e7eb;
+      border-radius: 10px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .evaluation-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.5s ease;
+    }
+    .evaluation-excellent { background: #10b981; }
+    .evaluation-good { background: #3b82f6; }
+    .evaluation-average { background: #f59e0b; }
+    .evaluation-poor { background: #ef4444; }
+    .interview-timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+    .interview-timeline::before {
+      content: '';
+      position: absolute;
+      left: 0.75rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e5e7eb;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -2.25rem;
+      top: 0.5rem;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 3px solid white;
+      box-shadow: 0 0 0 1px #e5e7eb;
+    }
+    .salary-range {
+      background: linear-gradient(90deg, #10b981 0%, #3b82f6 50%, #f59e0b 100%);
+      height: 8px;
+      border-radius: 4px;
+      position: relative;
+      margin: 1rem 0;
+    }
+    .salary-marker {
+      position: absolute;
+      top: -4px;
+      width: 16px;
+      height: 16px;
+      background: white;
+      border: 2px solid #ef4444;
+      border-radius: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-purple-800 to-indigo-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-user-plus text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">採用承認システム</h1>
+              <p class="text-purple-200 text-sm">Recruitment Approval System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-purple-700 px-3 py-1 rounded-full text-sm font-medium">総務・人事部門</span>
+            <div class="text-center">
+              <div class="text-xs text-purple-200">採用効率化率</div>
+              <div class="text-lg font-bold text-white">92%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-purple-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">高橋 良子</div>
+              <div class="text-sm text-purple-200">人事部長</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-purple-800 rounded-full flex items-center justify-center font-bold text-lg">
+              TY
+            </div>
+          </div>
+          <button class="text-purple-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-purple-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-purple-600 transition-colors">総務・人事HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-purple-600 transition-colors">採用管理</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">採用承認</span>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-purple-600 font-semibold">REC-2025-0012</span>
+    </nav>
+
+    <!-- 候補者概要カード -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-20 h-20 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-user-tie text-white text-3xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">電気設備技術者 採用承認</h2>
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mt-2">
+              <span class="flex items-center"><i class="fas fa-hashtag mr-1 text-purple-500"></i>REC-2025-0012</span>
+              <span class="flex items-center"><i class="fas fa-calendar mr-1 text-green-500"></i>2025/05/20</span>
+              <span class="flex items-center"><i class="fas fa-user mr-1 text-blue-500"></i>山田 太郎</span>
+              <span class="flex items-center"><i class="fas fa-map-marker-alt mr-1 text-red-500"></i>福岡県在住</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div class="text-right">
+            <div class="text-3xl font-bold text-purple-600">A評価</div>
+            <div class="text-sm text-gray-500">総合評価</div>
+          </div>
+          <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+
+      <!-- 承認フロー -->
+      <div class="bg-gray-50 rounded-xl p-4 mb-4">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-route text-purple-600 mr-2"></i>
+          採用承認ワークフロー
+        </h3>
+        <div class="approval-flow">
+          <div class="flex-1 flex justify-between items-center">
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-search text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">書類選考</div>
+              <div class="text-xs text-gray-500">人事担当</div>
+              <div class="text-xs text-green-600">完了</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-users text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">1次面接</div>
+              <div class="text-xs text-gray-500">技術部長</div>
+              <div class="text-xs text-green-600">完了</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-user-tie text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">2次面接</div>
+              <div class="text-xs text-gray-500">人事部長</div>
+              <div class="text-xs text-green-600">完了</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step current">
+                <i class="fas fa-clipboard-check text-blue-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">最終承認</div>
+              <div class="text-xs text-gray-500">高橋部長</div>
+              <div class="text-xs text-blue-600">承認待ち</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step pending">
+                <i class="fas fa-handshake text-yellow-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">内定通知</div>
+              <div class="text-xs text-gray-500">人事担当</div>
+              <div class="text-xs text-yellow-600">待機中</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインコンテンツ -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- Copilotアシスタント -->
+        <div class="copilot-suggestion card-hover">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-robot text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold">Copilot 採用基準整合性分析</h3>
+              <p class="text-white text-opacity-80 text-sm">AI支援による候補者適合性評価</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <!-- 技術適合性分析 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-cogs text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">技術スキル適合性</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 電気工事施工管理技士1級保有：<span class="font-bold text-green-300">必須要件満たす</span></div>
+                <div>• AutoCAD・制御設計経験：<span class="font-bold text-green-300">8年実務経験</span></div>
+                <div>• エネルギーサービス業界：<span class="font-bold text-yellow-300">関連業界経験あり</span></div>
+                <div>• PLC制御プログラミング：<span class="font-bold text-green-300">三菱・キーエンス対応可</span></div>
+              </div>
+            </div>
+            
+            <!-- 給与適合性分析 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-yen-sign text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">給与・待遇適合性</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 希望年収：<span class="font-bold text-yellow-300">¥6,200,000 (予算内)</span></div>
+                <div>• 同等スキル市場相場：<span class="font-bold">¥5,800,000-¥6,500,000</span></div>
+                <div>• 当社給与基準：<span class="font-bold text-green-300">7等級該当（¥6,100,000-¥6,800,000）</span></div>
+                <div>• コストパフォーマンス：<span class="font-bold text-green-300">良好</span></div>
+              </div>
+            </div>
+            
+            <!-- リスク評価 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-shield-alt text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">採用リスク評価</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 転職理由：<span class="font-bold text-green-300">キャリアアップ志向（低リスク）</span></div>
+                <div>• 定着可能性：<span class="font-bold text-green-300">高（前職3年勤務）</span></div>
+                <div>• 即戦力度：<span class="font-bold text-yellow-300">中～高（業界適応期間1-2ヶ月）</span></div>
+                <div>• 組織適合性：<span class="font-bold text-green-300">良好（面接評価から判定）</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex space-x-2 mt-4">
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-chart-bar mr-1"></i>詳細分析
+            </button>
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-balance-scale mr-1"></i>比較評価
+            </button>
+          </div>
+        </div>
+
+        <!-- 候補者詳細情報 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-id-card text-purple-600 mr-2"></i>
+              候補者詳細情報
+            </h3>
+            <button class="px-4 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm hover:bg-purple-200">
+              <i class="fas fa-file-pdf mr-1"></i>履歴書DL
+            </button>
+          </div>
+
+          <!-- 基本情報 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-medium text-gray-500">氏名</label>
+                <div class="text-lg font-bold text-gray-800">山田 太郎</div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-500">年齢</label>
+                <div class="text-lg font-bold text-gray-800">32歳</div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-500">現住所</label>
+                <div class="text-gray-700">福岡県福岡市早良区</div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-500">最終学歴</label>
+                <div class="text-gray-700">九州工業大学 電気工学科 卒業</div>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-medium text-gray-500">希望職種</label>
+                <div class="text-lg font-bold text-gray-800">電気設備技術者</div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-500">総合実務経験</label>
+                <div class="text-lg font-bold text-gray-800">8年</div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-500">希望年収</label>
+                <div class="text-lg font-bold text-green-600">¥6,200,000</div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-500">入社可能日</label>
+                <div class="text-gray-700">2025年7月1日</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 技術スキル・資格 -->
+          <div class="mb-6">
+            <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-award text-green-600 mr-2"></i>
+              保有資格・技術スキル
+            </h4>
+            
+            <!-- 資格 -->
+            <div class="mb-4">
+              <h5 class="font-medium text-gray-700 mb-2">国家資格・認定資格</h5>
+              <div class="flex flex-wrap gap-2">
+                <span class="skill-badge skill-certification">電気工事施工管理技士1級</span>
+                <span class="skill-badge skill-certification">第二種電気工事士</span>
+                <span class="skill-badge skill-certification">エネルギー管理士（電気分野）</span>
+                <span class="skill-badge skill-certification">第三種電気主任技術者</span>
+                <span class="skill-badge skill-certification">消防設備士甲種4類</span>
+              </div>
+            </div>
+            
+            <!-- 技術スキル -->
+            <div class="mb-4">
+              <h5 class="font-medium text-gray-700 mb-2">技術スキル</h5>
+              <div class="flex flex-wrap gap-2">
+                <span class="skill-badge skill-technical">受変電設備設計</span>
+                <span class="skill-badge skill-technical">照明制御システム</span>
+                <span class="skill-badge skill-technical">自動制御設計</span>
+                <span class="skill-badge skill-technical">省エネシステム設計</span>
+                <span class="skill-badge skill-technical">IoT制御システム</span>
+                <span class="skill-badge skill-technical">PLC制御プログラミング</span>
+              </div>
+            </div>
+            
+            <!-- ソフトウェアスキル -->
+            <div class="mb-4">
+              <h5 class="font-medium text-gray-700 mb-2">ソフトウェア・ツール</h5>
+              <div class="flex flex-wrap gap-2">
+                <span class="skill-badge skill-software">AutoCAD（8年）</span>
+                <span class="skill-badge skill-software">JCAD-ELE（5年）</span>
+                <span class="skill-badge skill-software">GX Works3（三菱PLC）</span>
+                <span class="skill-badge skill-software">KV STUDIO（キーエンス）</span>
+                <span class="skill-badge skill-software">Excel VBA</span>
+              </div>
+            </div>
+
+            <!-- マネジメントスキル -->
+            <div>
+              <h5 class="font-medium text-gray-700 mb-2">マネジメント・その他</h5>
+              <div class="flex flex-wrap gap-2">
+                <span class="skill-badge skill-management">チームリーダー経験</span>
+                <span class="skill-badge skill-management">プロジェクト管理</span>
+                <span class="skill-badge skill-management">顧客折衝経験</span>
+                <span class="skill-badge skill-management">安全管理者</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 職歴 -->
+          <div>
+            <h4 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-briefcase text-blue-600 mr-2"></i>
+              職歴・経験
+            </h4>
+            <div class="space-y-4">
+              <div class="border-l-4 border-blue-500 pl-4 py-2 bg-blue-50 rounded-r-lg">
+                <div class="font-bold text-gray-800">ABC電設株式会社</div>
+                <div class="text-sm text-gray-600">2021年4月 〜 2025年3月（4年間）</div>
+                <div class="text-sm text-gray-700 mt-1">
+                  <strong>役職：</strong>電気設備課 主任<br>
+                  <strong>業務：</strong>工場・オフィスビルの電気設備設計、省エネシステム導入、PLCプログラミング<br>
+                  <strong>実績：</strong>年間15件の電気設備設計、省エネ改修プロジェクト3件をリーダーとして完遂
+                </div>
+              </div>
+              <div class="border-l-4 border-green-500 pl-4 py-2 bg-green-50 rounded-r-lg">
+                <div class="font-bold text-gray-800">XYZ工業株式会社</div>
+                <div class="text-sm text-gray-600">2017年4月 〜 2021年3月（4年間）</div>
+                <div class="text-sm text-gray-700 mt-1">
+                  <strong>役職：</strong>電気保全課 技術者<br>
+                  <strong>業務：</strong>製造設備の電気保全、制御システム改良、設備効率化<br>
+                  <strong>実績：</strong>生産設備の電気保全業務、制御システム改良により設備稼働率5%向上
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 面接結果・評価 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+            <i class="fas fa-comments text-green-600 mr-2"></i>
+            面接結果・評価
+          </h3>
+          
+          <!-- 面接タイムライン -->
+          <div class="interview-timeline">
+            <div class="timeline-item">
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-bold text-blue-800">1次面接（技術面接）</h4>
+                  <span class="text-sm text-gray-500">2025/05/15 14:00-15:00</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <div class="text-sm font-medium text-gray-700 mb-1">面接官</div>
+                    <div class="text-sm text-gray-600">田中修一（技術部長）、佐藤健太（技術主任）</div>
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-700 mb-1">総合評価</div>
+                    <div class="text-lg font-bold text-green-600">A評価（85点）</div>
+                  </div>
+                </div>
+                
+                <!-- 評価項目 -->
+                <div class="space-y-2 mb-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">技術知識・スキル</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-excellent" style="width: 90%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-green-600">90%</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">実務経験・応用力</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-excellent" style="width: 85%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-green-600">85%</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">コミュニケーション</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-good" style="width: 80%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-blue-600">80%</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">課題解決力</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-excellent" style="width: 88%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-green-600">88%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="text-sm text-gray-700">
+                  <strong>コメント：</strong>
+                  電気設備の技術知識が豊富で、特にPLC制御・省エネシステムの実務経験が評価できる。
+                  AutoCADによる設計図面作成能力も高く、即戦力として期待できる。
+                  当社の業務内容への理解も深く、積極的な姿勢が感じられた。
+                </div>
+              </div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-bold text-purple-800">2次面接（人事面接）</h4>
+                  <span class="text-sm text-gray-500">2025/05/18 10:00-11:00</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <div class="text-sm font-medium text-gray-700 mb-1">面接官</div>
+                    <div class="text-sm text-gray-600">高橋良子（人事部長）、山田花子（人事課長）</div>
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-700 mb-1">総合評価</div>
+                    <div class="text-lg font-bold text-green-600">A評価（82点）</div>
+                  </div>
+                </div>
+                
+                <!-- 評価項目 -->
+                <div class="space-y-2 mb-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">志望動機・意欲</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-excellent" style="width: 85%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-green-600">85%</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">組織適合性</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-good" style="width: 80%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-blue-600">80%</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">将来性・成長意欲</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-excellent" style="width: 83%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-green-600">83%</span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">勤務条件適合性</span>
+                    <div class="flex items-center space-x-2">
+                      <div class="evaluation-meter w-24">
+                        <div class="evaluation-fill evaluation-good" style="width: 78%"></div>
+                      </div>
+                      <span class="text-sm font-bold text-blue-600">78%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="text-sm text-gray-700">
+                  <strong>コメント：</strong>
+                  エネルギーサービス業界への転職理由が明確で、当社での成長意欲も高い。
+                  前職での経験を活かし、より幅広い業務にチャレンジしたいとの意欲が感じられる。
+                  チームワークを重視する姿勢も評価できる。給与・勤務条件への理解も良好。
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 添付ファイル・関連資料 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-paperclip text-orange-600 mr-2"></i>
+            添付ファイル・関連資料
+          </h3>
+          
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-pdf text-red-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">履歴書.pdf</div>
+              <div class="text-xs text-gray-500">1.2MB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-word text-blue-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">職務経歴書.docx</div>
+              <div class="text-xs text-gray-500">856KB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-certificate text-green-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">資格証明書.pdf</div>
+              <div class="text-xs text-gray-500">2.1MB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-image text-orange-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">作品サンプル.jpg</div>
+              <div class="text-xs text-gray-500">4.5MB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ファイル管理連携 -->
+          <div class="mt-4 p-4 bg-purple-50 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-semibold text-purple-800 mb-1">統合ファイル管理連携</h4>
+                <div class="text-sm text-purple-600">採用フォルダ: REC-2025-0012_山田太郎_電気設備技術者</div>
+              </div>
+              <button class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                <i class="fas fa-folder-open mr-1"></i>フォルダを開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- 採用条件・給与 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-yen-sign text-green-600 mr-2"></i>
+            採用条件・給与
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 希望給与と提示額 -->
+            <div class="p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+              <div class="font-medium text-green-800 mb-2">給与条件</div>
+              <div class="space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">候補者希望年収</span>
+                  <span class="font-bold text-gray-800">¥6,200,000</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">当社提示額</span>
+                  <span class="font-bold text-green-600">¥6,300,000</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">等級</span>
+                  <span class="font-bold text-blue-600">7等級</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">昇格見込み</span>
+                  <span class="font-bold text-purple-600">6等級（2年後）</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 給与レンジ視覚化 -->
+            <div>
+              <div class="text-sm font-medium text-gray-700 mb-2">給与レンジ比較</div>
+              <div class="salary-range">
+                <div class="salary-marker" style="left: 65%"></div>
+              </div>
+              <div class="flex justify-between text-xs text-gray-500 mt-1">
+                <span>¥5.5M</span>
+                <span>市場相場</span>
+                <span>¥7.0M</span>
+              </div>
+              <div class="text-center text-xs text-red-600 mt-1">
+                提示額: ¥6.3M（市場相場上位）
+              </div>
+            </div>
+
+            <!-- その他条件 -->
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">勤務地</span>
+                <span class="text-gray-800">本社（福岡市）</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">勤務時間</span>
+                <span class="text-gray-800">8:30-17:30</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">休日</span>
+                <span class="text-gray-800">土日祝・年間120日</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">福利厚生</span>
+                <span class="text-gray-800">社保完備・退職金制度</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 採用基準適合性 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-clipboard-check text-blue-600 mr-2"></i>
+            採用基準適合性
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 必須要件 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-3">必須要件チェック</h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                  <span class="text-sm text-gray-700">電気工事施工管理技士1級</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 mr-1"></i>
+                    <span class="text-xs text-green-600">取得済</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                  <span class="text-sm text-gray-700">電気設備設計経験5年以上</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 mr-1"></i>
+                    <span class="text-xs text-green-600">8年経験</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                  <span class="text-sm text-gray-700">AutoCAD操作スキル</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 mr-1"></i>
+                    <span class="text-xs text-green-600">8年使用</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                  <span class="text-sm text-gray-700">PLC制御プログラミング</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 mr-1"></i>
+                    <span class="text-xs text-green-600">三菱・キーエンス</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 優遇要件 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-3">優遇要件</h4>
+              <div class="space-y-2">
+                <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
+                  <span class="text-sm text-gray-700">エネルギー管理士</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-blue-600 mr-1"></i>
+                    <span class="text-xs text-blue-600">電気分野</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
+                  <span class="text-sm text-gray-700">省エネシステム設計経験</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-blue-600 mr-1"></i>
+                    <span class="text-xs text-blue-600">3プロジェクト</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                  <span class="text-sm text-gray-700">第三種電気主任技術者</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-yellow-600 mr-1"></i>
+                    <span class="text-xs text-yellow-600">取得済</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <span class="text-sm text-gray-700">マネジメント経験</span>
+                  <div class="flex items-center">
+                    <i class="fas fa-minus-circle text-gray-400 mr-1"></i>
+                    <span class="text-xs text-gray-500">リーダー経験</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 総合適合度 -->
+            <div class="p-4 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border border-green-200">
+              <div class="text-center">
+                <div class="text-3xl font-bold text-green-600 mb-1">92%</div>
+                <div class="text-sm text-gray-600">総合適合度</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 他候補者との比較 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-users text-orange-600 mr-2"></i>
+            他候補者との比較
+          </h3>
+          
+          <div class="space-y-3">
+            <!-- 現在の候補者 -->
+            <div class="p-3 bg-green-50 border-2 border-green-300 rounded-lg">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-bold text-green-800">山田太郎（現在）</div>
+                <div class="text-lg font-bold text-green-600">A評価</div>
+              </div>
+              <div class="text-xs text-green-700 space-y-1">
+                <div>技術：90% | 経験：8年 | 希望：¥6.2M</div>
+                <div>資格：施工管理1級・エネルギー管理士</div>
+              </div>
+            </div>
+            
+            <!-- 他の候補者 */
+            <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-medium text-blue-800">佐藤次郎</div>
+                <div class="text-lg font-bold text-blue-600">B+評価</div>
+              </div>
+              <div class="text-xs text-blue-700 space-y-1">
+                <div>技術：82% | 経験：6年 | 希望：¥5.8M</div>
+                <div>資格：施工管理2級・第二種電気工事士</div>
+              </div>
+            </div>
+            
+            <div class="p-3 bg-gray-50 border border-gray-200 rounded-lg">
+              <div class="flex items-center justify-between mb-2">
+                <div class="font-medium text-gray-800">田中花子</div>
+                <div class="text-lg font-bold text-gray-600">B評価</div>
+              </div>
+              <div class="text-xs text-gray-700 space-y-1">
+                <div>技術：75% | 経験：5年 | 希望：¥5.5M</div>
+                <div>資格：第二種電気工事士・CAD利用技術者</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 推奨 -->
+          <div class="mt-4 p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+            <div class="flex items-center">
+              <i class="fas fa-thumbs-up text-green-600 mr-2"></i>
+              <div class="text-sm">
+                <div class="font-medium text-green-800">Copilot推奨</div>
+                <div class="text-green-700">技術力・経験ともに最適</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 採用予定・スケジュール -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-calendar-alt text-purple-600 mr-2"></i>
+            採用スケジュール
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 今後の予定 -->
+            <div class="p-4 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+              <div class="font-medium text-purple-800 mb-2">今後の流れ</div>
+              <div class="text-sm text-purple-700 space-y-1">
+                <div>• 最終承認: 本日中</div>
+                <div>• 内定通知: 5/21（火）</div>
+                <div>• 条件確認: 5/22（水）</div>
+                <div>• 入社日調整: 5/23（木）</div>
+              </div>
+            </div>
+            
+            <!-- 入社予定 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-3">入社準備</h4>
+              <div class="space-y-3">
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <div class="font-medium text-sm">入社手続き書類準備</div>
+                  <div class="text-xs text-gray-500">5/24～6/30</div>
+                </div>
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <div class="font-medium text-sm">健康診断・身元確認</div>
+                  <div class="text-xs text-gray-500">6/15～6/30</div>
+                </div>
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <div class="font-medium text-sm">入社前研修計画</div>
+                  <div class="text-xs text-gray-500">6/20～6/30</div>
+                </div>
+                <div class="relative pl-6">
+                  <div class="absolute left-2 top-2 w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <div class="font-medium text-sm">正式入社</div>
+                  <div class="text-xs text-gray-500">7/1 予定</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 配属予定 -->
+            <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <div class="flex items-center">
+                <i class="fas fa-building text-blue-600 mr-2"></i>
+                <div class="text-sm">
+                  <div class="font-medium text-blue-800">配属予定部署</div>
+                  <div class="text-blue-700">技術部 電気設備課</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- コメント・履歴 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-comments text-indigo-600 mr-2"></i>
+            コメント・履歴
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 面接官コメント -->
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  田
+                </div>
+                <div>
+                  <div class="font-medium text-sm">田中修一 (技術部長)</div>
+                  <div class="text-xs text-gray-500">2025/05/15 15:30</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                技術力は申し分なく、即戦力として期待できます。
+                特にPLC制御の実務経験が豊富で、当社の業務にすぐに活かせそうです。
+                積極的で学習意欲も高く、ぜひ採用したい人材です。
+              </div>
+            </div>
+            
+            <div class="p-3 bg-purple-50 rounded-lg">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                高
+                </div>
+                <div>
+                  <div class="font-medium text-sm">高橋良子 (人事部長)</div>
+                  <div class="text-xs text-gray-500">2025/05/18 11:15</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                人物面でも優秀で、組織への適合性も高いと判断します。
+                給与条件も妥当な範囲内で、採用を推奨します。
+                入社後のフォローアップ体制も整備済みです。
+              </div>
+            </div>
+            
+            <!-- システム履歴 -->
+            <div class="space-y-2">
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-check text-green-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">Copilot適合性分析完了</span>
+                  <span class="text-gray-500 text-xs ml-2">11:45</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-upload text-blue-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">面接評価資料追加</span>
+                  <span class="text-gray-500 text-xs ml-2">10:30</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-paper-plane text-purple-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">最終承認申請提出</span>
+                  <span class="text-gray-500 text-xs ml-2">09:15</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- コメント入力 -->
+            <div class="border-t pt-4">
+              <textarea 
+                placeholder="採用承認コメントを入力..." 
+                class="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none"
+                rows="3"></textarea>
+              <div class="flex justify-end mt-2">
+                <button class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">
+                  <i class="fas fa-comment mr-1"></i>コメント追加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 承認アクションバー -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4">
+      <div class="container mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">候補者:</span>
+            <span class="text-2xl font-bold text-purple-600 ml-2">山田太郎</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">提示年収:</span>
+            <span class="text-green-600 font-bold ml-2">¥6,300,000</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">承認期限:</span>
+            <span class="text-red-600 font-bold ml-2">2025/05/21 17:00</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- 承認オプション -->
+          <div class="flex items-center space-x-2">
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2" checked>
+              <span>給与条件確認済み</span>
+            </label>
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>条件付き採用</span>
+            </label>
+          </div>
+          
+          <!-- アクションボタン -->
+          <button class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            <i class="fas fa-download mr-2"></i>資料DL
+          </button>
+          <button class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+            <i class="fas fa-undo mr-2"></i>追加面接
+          </button>
+          <button class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <i class="fas fa-times mr-2"></i>不採用
+          </button>
+          <button class="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
+            <i class="fas fa-check mr-2"></i>採用承認
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 余白（固定バー用） -->
+    <div class="h-20"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 採用承認ボタンのクリック処理
+      const approveButton = document.querySelector('.bg-gradient-to-r.from-green-600');
+      if (approveButton) {
+        approveButton.addEventListener('click', function() {
+          if (confirm('山田太郎さんの採用を承認しますか？\n\n提示年収: ¥6,300,000\n配属: 技術部 電気設備課')) {
+            // 承認処理のシミュレーション
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              showNotification('採用承認が完了しました。人事担当者に内定通知の準備を指示しました。', 'success');
+              
+              // 承認ステップの更新
+              const currentStep = document.querySelector('.approval-step.current');
+              const nextStep = currentStep.parentElement.nextElementSibling.querySelector('.approval-step');
+              
+              currentStep.classList.remove('current');
+              currentStep.classList.add('completed');
+              currentStep.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+              currentStep.parentElement.querySelector('.text-blue-600').textContent = '承認済';
+              currentStep.parentElement.querySelector('.text-blue-600').className = 'text-xs text-green-600';
+              
+              if (nextStep) {
+                nextStep.classList.remove('pending');
+                nextStep.classList.add('current');
+                nextStep.parentElement.querySelector('.text-yellow-600').textContent = '処理中';
+                nextStep.parentElement.querySelector('.text-yellow-600').className = 'text-xs text-blue-600';
+              }
+              
+              // アクションバーを非表示
+              document.querySelector('.fixed.bottom-0').style.display = 'none';
+              
+            }, 2000);
+          }
+        });
+      }
+
+      // その他のイベントハンドラー
+      addEventHandlers();
+      
+      // 初期化処理
+      animateEvaluationBars();
+      updateDeadlineCountdown();
+      setInterval(updateDeadlineCountdown, 60000);
+
+      // ページ読み込み時のアニメーション
+      animatePageLoad();
+
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('採用承認システムへようこそ。Copilot分析結果をご確認ください。', 'success');
+      }, 1000);
+    });
+
+    function addEventHandlers() {
+      // 不採用ボタン
+      const rejectButton = document.querySelector('.bg-red-600');
+      if (rejectButton) {
+        rejectButton.addEventListener('click', function() {
+          const reason = prompt('不採用理由を入力してください：');
+          if (reason && reason.trim()) {
+            showNotification(`採用を見送りました。理由: ${reason}`, 'warning');
+          }
+        });
+      }
+
+      // 追加面接ボタン
+      const additionalInterviewButton = document.querySelector('.bg-yellow-600');
+      if (additionalInterviewButton) {
+        additionalInterviewButton.addEventListener('click', function() {
+          const interviewer = prompt('追加面接官を指定してください：');
+          if (interviewer && interviewer.trim()) {
+            showNotification(`追加面接を設定しました。面接官: ${interviewer}`, 'info');
+          }
+        });
+      }
+
+      // ファイルプレビュー
+      const filePreviewButtons = document.querySelectorAll('.fa-eye');
+      filePreviewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const fileName = this.closest('.border-2').querySelector('.font-medium').textContent;
+          showNotification(`${fileName} をプレビューします`, 'info');
+        });
+      });
+
+      // ダウンロード機能
+      const downloadButtons = document.querySelectorAll('.fa-download');
+      downloadButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const fileName = this.closest('.border-2').querySelector('.font-medium').textContent;
+          showNotification(`${fileName} をダウンロードしました`, 'success');
+        });
+      });
+
+      // フォルダ連携ボタン
+      const folderButton = document.querySelector('.bg-purple-600');
+      if (folderButton) {
+        folderButton.addEventListener('click', function() {
+          showNotification('統合ファイル管理システムで採用フォルダを開いています...', 'info');
+        });
+      }
+
+      // Copilot詳細分析
+      const detailAnalysisButton = document.querySelector('.bg-white.bg-opacity-20');
+      if (detailAnalysisButton && detailAnalysisButton.textContent.includes('詳細分析')) {
+        detailAnalysisButton.addEventListener('click', function() {
+          showNotification('Copilot詳細分析レポートを生成しています...', 'info');
+        });
+      }
+
+      // コメント追加機能
+      const commentButton = document.querySelector('.bg-gray-500');
+      const commentTextarea = document.querySelector('textarea');
+      if (commentButton && commentTextarea) {
+        commentButton.addEventListener('click', function() {
+          const comment = commentTextarea.value.trim();
+          if (comment) {
+            const commentSection = document.querySelector('.space-y-4');
+            const newComment = document.createElement('div');
+            newComment.className = 'p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400';
+            newComment.innerHTML = `
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  高
+                </div>
+                <div>
+                  <div class="font-medium text-sm">高橋良子 (人事部長)</div>
+                  <div class="text-xs text-gray-500">${new Date().toLocaleString('ja-JP')}</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">${comment}</div>
+            `;
+            commentSection.insertBefore(newComment, commentSection.lastElementChild);
+            commentTextarea.value = '';
+            showNotification('コメントを追加しました', 'success');
+          }
+        });
+      }
+    }
+
+    function animateEvaluationBars() {
+      const evaluationBars = document.querySelectorAll('.evaluation-fill');
+      evaluationBars.forEach((bar, index) => {
+        setTimeout(() => {
+          const width = bar.style.width;
+          bar.style.width = '0%';
+          setTimeout(() => {
+            bar.style.width = width;
+          }, 100);
+        }, index * 200);
+      });
+    }
+
+    function updateDeadlineCountdown() {
+      const deadlineText = document.querySelector('.text-red-600.font-bold');
+      if (deadlineText) {
+        const deadline = new Date('2025-05-21T17:00:00');
+        const now = new Date();
+        const diff = deadline - now;
+        
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          deadlineText.textContent = `残り ${hours}時間${minutes}分`;
+        }
+      }
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // スキルバッジのホバー効果
+    document.querySelectorAll('.skill-badge').forEach(badge => {
+      badge.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.05)';
+        this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+      });
+      badge.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+        this.style.boxShadow = 'none';
+      });
+    });
+
+    // 評価メーターのアニメーション
+    setTimeout(() => {
+      document.querySelectorAll('.evaluation-meter').forEach(meter => {
+        const fill = meter.querySelector('.evaluation-fill');
+        const targetWidth = fill.style.width;
+        fill.style.width = '0%';
+        setTimeout(() => {
+          fill.style.transition = 'width 1s ease-out';
+          fill.style.width = targetWidth;
+        }, 300);
+      });
+    }, 500);
+
+    // 給与レンジマーカーのアニメーション
+    setTimeout(() => {
+      const marker = document.querySelector('.salary-marker');
+      if (marker) {
+        marker.style.transform = 'translateX(-50%) scale(0)';
+        marker.style.transition = 'transform 0.5s ease-out';
+        setTimeout(() => {
+          marker.style.transform = 'translateX(-50%) scale(1)';
+        }, 800);
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
+            

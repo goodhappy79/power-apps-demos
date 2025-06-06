@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS分析ダッシュボード - カスタマー部門</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+    .glass-effect {
+      backdrop-filter: blur(10px);
+      background: rgba(255, 255, 255, 0.9);
+    }
+    .metric-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .metric-card-green {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .metric-card-orange {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .metric-card-blue {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .progress-ring {
+      transition: stroke-dasharray 0.3s ease;
+    }
+    .trend-up {
+      color: #10b981;
+    }
+    .trend-down {
+      color: #ef4444;
+    }
+    .trend-neutral {
+      color: #6b7280;
+    }
+    .satisfaction-excellent {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .satisfaction-good {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .satisfaction-average {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .satisfaction-poor {
+      background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+    }
+    .chart-container-large {
+      position: relative;
+      height: 400px;
+    }
+    .improvement-priority-high {
+      border-left: 4px solid #ef4444;
+      background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.05) 100%);
+    }
+    .improvement-priority-medium {
+      border-left: 4px solid #f59e0b;
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%);
+    }
+    .improvement-priority-low {
+      border-left: 4px solid #10b981;
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%);
+    }
+    .nps-promoter {
+      background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .nps-passive {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .nps-detractor {
+      background: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+    }
+    .heatmap-cell {
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: white;
+      min-height: 40px;
+      transition: all 0.2s ease;
+    }
+    .heatmap-cell:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    .heatmap-high { background: #dc2626; }
+    .heatmap-medium { background: #f59e0b; }
+    .heatmap-low { background: #10b981; }
+    .heatmap-none { background: #6b7280; }
+    
+    @keyframes pulse-soft {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    .pulse-animation {
+      animation: pulse-soft 2s infinite;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-indigo-700 to-purple-800 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-chart-line text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">CS分析ダッシュボード</h1>
+              <p class="text-indigo-200 text-sm">Customer Satisfaction Analytics</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-indigo-600 px-3 py-1 rounded-full text-sm font-medium">カスタマー部門</span>
+            <span class="bg-purple-600 px-3 py-1 rounded-full text-sm font-medium">分析・改善</span>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 期間選択 -->
+          <select class="bg-white text-gray-800 px-3 py-2 rounded-lg text-sm">
+            <option>今月</option>
+            <option>前月</option>
+            <option>四半期</option>
+            <option>年間</option>
+          </select>
+          <!-- エクスポート -->
+          <button class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-download text-sm mr-2"></i>
+            <span class="text-sm font-medium">レポート出力</span>
+          </button>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">分析担当者</div>
+              <div class="text-sm text-indigo-200">CS改善チーム</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <nav class="bg-white rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center space-x-2 text-sm">
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline flex items-center">
+          <i class="fas fa-home mr-1"></i>カスタマーHUB
+        </a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <a href="#" class="text-blue-600 hover:text-blue-800 hover:underline">分析・改善機能</a>
+        <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+        <span class="text-gray-800 font-semibold">CS分析ダッシュボード</span>
+      </div>
+    </nav>
+
+    <!-- メインKPI概要 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- 総合満足度スコア -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="metric-card-green text-white rounded-xl p-4 mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-3xl font-bold">4.6</div>
+              <div class="text-sm opacity-90">総合満足度</div>
+            </div>
+            <div class="relative w-16 h-16">
+              <svg class="w-16 h-16 transform -rotate-90">
+                <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.3)" stroke-width="4" fill="none"/>
+                <circle cx="32" cy="32" r="28" stroke="white" stroke-width="4" fill="none" 
+                        stroke-dasharray="175.93" stroke-dashoffset="35.19" class="progress-ring"/>
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                92%
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center text-sm">
+          <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+          <span class="text-green-600 font-medium">+0.3</span>
+          <span class="text-gray-500 ml-1">前月比</span>
+        </div>
+      </div>
+
+      <!-- NPS（ネットプロモータースコア） -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="metric-card-blue text-white rounded-xl p-4 mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-3xl font-bold">+42</div>
+              <div class="text-sm opacity-90">NPS</div>
+            </div>
+            <div class="text-right">
+              <i class="fas fa-thumbs-up text-2xl opacity-80"></i>
+              <div class="text-xs mt-1">推奨度</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center text-sm">
+          <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+          <span class="text-green-600 font-medium">+5</span>
+          <span class="text-gray-500 ml-1">前月比</span>
+        </div>
+      </div>
+
+      <!-- 平均対応時間 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="metric-card-orange text-white rounded-xl p-4 mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-3xl font-bold">1.2</div>
+              <div class="text-sm opacity-90">平均対応時間（時間）</div>
+            </div>
+            <div class="text-right">
+              <i class="fas fa-clock text-2xl opacity-80"></i>
+              <div class="text-xs mt-1">レスポンス</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center text-sm">
+          <i class="fas fa-arrow-down text-green-500 mr-1"></i>
+          <span class="text-green-600 font-medium">-0.3時間</span>
+          <span class="text-gray-500 ml-1">前月比</span>
+        </div>
+      </div>
+
+      <!-- 初回解決率 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="metric-card text-white rounded-xl p-4 mb-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-3xl font-bold">94%</div>
+              <div class="text-sm opacity-90">初回解決率</div>
+            </div>
+            <div class="text-right">
+              <i class="fas fa-check-circle text-2xl opacity-80"></i>
+              <div class="text-xs mt-1">解決効率</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center text-sm">
+          <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+          <span class="text-green-600 font-medium">+2%</span>
+          <span class="text-gray-500 ml-1">前月比</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 満足度詳細分析とトレンド -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- 満足度推移グラフ -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+            満足度推移トレンド
+          </h3>
+          <div class="flex space-x-2">
+            <button class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">3ヶ月</button>
+            <button class="px-3 py-1 hover:bg-gray-100 text-gray-600 rounded-full text-xs font-medium">6ヶ月</button>
+            <button class="px-3 py-1 hover:bg-gray-100 text-gray-600 rounded-full text-xs font-medium">年間</button>
+          </div>
+        </div>
+        <div class="chart-container">
+          <canvas id="satisfactionTrendChart"></canvas>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+          <div class="bg-green-50 rounded-lg p-3">
+            <div class="text-lg font-bold text-green-600">4.8</div>
+            <div class="text-xs text-gray-600">最高値</div>
+          </div>
+          <div class="bg-blue-50 rounded-lg p-3">
+            <div class="text-lg font-bold text-blue-600">4.6</div>
+            <div class="text-xs text-gray-600">平均値</div>
+          </div>
+          <div class="bg-orange-50 rounded-lg p-3">
+            <div class="text-lg font-bold text-orange-600">4.2</div>
+            <div class="text-xs text-gray-600">最低値</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 満足度分布 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-star text-yellow-500 mr-2"></i>
+          満足度分布
+        </h3>
+        <div class="space-y-4">
+          <div class="flex items-center">
+            <div class="w-24 text-sm font-medium">★★★★★</div>
+            <div class="flex-1 mx-3">
+              <div class="bg-gray-200 rounded-full h-3">
+                <div class="satisfaction-excellent h-3 rounded-full" style="width: 68%"></div>
+              </div>
+            </div>
+            <div class="w-16 text-right">
+              <span class="text-sm font-bold">68%</span>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <div class="w-24 text-sm font-medium">★★★★☆</div>
+            <div class="flex-1 mx-3">
+              <div class="bg-gray-200 rounded-full h-3">
+                <div class="satisfaction-good h-3 rounded-full" style="width: 24%"></div>
+              </div>
+            </div>
+            <div class="w-16 text-right">
+              <span class="text-sm font-bold">24%</span>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <div class="w-24 text-sm font-medium">★★★☆☆</div>
+            <div class="flex-1 mx-3">
+              <div class="bg-gray-200 rounded-full h-3">
+                <div class="satisfaction-average h-3 rounded-full" style="width: 6%"></div>
+              </div>
+            </div>
+            <div class="w-16 text-right">
+              <span class="text-sm font-bold">6%</span>
+            </div>
+          </div>
+          <div class="flex items-center">
+            <div class="w-24 text-sm font-medium">★★☆☆☆</div>
+            <div class="flex-1 mx-3">
+              <div class="bg-gray-200 rounded-full h-3">
+                <div class="satisfaction-poor h-3 rounded-full" style="width: 2%"></div>
+              </div>
+            </div>
+            <div class="w-16 text-right">
+              <span class="text-sm font-bold">2%</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- NPS分析 -->
+        <div class="mt-6 pt-6 border-t">
+          <h4 class="font-semibold text-gray-800 mb-4">NPS詳細分析</h4>
+          <div class="grid grid-cols-3 gap-3">
+            <div class="text-center">
+              <div class="nps-promoter text-white rounded-lg p-3 mb-2">
+                <div class="text-lg font-bold">62%</div>
+                <div class="text-xs opacity-90">推奨者</div>
+              </div>
+              <div class="text-xs text-gray-600">9-10点</div>
+            </div>
+            <div class="text-center">
+              <div class="nps-passive text-white rounded-lg p-3 mb-2">
+                <div class="text-lg font-bold">18%</div>
+                <div class="text-xs opacity-90">中立者</div>
+              </div>
+              <div class="text-xs text-gray-600">7-8点</div>
+            </div>
+            <div class="text-center">
+              <div class="nps-detractor text-white rounded-lg p-3 mb-2">
+                <div class="text-lg font-bold">20%</div>
+                <div class="text-xs opacity-90">批判者</div>
+              </div>
+              <div class="text-xs text-gray-600">0-6点</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 対応速度分析とクレーム傾向 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- 対応速度分析 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-tachometer-alt text-green-600 mr-2"></i>
+          対応速度分析
+        </h3>
+        <div class="chart-container">
+          <canvas id="responseTimeChart"></canvas>
+        </div>
+        <div class="mt-4 grid grid-cols-3 gap-4">
+          <div class="text-center bg-green-50 rounded-lg p-3">
+            <div class="text-lg font-bold text-green-600">0.8h</div>
+            <div class="text-xs text-gray-600">緊急対応</div>
+          </div>
+          <div class="text-center bg-blue-50 rounded-lg p-3">
+            <div class="text-lg font-bold text-blue-600">1.2h</div>
+            <div class="text-xs text-gray-600">通常対応</div>
+          </div>
+          <div class="text-center bg-purple-50 rounded-lg p-3">
+            <div class="text-lg font-bold text-purple-600">2.1h</div>
+            <div class="text-xs text-gray-600">計画対応</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- クレーム傾向分析 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+          クレーム傾向分析
+        </h3>
+        <div class="chart-container">
+          <canvas id="complaintTrendChart"></canvas>
+        </div>
+        <div class="mt-4 space-y-3">
+          <div class="flex items-center justify-between p-2 bg-red-50 rounded-lg">
+            <span class="text-sm font-medium">設備故障関連</span>
+            <span class="text-red-600 font-bold">35%</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-orange-50 rounded-lg">
+            <span class="text-sm font-medium">対応遅延</span>
+            <span class="text-orange-600 font-bold">28%</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
+            <span class="text-sm font-medium">説明不足</span>
+            <span class="text-blue-600 font-bold">22%</span>
+          </div>
+          <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+            <span class="text-sm font-medium">その他</span>
+            <span class="text-gray-600 font-bold">15%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顧客別満足度とアンケート結果 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <!-- 顧客別満足度ランキング -->
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-building text-blue-600 mr-2"></i>
+            顧客別満足度ランキング
+          </h3>
+          <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+            <i class="fas fa-external-link-alt mr-1"></i>詳細表示
+          </button>
+        </div>
+        <div class="space-y-4">
+          <div class="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-8 h-8 bg-yellow-500 text-white rounded-full flex items-center justify-center font-bold text-sm mr-4">
+              1
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800">DEF産業（食品製造）</div>
+              <div class="text-sm text-gray-600">冷凍冷蔵設備・省エネシステム</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-green-600">4.9</div>
+              <div class="flex items-center text-xs text-gray-500">
+                <i class="fas fa-arrow-up text-green-500 mr-1"></i>+0.2
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-8 h-8 bg-gray-400 text-white rounded-full flex items-center justify-center font-bold text-sm mr-4">
+              2
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800">GHI商事（オフィスビル）</div>
+              <div class="text-sm text-gray-600">ビル管理システム・省エネ制御</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-green-600">4.8</div>
+              <div class="flex items-center text-xs text-gray-500">
+                <i class="fas fa-arrow-up text-green-500 mr-1"></i>+0.1
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-8 h-8 bg-orange-600 text-white rounded-full flex items-center justify-center font-bold text-sm mr-4">
+              3
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800">JKL工場（製造業）</div>
+              <div class="text-sm text-gray-600">製造設備・環境制御システム</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-blue-600">4.7</div>
+              <div class="flex items-center text-xs text-gray-500">
+                <i class="fas fa-minus text-gray-400 mr-1"></i>±0
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full flex items-center justify-center font-bold text-sm mr-4">
+              4
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800">ABC工場（製造業）</div>
+              <div class="text-sm text-gray-600">省エネシステム・空調設備</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-orange-600">4.3</div>
+              <div class="flex items-center text-xs text-gray-500">
+                <i class="fas fa-arrow-down text-red-500 mr-1"></i>-0.2
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center p-4 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-8 h-8 bg-gray-300 text-gray-700 rounded-full flex items-center justify-center font-bold text-sm mr-4">
+              5
+            </div>
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800">MNO社（物流センター）</div>
+              <div class="text-sm text-gray-600">冷蔵設備・自動化システム</div>
+            </div>
+            <div class="text-right">
+              <div class="text-lg font-bold text-orange-600">4.1</div>
+              <div class="flex items-center text-xs text-gray-500">
+                <i class="fas fa-arrow-down text-red-500 mr-1"></i>-0.3
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- アンケート結果サマリー -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-poll text-purple-600 mr-2"></i>
+          アンケート結果
+        </h3>
+        <div class="space-y-4">
+          <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-green-800">技術力</span>
+              <span class="text-lg font-bold text-green-600">4.8</span>
+            </div>
+            <div class="bg-green-200 rounded-full h-2">
+              <div class="bg-green-600 h-2 rounded-full" style="width: 96%"></div>
+            </div>
+          </div>
+          
+          <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-blue-800">対応速度</span>
+              <span class="text-lg font-bold text-blue-600">4.6</span>
+            </div>
+            <div class="bg-blue-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full" style="width: 92%"></div>
+            </div>
+          </div>
+          
+          <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-purple-800">コミュニケーション</span>
+              <span class="text-lg font-bold text-purple-600">4.7</span>
+            </div>
+            <div class="bg-purple-200 rounded-full h-2">
+              <div class="bg-purple-600 h-2 rounded-full" style="width: 94%"></div>
+            </div>
+          </div>
+          
+          <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-orange-800">提案力</span>
+              <span class="text-lg font-bold text-orange-600">4.4</span>
+            </div>
+            <div class="bg-orange-200 rounded-full h-2">
+              <div class="bg-orange-600 h-2 rounded-full" style="width: 88%"></div>
+            </div>
+          </div>
+          
+          <div class="bg-gradient-to-r from-red-50 to-red-100 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-medium text-red-800">料金妥当性</span>
+              <span class="text-lg font-bold text-red-600">4.2</span>
+            </div>
+            <div class="bg-red-200 rounded-full h-2">
+              <div class="bg-red-600 h-2 rounded-full" style="width: 84%"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 回答率情報 -->
+        <div class="mt-6 pt-4 border-t">
+          <div class="text-center">
+            <div class="text-lg font-bold text-gray-800">回答率</div>
+            <div class="text-2xl font-bold text-indigo-600">78%</div>
+            <div class="text-xs text-gray-500">今月のアンケート</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 改善提案管理とリピート率 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- 改善提案管理 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+            改善提案管理
+          </h3>
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-plus mr-1"></i>新規提案
+          </button>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- 高優先度改善提案 -->
+          <div class="improvement-priority-high rounded-lg p-4">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <div class="font-semibold text-gray-800">緊急対応プロセス改善</div>
+                <div class="text-sm text-gray-600">初動対応時間の短縮と顧客連絡の自動化</div>
+              </div>
+              <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full font-semibold">高優先</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center text-gray-500">
+                <i class="fas fa-user mr-1"></i>
+                <span>提案者: 高橋技術者</span>
+              </div>
+              <div class="flex items-center text-gray-500">
+                <i class="fas fa-calendar mr-1"></i>
+                <span>期限: 2025/6/15</span>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="bg-gray-200 rounded-full h-2">
+                <div class="bg-red-500 h-2 rounded-full" style="width: 30%"></div>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">進捗: 30% (要件定義完了)</div>
+            </div>
+          </div>
+
+          <!-- 中優先度改善提案 -->
+          <div class="improvement-priority-medium rounded-lg p-4">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <div class="font-semibold text-gray-800">点検報告書テンプレート改良</div>
+                <div class="text-sm text-gray-600">顧客理解度向上のための表現改善</div>
+              </div>
+              <span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-semibold">中優先</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center text-gray-500">
+                <i class="fas fa-user mr-1"></i>
+                <span>提案者: 佐藤主任</span>
+              </div>
+              <div class="flex items-center text-gray-500">
+                <i class="fas fa-calendar mr-1"></i>
+                <span>期限: 2025/7/31</span>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="bg-gray-200 rounded-full h-2">
+                <div class="bg-yellow-500 h-2 rounded-full" style="width: 65%"></div>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">進捗: 65% (テスト実施中)</div>
+            </div>
+          </div>
+
+          <!-- 低優先度改善提案 -->
+          <div class="improvement-priority-low rounded-lg p-4">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <div class="font-semibold text-gray-800">顧客ポータルサイト機能拡張</div>
+                <div class="text-sm text-gray-600">リアルタイム設備状況確認機能</div>
+              </div>
+              <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-semibold">低優先</span>
+            </div>
+            <div class="flex items-center justify-between text-sm">
+              <div class="flex items-center text-gray-500">
+                <i class="fas fa-user mr-1"></i>
+                <span>提案者: 田中係長</span>
+              </div>
+              <div class="flex items-center text-gray-500">
+                <i class="fas fa-calendar mr-1"></i>
+                <span>期限: 2025/9/30</span>
+              </div>
+            </div>
+            <div class="mt-3">
+              <div class="bg-gray-200 rounded-full h-2">
+                <div class="bg-green-500 h-2 rounded-full" style="width: 15%"></div>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">進捗: 15% (企画検討中)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- リピート率・継続率分析 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-redo text-green-600 mr-2"></i>
+          リピート率・継続率分析
+        </h3>
+        
+        <!-- リピート率サマリー -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="text-center bg-green-50 rounded-lg p-4">
+            <div class="text-2xl font-bold text-green-600">96%</div>
+            <div class="text-sm text-gray-600">契約継続率</div>
+            <div class="text-xs text-green-600 mt-1">+2% 前年比</div>
+          </div>
+          <div class="text-center bg-blue-50 rounded-lg p-4">
+            <div class="text-2xl font-bold text-blue-600">89%</div>
+            <div class="text-sm text-gray-600">サービス利用率</div>
+            <div class="text-xs text-blue-600 mt-1">+5% 前年比</div>
+          </div>
+        </div>
+
+        <!-- 継続期間分析 -->
+        <div class="mb-6">
+          <h4 class="font-semibold text-gray-800 mb-3">継続期間分析</h4>
+          <div class="chart-container" style="height: 200px;">
+            <canvas id="retentionChart"></canvas>
+          </div>
+        </div>
+
+        <!-- 解約理由分析 -->
+        <div>
+          <h4 class="font-semibold text-gray-800 mb-3">解約理由分析（過去6ヶ月）</h4>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">料金見直し</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-red-500 h-2 rounded-full" style="width: 45%"></div>
+                </div>
+                <span class="text-sm font-medium">45%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">サービス品質</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-orange-500 h-2 rounded-full" style="width: 25%"></div>
+                </div>
+                <span class="text-sm font-medium">25%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">対応速度</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-yellow-500 h-2 rounded-full" style="width: 20%"></div>
+                </div>
+                <span class="text-sm font-medium">20%</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">その他</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-gray-500 h-2 rounded-full" style="width: 10%"></div>
+                </div>
+                <span class="text-sm font-medium">10%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 満足度ヒートマップと詳細分析 -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800 flex items-center">
+          <i class="fas fa-th text-purple-600 mr-2"></i>
+          サービス項目別満足度ヒートマップ
+        </h3>
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-2 text-sm">
+            <div class="w-4 h-4 heatmap-high rounded"></div>
+            <span>高評価</span>
+            <div class="w-4 h-4 heatmap-medium rounded"></div>
+            <span>普通</span>
+            <div class="w-4 h-4 heatmap-low rounded"></div>
+            <span>低評価</span>
+            <div class="w-4 h-4 heatmap-none rounded"></div>
+            <span>データなし</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ヒートマップテーブル -->
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr>
+              <th class="text-left p-3 font-semibold text-gray-800">顧客 / サービス項目</th>
+              <th class="text-center p-3 font-semibold text-gray-800">技術力</th>
+              <th class="text-center p-3 font-semibold text-gray-800">対応速度</th>
+              <th class="text-center p-3 font-semibold text-gray-800">説明力</th>
+              <th class="text-center p-3 font-semibold text-gray-800">提案力</th>
+              <th class="text-center p-3 font-semibold text-gray-800">料金</th>
+              <th class="text-center p-3 font-semibold text-gray-800">総合</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t">
+              <td class="p-3 font-medium">ABC工場</td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.8</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">3.9</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.6</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.2</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-low">3.8</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.3</div></td>
+            </tr>
+            <tr class="border-t">
+              <td class="p-3 font-medium">DEF産業</td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.9</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.8</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.7</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.9</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.8</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.9</div></td>
+            </tr>
+            <tr class="border-t">
+              <td class="p-3 font-medium">GHI商事</td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.7</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.9</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.8</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.2</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.6</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.8</div></td>
+            </tr>
+            <tr class="border-t">
+              <td class="p-3 font-medium">JKL工場</td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.8</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.3</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.7</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.6</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.0</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-high">4.7</div></td>
+            </tr>
+            <tr class="border-t">
+              <td class="p-3 font-medium">MNO社</td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.2</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-low">3.8</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.0</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-low">3.9</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.1</div></td>
+              <td class="p-1"><div class="heatmap-cell heatmap-medium">4.1</div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ヒートマップ分析結果 -->
+      <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-green-50 rounded-lg p-4">
+          <div class="font-semibold text-green-800 mb-2">強み領域</div>
+          <div class="text-sm text-green-700">
+            • 技術力（平均4.7）<br>
+            • 説明力（平均4.6）<br>
+            • 対応品質の安定性
+          </div>
+        </div>
+        <div class="bg-orange-50 rounded-lg p-4">
+          <div class="font-semibold text-orange-800 mb-2">改善必要領域</div>
+          <div class="text-sm text-orange-700">
+            • 対応速度（MNO社）<br>
+            • 料金妥当性（ABC工場）<br>
+            • 提案力の向上
+          </div>
+        </div>
+        <div class="bg-blue-50 rounded-lg p-4">
+          <div class="font-semibold text-blue-800 mb-2">重点フォロー顧客</div>
+          <div class="text-sm text-blue-700">
+            • MNO社（総合4.1）<br>
+            • ABC工場（料金満足度）<br>
+            • 新規契約顧客
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 行動計画と目標設定 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <!-- 行動計画 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-tasks text-indigo-600 mr-2"></i>
+          CS向上行動計画
+        </h3>
+        
+        <div class="space-y-4">
+          <div class="border-l-4 border-red-500 bg-red-50 rounded-r-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-red-800">緊急対応時間短縮プロジェクト</div>
+              <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">進行中</span>
+            </div>
+            <div class="text-sm text-red-700 mb-2">
+              目標：平均対応時間を1.2時間から0.8時間に短縮
+            </div>
+            <div class="flex items-center justify-between text-xs text-red-600">
+              <span>責任者：高橋技術者</span>
+              <span>期限：2025/6/30</span>
+            </div>
+          </div>
+          
+          <div class="border-l-4 border-blue-500 bg-blue-50 rounded-r-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-blue-800">顧客コミュニケーション研修</div>
+              <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">計画中</span>
+            </div>
+            <div class="text-sm text-blue-700 mb-2">
+              目標：説明力・提案力の評価を0.3ポイント向上
+            </div>
+            <div class="flex items-center justify-between text-xs text-blue-600">
+              <span>責任者：佐藤主任</span>
+              <span>期限：2025/7/31</span>
+            </div>
+          </div>
+          
+          <div class="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-green-800">料金体系見直し検討</div>
+              <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">企画中</span>
+            </div>
+            <div class="text-sm text-green-700 mb-2">
+              目標：料金満足度を4.2から4.5に向上
+            </div>
+            <div class="flex items-center justify-between text-xs text-green-600">
+              <span>責任者：営業部連携</span>
+              <span>期限：2025/8/31</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 目標設定と進捗 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-bullseye text-red-600 mr-2"></i>
+          CS目標設定と進捗
+        </h3>
+        
+        <div class="space-y-6">
+          <!-- 総合満足度目標 -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-semibold text-gray-800">総合満足度</span>
+              <span class="text-sm text-gray-600">4.6 → 4.8 (目標)</span>
+            </div>
+            <div class="bg-gray-200 rounded-full h-3">
+              <div class="bg-gradient-to-r from-blue-500 to-green-500 h-3 rounded-full" style="width: 75%"></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">進捗: 75% (0.15ポイント向上)</div>
+          </div>
+          
+          <!-- NPS目標 -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-semibold text-gray-800">NPS</span>
+              <span class="text-sm text-gray-600">+42 → +50 (目標)</span>
+            </div>
+            <div class="bg-gray-200 rounded-full h-3">
+              <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full" style="width: 62%"></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">進捗: 62% (+5ポイント向上)</div>
+          </div>
+          
+          <!-- 初回解決率目標 -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-semibold text-gray-800">初回解決率</span>
+              <span class="text-sm text-gray-600">94% → 96% (目標)</span>
+            </div>
+            <div class="bg-gray-200 rounded-full h-3">
+              <div class="bg-gradient-to-r from-orange-500 to-red-500 h-3 rounded-full" style="width: 50%"></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">進捗: 50% (+1ポイント向上)</div>
+          </div>
+          
+          <!-- 契約継続率目標 -->
+          <div>
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-semibold text-gray-800">契約継続率</span>
+              <span class="text-sm text-gray-600">96% → 98% (目標)</span>
+            </div>
+            <div class="bg-gray-200 rounded-full h-3">
+              <div class="bg-gradient-to-r from-green-500 to-teal-500 h-3 rounded-full" style="width: 40%"></div>
+            </div>
+            <div class="text-xs text-gray-500 mt-1">進捗: 40% (+0.8ポイント向上)</div>
+          </div>
+        </div>
+        
+        <!-- 目標達成予想 -->
+        <div class="mt-6 pt-4 border-t">
+          <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4">
+            <div class="font-semibold text-indigo-800 mb-2">年度末予想</div>
+            <div class="text-sm text-indigo-700">
+              現在の改善ペースを維持した場合、<br>
+              年度末までに全目標の<strong>85%</strong>達成見込み
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 詳細レポートとエクスポート -->
+    <div class="bg-white rounded-2xl shadow-lg p-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-800 flex items-center">
+          <i class="fas fa-file-alt text-green-600 mr-2"></i>
+          詳細レポート・分析
+        </h3>
+        <div class="flex space-x-3">
+          <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-chart-bar mr-1"></i>詳細分析
+          </button>
+          <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-download mr-1"></i>Excel出力
+          </button>
+          <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
+            <i class="fas fa-file-pdf mr-1"></i>PDF出力
+          </button>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-blue-50 rounded-lg p-4 text-center">
+          <i class="fas fa-chart-line text-2xl text-blue-600 mb-2"></i>
+          <div class="font-semibold text-blue-800">トレンド分析レポート</div>
+          <div class="text-sm text-blue-700">時系列データの詳細分析</div>
+        </div>
+        
+        <div class="bg-green-50 rounded-lg p-4 text-center">
+          <i class="fas fa-users text-2xl text-green-600 mb-2"></i>
+          <div class="font-semibold text-green-800">顧客セグメント分析</div>
+          <div class="text-sm text-green-700">顧客属性別満足度分析</div>
+        </div>
+        
+        <div class="bg-purple-50 rounded-lg p-4 text-center">
+          <i class="fas fa-lightbulb text-2xl text-purple-600 mb-2"></i>
+          <div class="font-semibold text-purple-800">改善アクション提案</div>
+          <div class="text-sm text-purple-700">AI分析による改善案</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Chart.js グラフ初期化
+    document.addEventListener('DOMContentLoaded', function() {
+      
+      // 満足度推移トレンドグラフ
+      const satisfactionTrendCtx = document.getElementById('satisfactionTrendChart').getContext('2d');
+      const satisfactionTrendChart = new Chart(satisfactionTrendCtx, {
+        type: 'line',
+        data: {
+          labels: ['1月', '2月', '3月', '4月', '5月'],
+          datasets: [{
+            label: '総合満足度',
+            data: [4.2, 4.3, 4.4, 4.5, 4.6],
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+          }, {
+            label: '技術力',
+            data: [4.5, 4.6, 4.7, 4.7, 4.8],
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.4,
+            fill: true
+          }, {
+            label: '対応速度',
+            data: [4.0, 4.1, 4.3, 4.4, 4.6],
+            borderColor: '#f59e0b',
+            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              min: 3.5,
+              max: 5.0,
+              ticks: {
+                stepSize: 0.2
+              }
+            }
+          }
+        }
+      });
+
+      // 対応速度分析グラフ
+      const responseTimeCtx = document.getElementById('responseTimeChart').getContext('2d');
+      const responseTimeChart = new Chart(responseTimeCtx, {
+        type: 'bar',
+        data: {
+          labels: ['緊急対応', '通常対応', '計画対応'],
+          datasets: [{
+            label: '目標時間',
+            data: [1.0, 2.0, 4.0],
+            backgroundColor: 'rgba(156, 163, 175, 0.6)',
+            borderColor: '#9ca3af',
+            borderWidth: 1
+          }, {
+            label: '実績時間',
+            data: [0.8, 1.2, 2.1],
+            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            borderColor: '#3b82f6',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: '時間'
+              }
+            }
+          }
+        }
+      });
+
+      // クレーム傾向分析グラフ
+      const complaintTrendCtx = document.getElementById('complaintTrendChart').getContext('2d');
+      const complaintTrendChart = new Chart(complaintTrendCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['設備故障関連', '対応遅延', '説明不足', 'その他'],
+          datasets: [{
+            data: [35, 28, 22, 15],
+            backgroundColor: [
+              '#ef4444',
+              '#f59e0b',
+              '#3b82f6',
+              '#6b7280'
+            ],
+            borderColor: '#ffffff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+            }
+          }
+        }
+      });
+
+      // 継続率分析グラフ
+      const retentionCtx = document.getElementById('retentionChart').getContext('2d');
+      const retentionChart = new Chart(retentionCtx, {
+        type: 'bar',
+        data: {
+          labels: ['1年未満', '1-2年', '2-3年', '3-5年', '5年以上'],
+          datasets: [{
+            label: '継続率',
+            data: [85, 92, 95, 97, 99],
+            backgroundColor: [
+              '#fca5a5',
+              '#fde68a',
+              '#bfdbfe',
+              '#a7f3d0',
+              '#86efac'
+            ],
+            borderColor: [
+              '#ef4444',
+              '#f59e0b',
+              '#3b82f6',
+              '#10b981',
+              '#22c55e'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              min: 80,
+              max: 100,
+              title: {
+                display: true,
+                text: '継続率 (%)'
+              }
+            }
+          }
+        }
+      });
+
+      // インタラクション機能
+      function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = {
+          'success': 'bg-green-500',
+          'warning': 'bg-yellow-500',
+          'error': 'bg-red-500',
+          'info': 'bg-blue-500'
+        }[type] || 'bg-blue-500';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+        notification.textContent = message;
+        notification.style.transform = 'translateX(100%)';
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 300);
+        }, 3000);
+      }
+
+      // ボタンクリックイベント
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const text = this.textContent.trim();
+          
+          if (text.includes('レポート出力')) {
+            showNotification('CS分析レポートを出力しています...', 'info');
+            setTimeout(() => {
+              showNotification('レポート出力が完了しました', 'success');
+            }, 2000);
+          } else if (text.includes('新規提案')) {
+            showNotification('改善提案登録画面を開いています...', 'info');
+          } else if (text.includes('詳細分析')) {
+            showNotification('詳細分析画面に移動しています...', 'info');
+          } else if (text.includes('Excel出力')) {
+            showNotification('Excel形式でデータを出力中...', 'info');
+          } else if (text.includes('PDF出力')) {
+            showNotification('PDF形式でレポートを生成中...', 'info');
+          }
+        });
+      });
+
+      // ヒートマップセルのホバー効果
+      const heatmapCells = document.querySelectorAll('.heatmap-cell');
+      heatmapCells.forEach(cell => {
+        cell.addEventListener('mouseenter', function() {
+          const value = this.textContent;
+          const row = this.closest('tr').querySelector('td').textContent;
+          const column = this.closest('table').querySelector('th:nth-child(' + (Array.from(this.closest('tr').children).indexOf(this.closest('td')) + 1) + ')').textContent;
+          
+          // ツールチップ表示のシミュレーション
+          this.title = `${row} - ${column}: ${value}`;
+        });
+      });
+
+      // 期間選択の変更
+      const periodSelect = document.querySelector('select');
+      if (periodSelect) {
+        periodSelect.addEventListener('change', function() {
+          const period = this.value;
+          showNotification(`表示期間を「${period}」に変更しました`, 'info');
+          
+          // グラフデータの更新シミュレーション
+          setTimeout(() => {
+            showNotification('データを更新しました', 'success');
+          }, 1500);
+        });
+      }
+
+      // プログレスバーのアニメーション
+      const progressBars = document.querySelectorAll('.bg-gradient-to-r');
+      progressBars.forEach(bar => {
+        if (bar.style.width) {
+          const targetWidth = bar.style.width;
+          bar.style.width = '0%';
+          
+          setTimeout(() => {
+            bar.style.transition = 'width 1s ease-in-out';
+            bar.style.width = targetWidth;
+          }, 500);
+        }
+      });
+
+      // リアルタイムデータ更新シミュレーション
+      function updateMetrics() {
+        // 満足度スコアの微調整
+        const satisfactionScore = document.querySelector('.text-3xl.font-bold');
+        if (satisfactionScore && satisfactionScore.textContent === '4.6') {
+          if (Math.random() > 0.9) {
+            const variations = ['4.5', '4.6', '4.7'];
+            const newScore = variations[Math.floor(Math.random() * variations.length)];
+            satisfactionScore.textContent = newScore;
+            
+            if (newScore > '4.6') {
+              showNotification('満足度スコアが向上しました！', 'success');
+            }
+          }
+        }
+        
+        // NPS スコアの更新
+        const npsScore = document.querySelectorAll('.text-3xl.font-bold')[1];
+        if (npsScore && Math.random() > 0.95) {
+          const currentScore = parseInt(npsScore.textContent.replace('+', ''));
+          const newScore = currentScore + (Math.random() > 0.5 ? 1 : -1);
+          npsScore.textContent = `+${newScore}`;
+        }
+      }
+
+      // 顧客フィードバックの追加シミュレーション
+      function addCustomerFeedback() {
+        if (Math.random() > 0.9) {
+          showNotification('新しい顧客フィードバックを受信しました', 'info');
+        }
+      }
+
+      // 改善提案の進捗更新
+      function updateImprovementProgress() {
+        const progressBars = document.querySelectorAll('.bg-red-500, .bg-yellow-500, .bg-green-500');
+        progressBars.forEach(bar => {
+          if (Math.random() > 0.95) {
+            let currentWidth = parseInt(bar.style.width);
+            if (currentWidth < 100) {
+              currentWidth = Math.min(currentWidth + 5, 100);
+              bar.style.width = `${currentWidth}%`;
+              
+              const progressText = bar.parentNode.nextElementSibling;
+              if (progressText) {
+                progressText.textContent = `進捗: ${currentWidth}%`;
+              }
+            }
+          }
+        });
+      }
+
+      // アンケート回答率の更新
+      function updateSurveyResponse() {
+        const responseRate = document.querySelector('.text-2xl.font-bold.text-indigo-600');
+        if (responseRate && Math.random() > 0.9) {
+          let currentRate = parseInt(responseRate.textContent.replace('%', ''));
+          if (currentRate < 90) {
+            currentRate += 1;
+            responseRate.textContent = `${currentRate}%`;
+          }
+        }
+      }
+
+      // 定期更新の設定
+      setInterval(updateMetrics, 30000);           // 30秒ごと
+      setInterval(addCustomerFeedback, 120000);    // 2分ごと
+      setInterval(updateImprovementProgress, 180000); // 3分ごと
+      setInterval(updateSurveyResponse, 300000);   // 5分ごと
+
+      // 初期化完了メッセージ
+      setTimeout(() => {
+        showNotification('CS分析ダッシュボードが正常に読み込まれました', 'success');
+      }, 1000);
+
+      // データエクスポート機能のシミュレーション
+      window.exportCSData = function(format) {
+        const formats = {
+          'excel': 'Excel形式（.xlsx）',
+          'pdf': 'PDF形式（.pdf）',
+          'csv': 'CSV形式（.csv）'
+        };
+        
+        showNotification(`${formats[format]}でのデータ出力を開始しました`, 'info');
+        
+        setTimeout(() => {
+          showNotification(`${formats[format]}での出力が完了しました`, 'success');
+        }, 3000);
+      };
+
+      // 詳細分析画面への遷移
+      window.openDetailedAnalysis = function(analysisType) {
+        const analyses = {
+          'satisfaction': '満足度詳細分析',
+          'nps': 'NPS詳細分析',
+          'retention': '継続率分析',
+          'complaint': 'クレーム分析'
+        };
+        
+        showNotification(`${analyses[analysisType]}画面を開いています...`, 'info');
+      };
+
+      // 改善提案の追加
+      window.addImprovementProposal = function() {
+        showNotification('改善提案登録フォームを開いています...', 'info');
+      };
+
+      // 顧客セグメント分析
+      window.analyzeCustomerSegments = function() {
+        showNotification('顧客セグメント分析を実行しています...', 'info');
+        
+        setTimeout(() => {
+          showNotification('セグメント分析が完了しました', 'success');
+        }, 2500);
+      };
+
+      // CS目標の更新
+      window.updateCSTargets = function() {
+        showNotification('CS目標設定画面を開いています...', 'info');
+      };
+
+      // アラート機能のシミュレーション
+      function checkAlerts() {
+        // 満足度低下のアラート
+        const lowSatisfactionCustomers = ['MNO社', 'ABC工場'];
+        if (Math.random() > 0.95) {
+          const customer = lowSatisfactionCustomers[Math.floor(Math.random() * lowSatisfactionCustomers.length)];
+          showNotification(`注意: ${customer}の満足度が低下傾向にあります`, 'warning');
+        }
+        
+        // 目標未達のアラート
+        if (Math.random() > 0.98) {
+          showNotification('一部のCS目標で進捗遅延が発生しています', 'warning');
+        }
+        
+        // 改善提案期限のアラート
+        if (Math.random() > 0.97) {
+          showNotification('改善提案の期限が近づいています', 'warning');
+        }
+      }
+
+      setInterval(checkAlerts, 60000); // 1分ごと
+
+      // 顧客満足度の詳細分析
+      function performDetailedSatisfactionAnalysis() {
+        const analysisResults = {
+          technicalSkill: {
+            average: 4.8,
+            trend: 'increasing',
+            topPerformers: ['DEF産業', 'GHI商事', 'JKL工場'],
+            improvementAreas: ['新技術対応', '複雑問題解決']
+          },
+          responseSpeed: {
+            average: 4.6,
+            trend: 'stable',
+            topPerformers: ['GHI商事', 'DEF産業'],
+            improvementAreas: ['初動対応', '部品調達時間']
+          },
+          communication: {
+            average: 4.7,
+            trend: 'increasing',
+            topPerformers: ['GHI商事', 'DEF産業', 'JKL工場'],
+            improvementAreas: ['技術説明の分かりやすさ']
+          }
+        };
+        
+        return analysisResults;
+      }
+
+      // ダッシュボードの自動リフレッシュ
+      function refreshDashboard() {
+        // グラフデータの更新
+        if (Math.random() > 0.8) {
+          // 満足度トレンドの更新
+          const newData = [4.3, 4.4, 4.5, 4.6, 4.7];
+          satisfactionTrendChart.data.datasets[0].data = newData;
+          satisfactionTrendChart.update();
+        }
+        
+        // メトリクスの更新
+        updateMetrics();
+        
+        // 最終更新時刻の表示
+        const now = new Date();
+        const timeString = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        
+        // 最終更新時刻を表示する要素があれば更新
+        const lastUpdateElements = document.querySelectorAll('.last-update');
+        lastUpdateElements.forEach(element => {
+          element.textContent = `最終更新: ${timeString}`;
+        });
+      }
+
+      // 5分ごとの自動リフレッシュ
+      setInterval(refreshDashboard, 300000);
+
+      console.log('CS分析ダッシュボードが正常に初期化されました');
+    });
+  </script>
+</body>
+</html>

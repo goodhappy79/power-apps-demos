@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>研修承認システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .approval-flow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+    .approval-flow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      z-index: 1;
+    }
+    .approval-step {
+      position: relative;
+      z-index: 2;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 50%;
+      border: 3px solid #10b981;
+      min-width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .approval-step.pending {
+      border-color: #f59e0b;
+      background: #fef3c7;
+    }
+    .approval-step.completed {
+      border-color: #10b981;
+      background: #d1fae5;
+    }
+    .approval-step.current {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      animation: pulse 2s infinite;
+    }
+    .copilot-suggestion {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      color: white;
+      margin: 1rem 0;
+    }
+    .effectiveness-gauge {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto;
+    }
+    .gauge-bg {
+      stroke: #e5e7eb;
+      stroke-width: 8;
+      fill: none;
+    }
+    .gauge-fill {
+      stroke: #10b981;
+      stroke-width: 8;
+      fill: none;
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.5s ease;
+    }
+    .gauge-fill.high-effect {
+      stroke: #10b981;
+    }
+    .gauge-fill.medium-effect {
+      stroke: #f59e0b;
+    }
+    .training-category {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .category-technical {
+      background-color: #dbeafe;
+      color: #1e40af;
+    }
+    .category-safety {
+      background-color: #fef3c7;
+      color: #b45309;
+    }
+    .category-business {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .category-certification {
+      background-color: #fce7f3;
+      color: #be185d;
+    }
+    .cost-breakdown {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .roi-indicator {
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+      border: 2px solid #10b981;
+      border-radius: 12px;
+      padding: 1rem;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-purple-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-purple-800 to-indigo-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-graduation-cap text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">研修承認システム</h1>
+              <p class="text-purple-200 text-sm">Training Approval System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-purple-700 px-3 py-1 rounded-full text-sm font-medium">総務・人事部門専用</span>
+            <div class="text-center">
+              <div class="text-xs text-purple-200">承認効率化率</div>
+              <div class="text-lg font-bold text-white">92%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-purple-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">高橋 良子</div>
+              <div class="text-sm text-purple-200">人事部長</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-purple-800 rounded-full flex items-center justify-center font-bold text-lg">
+              TY
+            </div>
+          </div>
+          <button class="text-purple-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-purple-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-purple-600 transition-colors">総務・人事HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-purple-600 transition-colors">研修管理</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">研修承認</span>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-purple-600 font-semibold">TR-2025-0025</span>
+    </nav>
+
+    <!-- 研修概要カード -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-certificate text-white text-2xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">電気工事施工管理技士1級受験対策講座</h2>
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mt-2">
+              <span class="flex items-center"><i class="fas fa-hashtag mr-1 text-purple-500"></i>TR-2025-0025</span>
+              <span class="flex items-center"><i class="fas fa-calendar mr-1 text-green-500"></i>2025/05/20</span>
+              <span class="flex items-center"><i class="fas fa-user mr-1 text-blue-500"></i>田中修一</span>
+              <span class="training-category category-certification">資格取得支援</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div class="text-right">
+            <div class="text-3xl font-bold text-purple-600">¥280,000</div>
+            <div class="text-sm text-gray-500">総費用（3名分）</div>
+          </div>
+          <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+
+      <!-- 承認フロー -->
+      <div class="bg-gray-50 rounded-xl p-4 mb-4">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-route text-purple-600 mr-2"></i>
+          承認ワークフロー
+        </h3>
+        <div class="approval-flow">
+          <div class="flex-1 flex justify-between items-center">
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-user text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">申請者</div>
+              <div class="text-xs text-gray-500">田中修一</div>
+              <div class="text-xs text-green-600">完了</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step current">
+                <i class="fas fa-user-tie text-blue-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">人事部長</div>
+              <div class="text-xs text-gray-500">高橋良子</div>
+              <div class="text-xs text-blue-600">承認待ち</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step pending">
+                <i class="fas fa-user-cog text-yellow-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">総務部長</div>
+              <div class="text-xs text-gray-500">山田太郎</div>
+              <div class="text-xs text-yellow-600">待機中</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step pending">
+                <i class="fas fa-crown text-yellow-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">役員承認</div>
+              <div class="text-xs text-gray-500">鈴木常務</div>
+              <div class="text-xs text-yellow-600">待機中</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインコンテンツ -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- Copilotアシスタント -->
+        <div class="copilot-suggestion card-hover">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-robot text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold">Copilot アシスタント</h3>
+              <p class="text-white text-opacity-80 text-sm">AI支援による研修効果予測</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <!-- 効果予測分析 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-chart-line text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">研修効果予測分析</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 資格取得確率: <span class="font-bold text-green-300">85%</span> (過去実績基準)</div>
+                <div>• 技術スキル向上度: <span class="font-bold text-green-300">高</span> (電気設備業務直結)</div>
+                <div>• 投資回収期間: <span class="font-bold text-yellow-300">約2.5年</span> (資格手当・昇進効果含む)</div>
+              </div>
+            </div>
+            
+            <!-- 類似研修比較 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-balance-scale text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">類似研修比較</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• A社講座: ¥95,000/人 <span class="font-bold text-yellow-300">(選択講座)</span></div>
+                <div>• B社通信講座: ¥65,000/人 <span class="font-bold text-red-300">(合格率60%)</span></div>
+                <div>• C社集中講座: ¥120,000/人 <span class="font-bold text-green-300">(合格率90%)</span></div>
+              </div>
+            </div>
+            
+            <!-- 業務時間影響 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-clock text-yellow-300 mr-2"></i>
+                <span class="text-white font-medium text-sm">業務時間影響分析</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 研修期間: <span class="font-bold">6ヶ月 (土日中心)</span></div>
+                <div>• 業務時間影響: <span class="font-bold text-green-300">最小限</span> (平日夜間・休日)</div>
+                <div>• プロジェクト影響: <span class="font-bold text-green-300">なし</span> (代替要員確保済)</div>
+              </div>
+            </div>
+            
+            <!-- ROI予測 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-chart-pie text-green-300 mr-2"></i>
+                <span class="text-white font-medium text-sm">投資収益予測</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 資格手当増加: <span class="font-bold text-green-300">¥15,000/月×3名</span></div>
+                <div>• 昇進・昇格効果: <span class="font-bold text-green-300">期待大</span></div>
+                <div>• 技術力向上価値: <span class="font-bold text-green-300">プロジェクト品質向上</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex space-x-2 mt-4">
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-download mr-1"></i>詳細分析
+            </button>
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-chart-bar mr-1"></i>ROI計算
+            </button>
+          </div>
+        </div>
+
+        <!-- 研修内容詳細 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-clipboard-list text-purple-600 mr-2"></i>
+            研修内容詳細
+          </h3>
+
+          <!-- 研修基本情報 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700">研修機関</label>
+                <div class="mt-1 p-3 bg-gray-50 rounded-lg">
+                  <div class="font-semibold text-gray-800">一般社団法人 建設業振興基金</div>
+                  <div class="text-sm text-gray-600">国家資格指定講習機関</div>
+                </div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-700">研修期間</label>
+                <div class="mt-1 p-3 bg-gray-50 rounded-lg">
+                  <div class="font-semibold text-gray-800">2025年6月～11月 (6ヶ月間)</div>
+                  <div class="text-sm text-gray-600">毎週土曜日 9:00-17:00 + 集中講義2日間</div>
+                </div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-700">会場</label>
+                <div class="mt-1 p-3 bg-gray-50 rounded-lg">
+                  <div class="font-semibold text-gray-800">福岡市建設会館</div>
+                  <div class="text-sm text-gray-600">福岡市中央区天神 (交通費支給対象)</div>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm font-medium text-gray-700">受講対象者</label>
+                <div class="mt-1 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                  <div class="space-y-2">
+                    <div class="flex items-center">
+                      <i class="fas fa-user text-blue-600 mr-2"></i>
+                      <span class="font-medium">田中修一 (技術部長)</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-user text-blue-600 mr-2"></i>
+                      <span class="font-medium">佐藤健太 (電気工事グループリーダー)</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-user text-blue-600 mr-2"></i>
+                      <span class="font-medium">山本太郎 (電気技術者)</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label class="text-sm font-medium text-gray-700">受講要件</label>
+                <div class="mt-1 p-3 bg-green-50 rounded-lg">
+                  <div class="text-sm text-green-700 space-y-1">
+                    <div>✓ 電気工事士2級以上保有</div>
+                    <div>✓ 実務経験5年以上</div>
+                    <div>✓ 全日程参加可能</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- カリキュラム -->
+          <div class="mb-6">
+            <h4 class="font-bold text-gray-800 mb-3">カリキュラム構成</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h5 class="font-semibold text-purple-800 mb-2">学科講習 (120時間)</h5>
+                <div class="space-y-2 text-sm">
+                  <div>• 電気工学一般 (30時間)</div>
+                  <div>• 施工管理法 (40時間)</div>
+                  <div>• 法規 (25時間)</div>
+                  <div>• 電気設備 (25時間)</div>
+                </div>
+              </div>
+              <div class="border border-gray-200 rounded-lg p-4">
+                <h5 class="font-semibold text-blue-800 mb-2">実地講習 (24時間)</h5>
+                <div class="space-y-2 text-sm">
+                  <div>• 施工管理 (12時間)</div>
+                  <div>• 実地演習 (8時間)</div>
+                  <div>• 模擬試験 (4時間)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 期待される効果 -->
+          <div class="p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+            <h4 class="font-semibold text-purple-800 mb-2 flex items-center">
+              <i class="fas fa-star mr-2"></i>
+              期待される効果・メリット
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-purple-700">
+              <div class="space-y-1">
+                <div>• 電気工事の管理監督能力向上</div>
+                <div>• 法定資格取得による業務範囲拡大</div>
+                <div>• プロジェクト管理品質の向上</div>
+              </div>
+              <div class="space-y-1">
+                <div>• 顧客信頼度の向上</div>
+                <div>• 技術者としての市場価値向上</div>
+                <div>• 後進指導能力の強化</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 費用内訳・予算分析 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-calculator text-green-600 mr-2"></i>
+            費用内訳・予算分析
+          </h3>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 費用内訳 -->
+            <div class="cost-breakdown">
+              <h4 class="font-semibold text-gray-800 mb-3">詳細費用内訳</h4>
+              <div class="space-y-3">
+                <div class="flex justify-between items-center p-2 bg-white rounded">
+                  <div>
+                    <div class="font-medium text-sm">受講料</div>
+                    <div class="text-xs text-gray-500">¥75,000 × 3名</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-bold">¥225,000</div>
+                    <div class="text-xs text-gray-500">80.4%</div>
+                  </div>
+                </div>
+                <div class="flex justify-between items-center p-2 bg-white rounded">
+                  <div>
+                    <div class="font-medium text-sm">教材費</div>
+                    <div class="text-xs text-gray-500">¥8,000 × 3名</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-bold">¥24,000</div>
+                    <div class="text-xs text-gray-500">8.6%</div>
+                  </div>
+                </div>
+                <div class="flex justify-between items-center p-2 bg-white rounded">
+                  <div>
+                    <div class="font-medium text-sm">交通費</div>
+                    <div class="text-xs text-gray-500">¥2,000 × 25回 × 3名</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-bold">¥150,000</div>
+                    <div class="text-xs text-gray-500">53.6%</div>
+                  </div>
+                </div>
+                <div class="flex justify-between items-center p-2 bg-white rounded">
+                  <div>
+                    <div class="font-medium text-sm">試験受験料</div>
+                    <div class="text-xs text-gray-500">¥10,400 × 3名</div>
+                  </div>
+                  <div class="text-right">
+                    <div class="font-bold">¥31,200</div>
+                    <div class="text-xs text-gray-500">11.1%</div>
+                  </div>
+                </div>
+                <div class="border-t pt-2 flex justify-between items-center font-bold">
+                  <div>合計費用</div>
+                  <div class="text-lg text-purple-600">¥280,000</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- ROI分析 -->
+            <div class="roi-indicator">
+              <h4 class="font-semibold text-green-800 mb-3">投資収益分析 (ROI)</h4>
+              <div class="space-y-4">
+                <!-- 効果ゲージ -->
+                <div class="effectiveness-gauge mb-4">
+                  <svg viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="54" class="gauge-bg"></circle>
+                    <circle cx="60" cy="60" r="54" class="gauge-fill high-effect" 
+                            stroke-dasharray="270 340" stroke-dashoffset="70"></circle>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <div class="text-2xl font-bold text-green-600">325%</div>
+                    <div class="text-xs text-gray-500">3年間ROI</div>
+                  </div>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">初期投資</span>
+                    <span class="font-medium">¥280,000</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">年間効果</span>
+                    <span class="font-medium text-green-600">¥540,000</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">3年累積効果</span>
+                    <span class="font-bold text-green-600">¥1,620,000</span>
+                  </div>
+                  <div class="border-t pt-2 flex justify-between">
+                    <span class="text-gray-600">回収期間</span>
+                    <span class="font-bold text-blue-600">7.5ヶ月</span>
+                  </div>
+                </div>
+                
+                <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                  <div class="text-sm text-green-700">
+                    <div class="font-medium mb-1">効果算出根拠</div>
+                    <div class="space-y-1 text-xs">
+                      <div>• 資格手当: ¥15,000/月×3名</div>
+                      <div>• 昇進効果: 平均昇給¥30,000/月</div>
+                      <div>• 技術力向上: プロジェクト品質向上価値</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 類似研修比較 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-balance-scale text-blue-600 mr-2"></i>
+            類似研修比較・選定理由
+          </h3>
+          
+          <div class="overflow-x-auto mb-4">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 border-b">
+                  <th class="text-left p-3 font-medium text-gray-700">研修機関</th>
+                  <th class="text-center p-3 font-medium text-gray-700">期間</th>
+                  <th class="text-right p-3 font-medium text-gray-700">費用/人</th>
+                  <th class="text-center p-3 font-medium text-gray-700">合格率</th>
+                  <th class="text-center p-3 font-medium text-gray-700">総合評価</th>
+                  <th class="text-center p-3 font-medium text-gray-700">選定</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b hover:bg-blue-50 bg-blue-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">建設業振興基金</div>
+                    <div class="text-xs text-gray-500">国家資格指定機関</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">6ヶ月</span>
+                  </td>
+                  <td class="p-3 text-right">
+                    <div class="font-bold">¥93,333</div>
+                    <div class="text-xs text-gray-500">(交通費込)</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-bold text-green-600">85%</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="flex justify-center">
+                      <span class="text-yellow-400">★★★★★</span>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-bold">選定</span>
+                  </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">A社資格スクール</div>
+                    <div class="text-xs text-gray-500">民間資格学校</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">8ヶ月</span>
+                  </td>
+                  <td class="p-3 text-right">
+                    <div class="font-bold">¥95,000</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-bold text-yellow-600">75%</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="flex justify-center">
+                      <span class="text-yellow-400">★★★★☆</span>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">次点</span>
+                  </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">B社通信教育</div>
+                    <div class="text-xs text-gray-500">通信講座</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">12ヶ月</span>
+                  </td>
+                  <td class="p-3 text-right">
+                    <div class="font-bold">¥65,000</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-bold text-red-600">60%</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="flex justify-center">
+                      <span class="text-yellow-400">★★★☆☆</span>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-red-100 text-red-600 px-2 py-1 rounded-full text-xs">除外</span>
+                  </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">C社集中講座</div>
+                    <div class="text-xs text-gray-500">短期集中型</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">3ヶ月</span>
+                  </td>
+                  <td class="p-3 text-right">
+                    <div class="font-bold">¥120,000</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-bold text-green-600">90%</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="flex justify-center">
+                      <span class="text-yellow-400">★★★★☆</span>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full text-xs">高額</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 選定理由 -->
+          <div class="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <h4 class="font-semibold text-blue-800 mb-2">選定理由</h4>
+            <div class="text-sm text-blue-700 space-y-1">
+              <div>• 国家資格指定機関として信頼性が高い</div>
+              <div>• 85%の高い合格率で投資効果が期待できる</div>
+              <div>• 土日中心のスケジュールで業務影響が最小限</div>
+              <div>• 費用対効果が最も優秀（¥93,333/人）</div>
+              <div>• 福岡市内でアクセスが良好</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 添付ファイル・関連資料 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-paperclip text-orange-600 mr-2"></i>
+            添付ファイル・関連資料
+          </h3>
+          
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-pdf text-red-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">研修案内パンフレット.pdf</div>
+              <div class="text-xs text-gray-500">3.2MB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-excel text-green-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">研修費用比較表.xlsx</div>
+              <div class="text-xs text-gray-500">245KB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-word text-blue-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">研修効果予測分析.docx</div>
+              <div class="text-xs text-gray-500">890KB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-purple-400 hover:bg-purple-50 transition-all cursor-pointer">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-calendar text-purple-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">研修スケジュール表.pdf</div>
+              <div class="text-xs text-gray-500">1.1MB</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ファイル管理連携 -->
+          <div class="mt-4 p-4 bg-purple-50 rounded-lg">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-semibold text-purple-800 mb-1">統合ファイル管理連携</h4>
+                <div class="text-sm text-purple-600">フォルダ: 総務人事/研修管理/2025年度/資格取得支援</div>
+              </div>
+              <button class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                <i class="fas fa-folder-open mr-1"></i>フォルダを開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- 予算・効果サマリー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-pie text-green-600 mr-2"></i>
+            予算・効果サマリー
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 予算使用状況 -->
+            <div class="p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+              <div class="text-sm text-green-800 mb-2">研修予算使用状況</div>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-gray-600 text-sm">年間予算</span>
+                  <span class="font-medium">¥2,000,000</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600 text-sm">使用済み</span>
+                  <span class="font-medium">¥650,000</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600 text-sm">今回申請</span>
+                  <span class="font-bold text-purple-600">¥280,000</span>
+                </div>
+                <div class="border-t pt-2 flex justify-between">
+                  <span class="text-gray-600 text-sm">残予算</span>
+                  <span class="font-bold text-green-600">¥1,070,000</span>
+                </div>
+              </div>
+              <div class="mt-3">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 46.5%"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">予算使用率: 46.5%</div>
+              </div>
+            </div>
+            
+            <!-- 投資効果予測 -->
+            <div class="p-4 bg-blue-50 rounded-lg">
+              <h4 class="font-semibold text-blue-800 mb-3">投資効果予測</h4>
+              <div class="space-y-3">
+                <div class="text-center">
+                  <div class="text-3xl font-bold text-blue-600">325%</div>
+                  <div class="text-sm text-gray-600">3年間ROI</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                  <div class="text-center p-2 bg-white rounded">
+                    <div class="font-bold text-green-600">85%</div>
+                    <div class="text-gray-500">合格予測率</div>
+                  </div>
+                  <div class="text-center p-2 bg-white rounded">
+                    <div class="font-bold text-purple-600">7.5月</div>
+                    <div class="text-gray-500">回収期間</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 業務時間影響分析 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-clock text-orange-600 mr-2"></i>
+            業務時間影響分析
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 研修スケジュール -->
+            <div class="p-3 bg-orange-50 rounded-lg">
+              <h4 class="font-medium text-orange-800 mb-2">研修スケジュール</h4>
+              <div class="text-sm text-orange-700 space-y-1">
+                <div>• 毎週土曜日: 9:00-17:00</div>
+                <div>• 集中講義: 平日2日間</div>
+                <div>• 期間: 6ヶ月 (25回)</div>
+              </div>
+            </div>
+            
+            <!-- 業務影響評価 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-3">業務影響評価</h4>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                  <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                    <span class="text-sm font-medium">平日業務</span>
+                  </div>
+                  <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">影響なし</span>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                  <div class="flex items-center">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mr-2"></i>
+                    <span class="text-sm font-medium">土曜出勤</span>
+                  </div>
+                  <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">要調整</span>
+                </div>
+                <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
+                  <div class="flex items-center">
+                    <i class="fas fa-users text-blue-600 mr-2"></i>
+                    <span class="text-sm font-medium">代替要員</span>
+                  </div>
+                  <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">確保済</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- プロジェクト影響 -->
+            <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <h4 class="font-medium text-blue-800 mb-2">進行中プロジェクト</h4>
+              <div class="text-sm text-blue-700 space-y-1">
+                <div>• ABC工場: 代替要員配置済</div>
+                <div>• DEF産業: スケジュール調整済</div>
+                <div>• 新規案件: 影響なし</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 受講者情報 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-users text-blue-600 mr-2"></i>
+            受講者詳細情報
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 受講者1 -->
+            <div class="border border-gray-200 rounded-lg p-3">
+              <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span class="font-bold text-blue-600 text-sm">田中</span>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-800">田中修一</div>
+                  <div class="text-sm text-gray-500">技術部長</div>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">現資格</span>
+                  <span class="font-medium">電気工事士1級</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">実務経験</span>
+                  <span class="font-medium">16年</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">合格可能性</span>
+                  <span class="font-bold text-green-600">90%</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 受講者2 -->
+            <div class="border border-gray-200 rounded-lg p-3">
+              <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                  <span class="font-bold text-green-600 text-sm">佐藤</span>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-800">佐藤健太</div>
+                  <div class="text-sm text-gray-500">電気工事GL</div>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">現資格</span>
+                  <span class="font-medium">電気工事士2級</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">実務経験</span>
+                  <span class="font-medium">8年</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">合格可能性</span>
+                  <span class="font-bold text-green-600">85%</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 受講者3 -->
+            <div class="border border-gray-200 rounded-lg p-3">
+              <div class="flex items-center space-x-3 mb-2">
+                <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span class="font-bold text-purple-600 text-sm">山本</span>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-800">山本太郎</div>
+                  <div class="text-sm text-gray-500">電気技術者</div>
+                </div>
+              </div>
+              <div class="text-sm space-y-1">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">現資格</span>
+                  <span class="font-medium">電気工事士2級</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">実務経験</span>
+                  <span class="font-medium">6年</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">合格可能性</span>
+                  <span class="font-bold text-yellow-600">75%</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 全体統計 -->
+            <div class="p-3 bg-gray-50 rounded-lg">
+              <h4 class="font-medium text-gray-800 mb-2">合格予測統計</h4>
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div class="text-center">
+                  <div class="font-bold text-green-600">2.6名</div>
+                  <div class="text-gray-500 text-xs">予想合格者数</div>
+                </div>
+                <div class="text-center">
+                  <div class="font-bold text-blue-600">83%</div>
+                  <div class="text-gray-500 text-xs">平均合格率</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- コメント・履歴 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-comments text-indigo-600 mr-2"></i>
+            コメント・履歴
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 申請者コメント -->
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  田
+                </div>
+                <div>
+                  <div class="font-medium text-sm">田中修一 (申請者)</div>
+                  <div class="text-xs text-gray-500">2025/05/20 14:30</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                電気工事施工管理技士1級の資格取得により、現場管理能力の向上と法定責任者としての業務拡大が期待できます。3名同時受講で効率的な技術力底上げを図りたいと考えております。
+              </div>
+            </div>
+            
+            <!-- システム履歴 -->
+            <div class="space-y-2">
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-robot text-green-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">研修資料ファイル追加</span>
+                  <span class="text-gray-500 text-xs ml-2">14:45</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-paper-plane text-orange-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">研修承認申請提出</span>
+                  <span class="text-gray-500 text-xs ml-2">14:30</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- コメント入力 -->
+            <div class="border-t pt-4">
+              <textarea 
+                placeholder="承認コメントを入力..." 
+                class="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none"
+                rows="3"></textarea>
+              <div class="flex justify-end mt-2">
+                <button class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">
+                  <i class="fas fa-comment mr-1"></i>コメント追加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 承認アクションバー -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4">
+      <div class="container mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">研修費用:</span>
+            <span class="text-2xl font-bold text-purple-600 ml-2">¥280,000</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">承認期限:</span>
+            <span class="text-red-600 font-bold ml-2">2025/05/23 17:00</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">ROI:</span>
+            <span class="text-green-600 font-bold ml-2">325% (3年)</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- 承認オプション -->
+          <div class="flex items-center space-x-2">
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>条件付き承認</span>
+            </label>
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>予算調整指示</span>
+            </label>
+          </div>
+          
+          <!-- アクションボタン -->
+          <button class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            <i class="fas fa-download mr-2"></i>資料DL
+          </button>
+          <button class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+            <i class="fas fa-undo mr-2"></i>差戻し
+          </button>
+          <button class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <i class="fas fa-times mr-2"></i>却下
+          </button>
+          <button class="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
+            <i class="fas fa-check mr-2"></i>承認する
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 余白（固定バー用） -->
+    <div class="h-20"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 効果ゲージアニメーション
+      animateEffectivenessGauge();
+      
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 承認ボタンのクリック処理
+      const approveButton = document.querySelector('.bg-gradient-to-r.from-green-600');
+      if (approveButton) {
+        approveButton.addEventListener('click', function() {
+          if (confirm('この研修申請を承認しますか？\n\n研修内容: 電気工事施工管理技士1級受験対策講座\n費用: ¥280,000 (3名分)\nROI: 325% (3年間)')) {
+            // 承認処理のシミュレーション
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              showNotification('研修承認が完了しました。次の承認者（総務部長）に通知されました。', 'success');
+              
+              // 承認ステップの更新
+              const currentStep = document.querySelector('.approval-step.current');
+              const nextStep = currentStep.parentElement.nextElementSibling.querySelector('.approval-step');
+              
+              currentStep.classList.remove('current');
+              currentStep.classList.add('completed');
+              currentStep.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+              currentStep.parentElement.querySelector('.text-blue-600').textContent = '承認済';
+              currentStep.parentElement.querySelector('.text-blue-600').className = 'text-xs text-green-600';
+              
+              if (nextStep) {
+                nextStep.classList.remove('pending');
+                nextStep.classList.add('current');
+                nextStep.parentElement.querySelector('.text-yellow-600').textContent = '承認待ち';
+                nextStep.parentElement.querySelector('.text-yellow-600').className = 'text-xs text-blue-600';
+              }
+              
+              // アクションバーを非表示
+              document.querySelector('.fixed.bottom-0').style.display = 'none';
+              
+            }, 2000);
+          }
+        });
+      }
+
+      // その他のイベントハンドラー
+      addEventHandlers();
+      
+      // 初期化処理
+      updateDeadlineCountdown();
+      setInterval(updateDeadlineCountdown, 60000);
+
+      // ページ読み込み時のアニメーション
+      animatePageLoad();
+
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('研修承認システムへようこそ。Copilot効果予測をご確認ください。', 'success');
+      }, 1000);
+    });
+
+    function addEventHandlers() {
+      // 差戻しボタン
+      const rejectButton = document.querySelector('.bg-yellow-600');
+      if (rejectButton) {
+        rejectButton.addEventListener('click', function() {
+          const reason = prompt('差戻し理由を入力してください：');
+          if (reason && reason.trim()) {
+            showNotification(`研修申請を差戻ししました。理由: ${reason}`, 'warning');
+          }
+        });
+      }
+
+      // 却下ボタン
+      const denyButton = document.querySelector('.bg-red-600');
+      if (denyButton) {
+        denyButton.addEventListener('click', function() {
+          if (confirm('この研修申請を却下しますか？')) {
+            const reason = prompt('却下理由を入力してください：');
+            if (reason && reason.trim()) {
+              showNotification(`研修申請を却下しました。理由: ${reason}`, 'error');
+            }
+          }
+        });
+      }
+
+      // ファイルプレビュー
+      const filePreviewButtons = document.querySelectorAll('.fa-eye');
+      filePreviewButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const fileName = this.closest('.border-2').querySelector('.font-medium').textContent;
+          showNotification(`${fileName} をプレビューします`, 'info');
+        });
+      });
+
+      // ダウンロード機能
+      const downloadButtons = document.querySelectorAll('.fa-download');
+      downloadButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const fileName = this.closest('.border-2').querySelector('.font-medium').textContent;
+          showNotification(`${fileName} をダウンロードしました`, 'success');
+        });
+      });
+
+      // フォルダ連携ボタン
+      const folderButton = document.querySelector('.bg-purple-600');
+      if (folderButton) {
+        folderButton.addEventListener('click', function() {
+          showNotification('統合ファイル管理システムで研修管理フォルダを開いています...', 'info');
+        });
+      }
+
+      // Copilotアシスタント詳細分析
+      const detailAnalysisButton = document.querySelector('.bg-white.bg-opacity-20');
+      if (detailAnalysisButton && detailAnalysisButton.textContent.includes('詳細分析')) {
+        detailAnalysisButton.addEventListener('click', function() {
+          showNotification('Copilot詳細効果予測レポートを生成しています...', 'info');
+        });
+      }
+
+      // ROI計算ボタン
+      const roiButton = document.querySelectorAll('.bg-white.bg-opacity-20')[1];
+      if (roiButton) {
+        roiButton.addEventListener('click', function() {
+          showNotification('ROI詳細計算シートを生成しています...', 'info');
+        });
+      }
+
+      // コメント追加機能
+      const commentButton = document.querySelector('.bg-gray-500');
+      const commentTextarea = document.querySelector('textarea');
+      if (commentButton && commentTextarea) {
+        commentButton.addEventListener('click', function() {
+          const comment = commentTextarea.value.trim();
+          if (comment) {
+            const commentSection = document.querySelector('.space-y-4');
+            const newComment = document.createElement('div');
+            newComment.className = 'p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400';
+            newComment.innerHTML = `
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  高
+                </div>
+                <div>
+                  <div class="font-medium text-sm">高橋良子 (人事部長)</div>
+                  <div class="text-xs text-gray-500">${new Date().toLocaleString('ja-JP')}</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">${comment}</div>
+            `;
+            commentSection.insertBefore(newComment, commentSection.lastElementChild);
+            commentTextarea.value = '';
+            showNotification('コメントを追加しました', 'success');
+          }
+        });
+      }
+
+      // 受講者詳細情報のクリック
+      const traineeBorders = document.querySelectorAll('.border.border-gray-200.rounded-lg');
+      traineeBorders.forEach(border => {
+        border.addEventListener('click', function() {
+          const name = this.querySelector('.font-semibold').textContent;
+          showNotification(`${name}の詳細情報を表示します`, 'info');
+        });
+      });
+    }
+
+    function animateEffectivenessGauge() {
+      const gauge = document.querySelector('.gauge-fill.high-effect');
+      if (gauge) {
+        const percentage = 85; // 325%ROIを85%表示で表現
+        const circumference = 2 * Math.PI * 54;
+        const offset = circumference - (percentage / 100) * circumference;
+        
+        setTimeout(() => {
+          gauge.style.strokeDasharray = `${circumference} ${circumference}`;
+          gauge.style.strokeDashoffset = offset;
+        }, 500);
+      }
+    }
+
+    function updateDeadlineCountdown() {
+      const deadlineText = document.querySelector('.text-red-600.font-bold');
+      if (deadlineText) {
+        const deadline = new Date('2025-05-23T17:00:00');
+        const now = new Date();
+        const diff = deadline - now;
+        
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          
+          if (days > 0) {
+            deadlineText.textContent = `残り ${days}日${hours}時間`;
+          } else {
+            deadlineText.textContent = `残り ${hours}時間${minutes}分`;
+          }
+        }
+      }
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-purple-500'
+      }[type] || 'bg-purple-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // 研修効果シミュレーション関数
+    function simulateTrainingEffect() {
+      const effectData = {
+        qualification_allowance: 15000 * 3 * 12, // 月15,000円×3名×12ヶ月
+        promotion_effect: 30000 * 12, // 平均昇給30,000円×12ヶ月
+        skill_improvement: 200000, // 技術力向上による価値
+        total_annual_effect: 0
+      };
+      
+      effectData.total_annual_effect = effectData.qualification_allowance + 
+                                      effectData.promotion_effect + 
+                                      effectData.skill_improvement;
+      
+      return effectData;
+    }
+
+    // 合格率予測計算
+    function calculatePassRate() {
+      const trainees = [
+        { name: '田中修一', experience: 16, current_cert: '1級', rate: 90 },
+        { name: '佐藤健太', experience: 8, current_cert: '2級', rate: 85 },
+        { name: '山本太郎', experience: 6, current_cert: '2級', rate: 75 }
+      ];
+      
+      const averageRate = trainees.reduce((sum, trainee) => sum + trainee.rate, 0) / trainees.length;
+      const expectedPasses = trainees.reduce((sum, trainee) => sum + (trainee.rate / 100), 0);
+      
+      return {
+        average_rate: Math.round(averageRate),
+        expected_passes: Math.round(expectedPasses * 10) / 10,
+        trainees: trainees
+      };
+    }
+
+    // 予算影響分析
+    function analyzeBudgetImpact() {
+      const budget = {
+        annual_budget: 2000000,
+        used_budget: 650000,
+        current_request: 280000,
+        remaining_budget: 0,
+        usage_rate: 0
+      };
+      
+      budget.remaining_budget = budget.annual_budget - budget.used_budget - budget.current_request;
+      budget.usage_rate = ((budget.used_budget + budget.current_request) / budget.annual_budget * 100).toFixed(1);
+      
+      return budget;
+    }
+
+    // 初期化時にデータ計算を実行
+    document.addEventListener('DOMContentLoaded', function() {
+      const effectData = simulateTrainingEffect();
+      const passRateData = calculatePassRate();
+      const budgetData = analyzeBudgetImpact();
+      
+      console.log('研修効果データ:', effectData);
+      console.log('合格率予測:', passRateData);
+      console.log('予算分析:', budgetData);
+    });
+  </script>
+</body>
+</html>">Copilot効果予測完了</span>
+                  <span class="text-gray-500 text-xs ml-2">15:45</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-chart-bar text-purple-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">ROI分析レポート生成</span>
+                  <span class="text-gray-500 text-xs ml-2">15:30</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-upload text-blue-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium

@@ -1,0 +1,1799 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>経営管理HUB - 統合管理システム</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 16px 24px -3px rgba(0, 0, 0, 0.15), 0 8px 10px -2px rgba(0, 0, 0, 0.08);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .alert-pulse {
+      animation: alertPulse 2s infinite;
+    }
+    @keyframes alertPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .glass-effect {
+      backdrop-filter: blur(12px);
+      background: rgba(255, 255, 255, 0.95);
+    }
+    .executive-gradient {
+      background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 25%, #7c3aed  50%, #be185d 75%, #dc2626 100%);
+    }
+    .kpi-card {
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .metric-trend::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #10b981, #3b82f6, #8b5cf6);
+      border-radius: 4px 4px 0 0;
+    }
+    .executive-badge {
+      background: linear-gradient(45deg, #dc2626, #b91c1c);
+      color: white;
+      padding: 3px 10px;
+      border-radius: 16px;
+      font-size: 11px;
+      font-weight: bold;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .priority-high {
+      border-left: 4px solid #dc2626;
+      background: linear-gradient(90deg, rgba(220, 38, 38, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    }
+    .priority-medium {
+      border-left: 4px solid #f59e0b;
+      background: linear-gradient(90deg, rgba(245, 158, 11, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    }
+    .priority-normal {
+      border-left: 4px solid #10b981;
+      background: linear-gradient(90deg, rgba(16, 185, 129, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+    .progress-ring-executive {
+      transform: rotate(-90deg);
+    }
+    .progress-ring-executive circle {
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.5s ease;
+    }
+    .risk-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .risk-high { background-color: #dc2626; }
+    .risk-medium { background-color: #f59e0b; }
+    .risk-low { background-color: #10b981; }
+    .department-status {
+      position: relative;
+      overflow: hidden;
+    }
+    .department-status::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      transition: left 0.5s;
+    }
+    .department-status:hover::before {
+      left: 100%;
+    }
+    .executive-metric {
+      position: relative;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 12px;
+      padding: 16px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- エグゼクティブヘッダー -->
+  <header class="executive-gradient text-white shadow-2xl">
+    <div class="container mx-auto px-6 py-6">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-8">
+            <i class="fas fa-crown text-3xl mr-4 text-yellow-300"></i>
+            <div>
+              <h1 class="text-3xl font-bold tracking-tight">経営管理システム</h1>
+              <p class="text-blue-200 text-sm font-medium">Executive Management Platform</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-6">
+            <div class="flex items-center bg-white bg-opacity-20 rounded-lg px-4 py-2">
+              <i class="fas fa-building mr-2"></i>
+              <span class="font-semibold">エネルギーサービス本社</span>
+            </div>
+            <div class="executive-badge">
+              <i class="fas fa-user-tie mr-1"></i>
+              経営層
+            </div>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">全社システム活用度</div>
+              <div class="text-xl font-bold text-yellow-300">94%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-6">
+          <!-- エグゼクティブ通知 -->
+          <div class="relative">
+            <button class="p-3 hover:bg-white hover:bg-opacity-10 rounded-full transition-colors">
+              <i class="fas fa-bell text-2xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-7 h-7 flex items-center justify-center alert-pulse font-bold">8</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-4">
+            <div class="text-right">
+              <div class="font-bold text-lg">中村 雄介</div>
+              <div class="text-sm text-blue-200">代表取締役社長</div>
+            </div>
+            <div class="w-14 h-14 bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-full flex items-center justify-center font-bold text-xl border-3 border-white shadow-lg">
+              CEO
+            </div>
+          </div>
+          <button class="text-blue-200 hover:text-white text-sm font-medium flex items-center bg-white bg-opacity-10 hover:bg-opacity-20 px-4 py-2 rounded-lg transition-all">
+            <i class="fas fa-cog mr-2"></i>システム設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-6 py-8">
+    <!-- エグゼクティブナビゲーション -->
+    <nav class="glass-effect rounded-2xl shadow-lg p-6 mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3 text-sm font-medium">
+          <a href="#" class="text-indigo-600 hover:text-indigo-800 hover:underline flex items-center">
+            <i class="fas fa-home mr-2"></i>経営ダッシュボード
+          </a>
+          <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+          <span class="text-gray-800 font-bold">経営管理HUB</span>
+        </div>
+        
+        <div class="flex items-center space-x-6">
+          <span class="text-xs text-gray-500 font-medium">統合機能:</span>
+          <a href="#" class="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center">
+            <i class="fas fa-chart-line mr-1"></i>収益分析
+          </a>
+          <a href="#" class="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center">
+            <i class="fas fa-project-diagram mr-1"></i>案件分析
+          </a>
+          <a href="#" class="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center">
+            <i class="fas fa-shield-alt mr-1"></i>リスク管理
+          </a>
+          <a href="#" class="text-xs text-indigo-600 hover:text-indigo-800 hover:underline flex items-center">
+            <i class="fas fa-check-double mr-1"></i>重要案件承認
+          </a>
+        </div>
+      </div>
+      
+      <!-- クイック検索 -->
+      <div class="mt-4 pt-4 border-t border-gray-200">
+        <div class="flex items-center space-x-4">
+          <div class="relative flex-1 max-w-md">
+            <input type="text" placeholder="全社統合検索（案件・部門・KPI・リスク...）" class="w-full px-4 py-3 pl-12 pr-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm">
+            <div class="absolute left-4 top-3.5 text-gray-400">
+              <i class="fas fa-search text-lg"></i>
+            </div>
+          </div>
+          <div class="flex items-center text-gray-600 font-medium">
+            <i class="far fa-calendar-alt mr-2 text-indigo-600"></i>
+            <span>2025年5月19日（月）16:45</span>
+          </div>
+          <button class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl flex items-center gap-2 shadow-lg transition-all font-medium">
+            <i class="fas fa-plus"></i>
+            <span>重要案件登録</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 経営KPI概要ダッシュボード -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+      <!-- 売上実績 -->
+      <div class="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-chart-line text-2xl"></i>
+          </div>
+          <div class="text-right">
+            <div class="text-sm opacity-80">売上達成率</div>
+            <div class="text-2xl font-bold">92%</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">今月売上</span>
+            <span class="font-semibold">3.8億円</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">年間目標</span>
+            <span class="font-semibold">48億円</span>
+          </div>
+          <div class="flex items-center text-sm">
+            <i class="fas fa-arrow-up mr-1 text-green-300"></i>
+            <span class="text-green-300">前年同期比 +8.5%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 営業利益率 -->
+      <div class="bg-gradient-to-br from-green-600 to-green-700 rounded-2xl p-6 text-white card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-percentage text-2xl"></i>
+          </div>
+          <div class="text-right">
+            <div class="text-sm opacity-80">営業利益率</div>
+            <div class="text-2xl font-bold">12.3%</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">今月利益</span>
+            <span class="font-semibold">4,680万円</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">目標利益率</span>
+            <span class="font-semibold">12.0%</span>
+          </div>
+          <div class="flex items-center text-sm">
+            <i class="fas fa-arrow-up mr-1 text-green-300"></i>
+            <span class="text-green-300">前月比 +0.8%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 案件粗利率 -->
+      <div class="bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-6 text-white card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-coins text-2xl"></i>
+          </div>
+          <div class="text-right">
+            <div class="text-sm opacity-80">案件粗利率</div>
+            <div class="text-2xl font-bold">28.5%</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">平均粗利</span>
+            <span class="font-semibold">2,850万円</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">目標粗利率</span>
+            <span class="font-semibold">27.0%</span>
+          </div>
+          <div class="flex items-center text-sm">
+            <i class="fas fa-arrow-up mr-1 text-green-300"></i>
+            <span class="text-green-300">前月比 +1.2%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 全社リスク指標 -->
+      <div class="bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-6 text-white card-hover">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-shield-alt text-2xl"></i>
+          </div>
+          <div class="text-right">
+            <div class="text-sm opacity-80">リスク指標</div>
+            <div class="text-2xl font-bold">中</div>
+          </div>
+        </div>
+        <div class="space-y-2">
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">高リスク案件</span>
+            <span class="font-semibold">3件</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="opacity-80">要対策項目</span>
+            <span class="font-semibold">8件</span>
+          </div>
+          <div class="flex items-center text-sm">
+            <i class="fas fa-arrow-down mr-1 text-green-300"></i>
+            <span class="text-green-300">前月比 -2件</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 承認待ち重要案件と全社リスク -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+      <!-- 承認待ち重要案件 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center mr-4">
+              <i class="fas fa-gavel text-white text-xl"></i>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-800">承認待ち重要案件</h2>
+              <p class="text-sm text-gray-600">経営判断・高額投資案件</p>
+            </div>
+            <span class="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm px-3 py-1 rounded-full font-semibold">5</span>
+          </div>
+          <div class="flex gap-2">
+            <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center">
+              <i class="fas fa-filter mr-1"></i> 金額順
+            </button>
+            <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center">
+              <i class="fas fa-calendar mr-1"></i> 期限順
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 高額投資案件 -->
+          <div class="priority-high rounded-xl p-4 card-hover">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <i class="fas fa-industry text-red-500 mr-2"></i>
+                  <span class="font-semibold text-gray-800">大型太陽光発電設備投資案件</span>
+                  <span class="ml-2 bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">高額投資</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">投資額：2.8億円 | ROI：15年回収予定 | 新規事業展開</p>
+                <div class="flex items-center text-xs text-gray-500 mb-2">
+                  <i class="fas fa-clock mr-1"></i>
+                  <span>承認期限: 2025/05/22 | 設備発注待ち</span>
+                  <span class="mx-2">•</span>
+                  <span>担当：技術部・営業部・財務部</span>
+                </div>
+                <div class="flex items-center text-xs text-gray-500">
+                  <i class="fas fa-chart-line mr-1"></i>
+                  <span>事業計画整合性: ◎ | 財務影響評価: 要検討</span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  詳細検討
+                </button>
+                <button class="bg-white border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  資料確認
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 重要案件承認 -->
+          <div class="priority-medium rounded-xl p-4 card-hover">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <i class="fas fa-handshake text-amber-500 mr-2"></i>
+                  <span class="font-semibold text-gray-800">XYZ工場ESCO事業契約</span>
+                  <span class="ml-2 bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">重要顧客</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">契約額：1.5億円 | 期間：7年 | エネルギー削減率：25%</p>
+                <div class="flex items-center text-xs text-gray-500">
+                  <i class="fas fa-user-tie mr-1"></i>
+                  <span>担当：営業部長 | 技術検討：完了済み | 財務承認：待ち</span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <button class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  契約承認
+                </button>
+                <button class="bg-white border border-amber-300 text-amber-600 hover:bg-amber-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  条件確認
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 予算申請承認 -->
+          <div class="priority-normal rounded-xl p-4 card-hover">
+            <div class="flex items-center justify-between">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <i class="fas fa-calculator text-green-500 mr-2"></i>
+                  <span class="font-semibold text-gray-800">来期設備投資予算申請</span>
+                  <span class="ml-2 bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">予算申請</span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">申請額：8,500万円 | 対象：測定機器・CADシステム更新</p>
+                <div class="flex items-center text-xs text-gray-500">
+                  <i class="fas fa-chart-pie mr-1"></i>
+                  <span>前年比：+12% | 効率化効果：年間1,200万円削減見込み</span>
+                </div>
+              </div>
+              <div class="flex flex-col gap-2">
+                <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                  予算承認
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 全社リスク一覧 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mr-4">
+              <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">全社リスク状況</h3>
+              <p class="text-sm text-gray-600">部門横断リスク・対策状況</p>
+            </div>
+          </div>
+          <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">リスク詳細管理</button>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 部門別リスク要約 -->
+          <div class="bg-gradient-to-r from-red-50 to-red-25 border border-red-200 rounded-xl p-4">
+            <div class="flex items-start">
+              <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-chart-line text-red-600"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-gray-800">営業部門リスク</h4>
+                  <span class="risk-indicator risk-high"></span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">提案遅延5件・契約遅延3件 | 四半期目標達成リスク</p>
+                <p class="text-xs text-red-600 mb-3">⚠️ 大型案件2件の受注確度低下 | 対策会議要請</p>
+                <div class="flex gap-2">
+                  <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-xs">対策会議</button>
+                  <button class="bg-white border border-red-300 text-red-600 hover:bg-red-50 px-3 py-1 rounded-lg text-xs">詳細確認</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 技術部門リスク -->
+          <div class="bg-gradient-to-r from-amber-50 to-amber-25 border border-amber-200 rounded-xl p-4">
+            <div class="flex items-start">
+              <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-cogs text-amber-600"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-gray-800">技術部門リスク</h4>
+                  <span class="risk-indicator risk-medium"></span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">工事遅延2件・納期リスク4件 | 技術者リソース不足</p>
+                <p class="text-xs text-amber-600 mb-3">技術者稼働率95%超 | スキル継承の遅れ</p>
+                <div class="flex gap-2">
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-lg text-xs">リソース調整</button>
+                  <button class="bg-white border border-amber-300 text-amber-600 hover:bg-amber-50 px-3 py-1 rounded-lg text-xs">稼働分析</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- カスタマー部門リスク -->
+          <div class="bg-gradient-to-r from-blue-50 to-blue-25 border border-blue-200 rounded-xl p-4">
+            <div class="flex items-start">
+              <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-headset text-blue-600"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-gray-800">カスタマー部門リスク</h4>
+                  <span class="risk-indicator risk-low"></span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">クレーム対応長期化2件 | 顧客満足度一部低下</p>
+                <p class="text-xs text-blue-600 mb-3">対応状況良好 | 予防保全の強化が必要</p>
+                <div class="flex gap-2">
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-xs">対応確認</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 財務・経営リスク -->
+          <div class="bg-gradient-to-r from-purple-50 to-purple-25 border border-purple-200 rounded-xl p-4">
+            <div class="flex items-start">
+              <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-chart-pie text-purple-600"></i>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between mb-2">
+                  <h4 class="font-semibold text-gray-800">財務・経営リスク</h4>
+                  <span class="risk-indicator risk-medium"></span>
+                </div>
+                <p class="text-sm text-gray-600 mb-2">キャッシュフロー変動・新規投資回収リスク</p>
+                <p class="text-xs text-purple-600 mb-3">資金繰り健全 | 投資判断基準の見直し検討</p>
+                <div class="flex gap-2">
+                  <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-xs">財務分析</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 部門別業績と経営会議議題 -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
+      <!-- 部門別業績 -->
+      <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mr-4">
+              <i class="fas fa-building text-white text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">部門別業績</h3>
+              <p class="text-sm text-gray-600">売上・利益・効率指標</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+              <option>今月</option>
+              <option>今四半期</option>
+              <option>今年度</option>
+            </select>
+            <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">詳細分析</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full">
+            <thead>
+              <tr class="bg-gradient-to-r from-gray-50 to-gray-100">
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">部門</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">売上実績</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">目標達成率</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">利益率</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">効率指標</th>
+                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">前月比</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr class="hover:bg-green-50 transition-colors">
+                <td class="px-4 py-4">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                      <i class="fas fa-chart-line text-blue-600"></i>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-gray-800">営業部門</div>
+                      <div class="text-xs text-gray-500">ES・PPA・電力販売</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="font-semibold text-gray-800">1.8億円</div>
+                  <div class="text-xs text-gray-500">目標: 1.9億円</div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-green-500 h-2 rounded-full" style="width: 95%"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-green-600">95%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="font-semibold text-gray-800">28.5%</div>
+                  <div class="text-xs text-green-600">+1.2%</div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex flex-col gap-1">
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">受注率◎</span>
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">提案効率</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center text-green-600">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span class="text-sm font-semibold">+8.5%</span>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr class="hover:bg-blue-50 transition-colors">
+                <td class="px-4 py-4">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                      <i class="fas fa-cogs text-indigo-600"></i>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-gray-800">技術部門</div>
+                      <div class="text-xs text-gray-500">設計・施工・品質</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="font-semibold text-gray-800">1.2億円</div>
+                  <div class="text-xs text-gray-500">目標: 1.15億円</div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-blue-500 h-2 rounded-full" style="width: 102%"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-blue-600">102%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="font-semibold text-gray-800">15.2%</div>
+                  <div class="text-xs text-blue-600">+0.8%</div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex flex-col gap-1">
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">効率◎</span>
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">品質92%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center text-blue-600">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span class="text-sm font-semibold">+5.2%</span>
+                  </div>
+                </td>
+              </tr>
+
+              <tr class="hover:bg-green-50 transition-colors">
+                <td class="px-4 py-4">
+                  <div class="flex items-center">
+                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                      <i class="fas fa-headset text-green-600"></i>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-gray-800">カスタマー部門</div>
+                      <div class="text-xs text-gray-500">保守・点検・CS</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="font-semibold text-gray-800">8,500万円</div>
+                  <div class="text-xs text-gray-500">目標: 8,200万円</div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-green-500 h-2 rounded-full" style="width: 98%"></div>
+                    </div>
+                    <span class="text-sm font-semibold text-green-600">98%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="font-semibold text-gray-800">22.8%</div>
+                  <div class="text-xs text-green-600">+1.5%</div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex flex-col gap-1">
+                    <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">CS◎</span>
+                    <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">対応97%</span>
+                  </div>
+                </td>
+                <td class="px-4 py-4">
+                  <div class="flex items-center text-green-600">
+                    <i class="fas fa-arrow-up mr-1"></i>
+                    <span class="text-sm font-semibold">+3.7%</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 経営会議議題 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-4">
+            <i class="fas fa-users text-white text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">経営会議議題</h3>
+            <p class="text-sm text-gray-600">次回: 5/22 10:00</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="bg-gradient-to-r from-red-50 to-red-25 border-l-4 border-red-500 rounded-r-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-semibold text-gray-800">1. 大型投資案件審議</h4>
+              <span class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">重要</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">太陽光発電設備投資2.8億円の可否判断</p>
+            <p class="text-xs text-gray-500">資料準備：財務部・技術部 | 担当：中村社長</p>
+          </div>
+
+          <div class="bg-gradient-to-r from-amber-50 to-amber-25 border-l-4 border-amber-500 rounded-r-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-semibold text-gray-800">2. 四半期業績レビュー</h4>
+              <span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded-full">定例</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">Q1実績報告と下半期戦略調整</p>
+            <p class="text-xs text-gray-500">報告：各部門長 | 目標達成状況と改善策</p>
+          </div>
+
+          <div class="bg-gradient-to-r from-blue-50 to-blue-25 border-l-4 border-blue-500 rounded-r-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-semibold text-gray-800">3. 新システム導入効果</h4>
+              <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">報告</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">統合管理システムROI評価</p>
+            <p class="text-xs text-gray-500">報告：IT部・各部門 | 活用度94%達成</p>
+          </div>
+
+          <div class="bg-gradient-to-r from-green-50 to-green-25 border-l-4 border-green-500 rounded-r-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-semibold text-gray-800">4. 人材育成計画</h4>
+              <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">戦略</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">技術者資格取得・スキル向上施策</p>
+            <p class="text-xs text-gray-500">提案：人事部・技術部 | 若手定着化対策</p>
+          </div>
+
+          <div class="bg-gradient-to-r from-purple-50 to-purple-25 border-l-4 border-purple-500 rounded-r-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-semibold text-gray-800">5. 市場展開戦略</h4>
+              <span class="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">展開</span>
+            </div>
+            <p class="text-sm text-gray-600 mb-2">九州域外への事業拡大検討</p>
+            <p class="text-xs text-gray-500">検討：営業部・企画部 | 関東圏進出計画</p>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all">
+            <i class="fas fa-calendar-plus mr-2"></i>
+            議題追加・資料確認
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 収益分析と案件分析 -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+      <!-- 収益分析 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-4">
+              <i class="fas fa-chart-line text-white text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">収益分析</h3>
+              <p class="text-sm text-gray-600">売上・利益・ROI分析</p>
+            </div>
+          </div>
+          <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">詳細分析画面</button>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 売上推移グラフエリア -->
+          <div class="chart-container">
+            <canvas id="revenueChart" width="400" height="200"></canvas>
+          </div>
+
+          <!-- 収益指標サマリー -->
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
+              <div class="text-sm text-gray-600 mb-1">月間売上</div>
+              <div class="text-2xl font-bold text-blue-600">3.8億円</div>
+              <div class="text-xs text-green-600 flex items-center mt-1">
+                <i class="fas fa-arrow-up mr-1"></i>
+                <span>前月比 +8.5%</span>
+              </div>
+            </div>
+            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4">
+              <div class="text-sm text-gray-600 mb-1">営業利益</div>
+              <div class="text-2xl font-bold text-green-600">4,680万円</div>
+              <div class="text-xs text-green-600 flex items-center mt-1">
+                <i class="fas fa-arrow-up mr-1"></i>
+                <span>利益率 12.3%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 事業別収益 -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800 mb-3">事業別収益構成</h4>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                  <span class="text-sm text-gray-800">エネルギーサービス</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-gray-800 mr-2">2.1億円</span>
+                  <div class="w-20 bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 55%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                  <span class="text-sm text-gray-800">電力販売</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-gray-800 mr-2">1.0億円</span>
+                  <div class="w-20 bg-gray-200 rounded-full h-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 26%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+                  <span class="text-sm text-gray-800">保守・メンテナンス</span>
+                </div>
+                <div class="flex items-center">
+                  <span class="text-sm font-semibold text-gray-800 mr-2">7,000万円</span>
+                  <div class="w-20 bg-gray-200 rounded-full h-2">
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: 19%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 案件分析 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center">
+            <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mr-4">
+              <i class="fas fa-project-diagram text-white text-xl"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800">案件分析</h3>
+              <p class="text-sm text-gray-600">パイプライン・受注分析</p>
+            </div>
+          </div>
+          <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">詳細分析画面</button>
+        </div>
+
+        <div class="space-y-6">
+          <!-- 案件統計 -->
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+              <div class="text-sm text-gray-600 mb-1">提案中</div>
+              <div class="text-2xl font-bold text-blue-600">23件</div>
+              <div class="text-xs text-blue-600">3.2億円</div>
+            </div>
+            <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+              <div class="text-sm text-gray-600 mb-1">成約率</div>
+              <div class="text-2xl font-bold text-green-600">68%</div>
+              <div class="text-xs text-green-600">前月比+5%</div>
+            </div>
+            <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+              <div class="text-sm text-gray-600 mb-1">平均単価</div>
+              <div class="text-2xl font-bold text-purple-600">1,580万円</div>
+              <div class="text-xs text-purple-600">+12%</div>
+            </div>
+          </div>
+
+          <!-- 大型案件状況 -->
+          <div>
+            <h4 class="text-sm font-semibold text-gray-800 mb-3">大型案件状況（5,000万円以上）</h4>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div class="flex-1">
+                  <div class="font-medium text-sm text-gray-800">ABC工場ESCO事業</div>
+                  <div class="text-xs text-gray-500">1.8億円 | 受注確度: 85%</div>
+                </div>
+                <span class="px-3 py-1 text-xs rounded-full bg-blue-100 text-blue-800 font-medium">交渉中</span>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div class="flex-1">
+                  <div class="font-medium text-sm text-gray-800">DEF産業太陽光PPA</div>
+                  <div class="text-xs text-gray-500">1.2億円 | 受注確度: 75%</div>
+                </div>
+                <span class="px-3 py-1 text-xs rounded-full bg-green-100 text-green-800 font-medium">提案済</span>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+                <div class="flex-1">
+                  <div class="font-medium text-sm text-gray-800">GHI商事電力販売</div>
+                  <div class="text-xs text-gray-500">8,500万円 | 受注確度: 60%</div>
+                </div>
+                <span class="px-3 py-1 text-xs rounded-full bg-amber-100 text-amber-800 font-medium">検討中</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 受注予測 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="text-sm text-gray-600">月間受注予測</div>
+                <div class="text-xl font-bold text-indigo-600">2.8億円</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs text-indigo-600 flex items-center">
+                  <i class="fas fa-chart-line mr-1"></i>
+                  <span>目標比 93%</span>
+                </div>
+                <div class="text-xs text-gray-500">加重平均確度</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 経営機能メニュー -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <div class="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl flex items-center justify-center mr-4">
+          <i class="fas fa-th-large text-white text-xl"></i>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-800">経営管理機能</h2>
+          <p class="text-sm text-gray-600">戦略的意思決定支援システム</p>
+        </div>
+      </div>
+
+      <!-- 重要意思決定機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-red-800 border-b-2 border-red-200 pb-2">
+          <i class="fas fa-gavel mr-2"></i>重要意思決定・承認
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-red-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-red-100">
+            <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">高額投資承認</h4>
+                <i class="fas fa-industry text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">1億円以上の設備投資・事業投資の戦略的判断。ROI・リスク評価による意思決定支援</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">緊急: 1件</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">検討中: 2件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                投資承認画面を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-purple-100">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">重要案件承認</h4>
+                <i class="fas fa-handshake text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">大型契約・戦略顧客案件の最終承認。事業戦略整合性とリスク評価</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-medium">待機: 3件</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">要検討: 2件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                案件承認画面を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-amber-100">
+            <div class="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">予算承認管理</h4>
+                <i class="fas fa-calculator text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">部門予算・追加予算申請の承認。事業計画整合性と優先度評価</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">承認済: 8件</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">審議中: 3件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                予算承認画面を開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 経営分析・戦略立案機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-blue-800 border-b-2 border-blue-200 pb-2">
+          <i class="fas fa-chart-line mr-2"></i>経営分析・戦略立案
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-blue-100">
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">収益分析</h4>
+                <i class="fas fa-chart-pie text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">売上・利益の多角的分析。事業別・部門別・顧客別の収益構造可視化</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">利益率: 12.3%</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">前年比: +8.5%</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                収益分析を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-green-100">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">案件分析</h4>
+                <i class="fas fa-project-diagram text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">案件パイプライン・受注予測分析。成約率・担当者別パフォーマンス評価</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">成約率: 68%</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">提案中: 23件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                案件分析を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-indigo-100">
+            <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">中期経営計画</h4>
+                <i class="fas fa-road text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">3-5年の戦略目標設定・KPI追跡。市場動向と成長戦略の策定支援</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full font-medium">目標: 売上60億</span>
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">進捗: 85%</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                中期計画を開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- リスク管理・ガバナンス機能群 -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold mb-4 text-red-800 border-b-2 border-red-200 pb-2">
+          <i class="fas fa-shield-alt mr-2"></i>リスク管理・ガバナンス
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          
+          <div class="bg-gradient-to-br from-white to-red-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-red-100">
+            <div class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">リスク管理</h4>
+                <i class="fas fa-exclamation-triangle text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">全社リスクの統合管理。財務・運営・戦略・コンプライアンスリスクの監視</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full font-medium">高リスク: 3件</span>
+                <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-medium">監視中: 8件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                リスク管理を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-purple-100">
+            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">取締役会資料</h4>
+                <i class="fas fa-users text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">取締役会・経営会議の資料管理。議題設定・決議事項追跡・実施状況確認</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-medium">次回: 5/22</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">議題: 5件</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                会議資料管理を開く
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-green-100">
+            <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+              <div class="flex justify-between items-center">
+                <h4 class="font-bold text-lg">原価管理</h4>
+                <i class="fas fa-calculator text-2xl opacity-80"></i>
+              </div>
+            </div>
+            <div class="p-6">
+              <p class="text-gray-600 mb-4">原価構成分析・原価改善追跡。標準原価設定とシミュレーション機能</p>
+              <div class="flex flex-wrap gap-2 mb-4">
+                <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">原価率: 71.5%</span>
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium">改善: 3%</span>
+              </div>
+              <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+                原価管理を開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 部門間連携状況と活動履歴 -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+      <!-- 部門間連携状況 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-4">
+            <i class="fas fa-handshake text-white text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">部門間連携状況</h3>
+            <p class="text-sm text-gray-600">横断プロジェクト・情報共有状況</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 営業-技術連携 -->
+          <div class="department-status bg-gradient-to-r from-blue-50 to-blue-25 border border-blue-200 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center mr-3">
+                  <i class="fas fa-exchange-alt text-blue-600"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-800">営業部 ⇄ 技術部</h4>
+                  <p class="text-xs text-gray-500">技術提案・見積支援</p>
+                </div>
+              </div>
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">良好</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center text-xs">
+              <div>
+                <div class="font-medium text-gray-800">連携件数</div>
+                <div class="text-blue-600 font-bold">28件/月</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">対応時間</div>
+                <div class="text-green-600 font-bold">1.2日</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">満足度</div>
+                <div class="text-blue-600 font-bold">4.6/5</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 技術-カスタマー連携 -->
+          <div class="department-status bg-gradient-to-r from-green-50 to-green-25 border border-green-200 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mr-3">
+                  <i class="fas fa-cogs text-green-600"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-800">技術部 ⇄ カスタマー部</h4>
+                  <p class="text-xs text-gray-500">技術サポート・保守連携</p>
+                </div>
+              </div>
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">良好</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center text-xs">
+              <div>
+                <div class="font-medium text-gray-800">連携件数</div>
+                <div class="text-green-600 font-bold">15件/月</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">対応時間</div>
+                <div class="text-green-600 font-bold">0.8日</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">解決率</div>
+                <div class="text-green-600 font-bold">97%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 営業-カスタマー連携 -->
+          <div class="department-status bg-gradient-to-r from-purple-50 to-purple-25 border border-purple-200 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center mr-3">
+                  <i class="fas fa-users text-purple-600"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-800">営業部 ⇄ カスタマー部</h4>
+                  <p class="text-xs text-gray-500">顧客情報・契約更新</p>
+                </div>
+              </div>
+              <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full font-medium">普通</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center text-xs">
+              <div>
+                <div class="font-medium text-gray-800">連携件数</div>
+                <div class="text-purple-600 font-bold">12件/月</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">情報共有</div>
+                <div class="text-amber-600 font-bold">要改善</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">効率性</div>
+                <div class="text-purple-600 font-bold">75%</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 全社横断プロジェクト -->
+          <div class="department-status bg-gradient-to-r from-indigo-50 to-indigo-25 border border-indigo-200 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center mr-3">
+                  <i class="fas fa-project-diagram text-indigo-600"></i>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-800">全社横断プロジェクト</h4>
+                  <p class="text-xs text-gray-500">DX推進・システム統合</p>
+                </div>
+              </div>
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-medium">順調</span>
+            </div>
+            <div class="grid grid-cols-3 gap-3 text-center text-xs">
+              <div>
+                <div class="font-medium text-gray-800">進行PJ</div>
+                <div class="text-indigo-600 font-bold">3件</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">進捗率</div>
+                <div class="text-green-600 font-bold">85%</div>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">参加率</div>
+                <div class="text-indigo-600 font-bold">94%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近の経営活動履歴 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-700 rounded-xl flex items-center justify-center mr-4">
+            <i class="fas fa-history text-white text-xl"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">最近の経営活動履歴</h3>
+            <p class="text-sm text-gray-600">全社連携・重要意思決定</p>
+          </div>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-gavel text-red-600"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-800">大型太陽光投資案件の承認決裁</div>
+              <div class="text-xs text-gray-500">2025/05/19 15:30 • 投資額：2.8億円 • 決裁者：中村社長</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">重要決裁</span>
+              <span class="executive-badge">CEO承認</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-chart-line text-blue-600"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-800">四半期業績レビュー・下半期戦略調整</div>
+              <div class="text-xs text-gray-500">2025/05/19 14:00 • 参加：全部門長 • 目標達成率92%確認</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">戦略会議</span>
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">全社</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-handshake text-green-600"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-800">XYZ工場ESCO事業契約承認</div>
+              <div class="text-xs text-gray-500">2025/05/19 11:15 • 契約額：1.5億円 • 期間：7年間</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">契約承認</span>
+              <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">大型案件</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-users text-purple-600"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-800">人材育成計画・技術者資格取得支援策決定</div>
+              <div class="text-xs text-gray-500">2025/05/18 16:45 • 予算：500万円 • 対象：15名</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full font-medium">人事戦略</span>
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full font-medium">投資決定</span>
+            </div>
+          </div>
+          
+          <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition-colors">
+            <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-3">
+              <i class="fas fa-shield-alt text-indigo-600"></i>
+            </div>
+            <div class="flex-1">
+              <div class="text-sm font-medium text-gray-800">全社リスク管理会議・対策指示</div>
+              <div class="text-xs text-gray-500">2025/05/18 10:00 • 高リスク案件3件の対策方針決定</div>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium">リスク管理</span>
+              <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full font-medium">対策会議</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="text-center mt-4">
+          <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+            すべての経営活動履歴を表示
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- システム統計と全社KPI -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-8">
+      <!-- 全社KPI統計 -->
+      <div class="lg:col-span-3 bg-white rounded-lg shadow-md p-6">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-bar text-indigo-600 mr-2"></i>
+          全社KPI統計（経営ダッシュボード）
+        </h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
+            <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+              <i class="fas fa-yen-sign text-blue-600"></i>
+            </div>
+            <div class="text-sm text-gray-600">年間売上実績</div>
+            <div class="text-lg font-bold text-blue-600">44.2億円</div>
+            <div class="text-xs text-green-600">目標比 92%</div>
+          </div>
+          
+          <div class="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">
+            <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+              <i class="fas fa-percentage text-green-600"></i>
+            </div>
+            <div class="text-sm text-gray-600">営業利益率</div>
+            <div class="text-lg font-bold text-green-600">12.3%</div>
+            <div class="text-xs text-green-600">+0.8%向上</div>
+          </div>
+          
+          <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">
+            <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+              <i class="fas fa-users text-purple-600"></i>
+            </div>
+            <div class="text-sm text-gray-600">従業員満足度</div>
+            <div class="text-lg font-bold text-purple-600">4.2/5.0</div>
+            <div class="text-xs text-green-600">+0.3向上</div>
+          </div>
+          
+          <div class="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl">
+            <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mx-auto mb-2">
+              <i class="fas fa-leaf text-orange-600"></i>
+            </div>
+            <div class="text-sm text-gray-600">CO2削減貢献</div>
+            <div class="text-lg font-bold text-orange-600">2,850t</div>
+            <div class="text-xs text-green-600">目標達成</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- システム連携状況 -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h4 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-link text-purple-600 mr-2"></i>
+          システム連携状況
+        </h4>
+        <div class="space-y-3">
+          <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <div class="font-medium text-sm text-blue-800">統合ファイル管理</div>
+            <div class="text-xs text-blue-600 mt-1">全社文書の一元管理</div>
+            <div class="text-xs text-gray-500">同期状況: 正常</div>
+          </div>
+          
+          <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+            <div class="font-medium text-sm text-green-800">活動履歴管理</div>
+            <div class="text-xs text-green-600 mt-1">全社活動のリアルタイム記録</div>
+            <div class="text-xs text-gray-500">同期状況: 正常</div>
+          </div>
+          
+          <div class="p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400">
+            <div class="font-medium text-sm text-purple-800">承認ダッシュボード</div>
+            <div class="text-xs text-purple-600 mt-1">全社承認プロセス統合</div>
+            <div class="text-xs text-gray-500">同期状況: 正常</div>
+          </div>
+          
+          <div class="p-3 bg-indigo-50 rounded-lg border-l-4 border-indigo-400">
+            <div class="font-medium text-sm text-indigo-800">全社検索</div>
+            <div class="text-xs text-indigo-600 mt-1">横断検索システム</div>
+            <div class="text-xs text-gray-500">同期状況: 正常</div>
+          </div>
+          
+          <div class="text-center">
+            <button class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+              <i class="fas fa-sync mr-1"></i>システム連携確認
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js 初期化スクリプト -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 売上推移チャートの初期化
+      const ctx = document.getElementById('revenueChart');
+      if (ctx) {
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['1月', '2月', '3月', '4月', '5月'],
+            datasets: [{
+              label: '売上実績',
+              data: [3.2, 3.5, 3.8, 3.6, 3.8],
+              borderColor: 'rgb(59, 130, 246)',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.4,
+              fill: true
+            }, {
+              label: '売上目標',
+              data: [3.5, 3.7, 3.9, 3.8, 4.0],
+              borderColor: 'rgb(34, 197, 94)',
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              borderDash: [5, 5],
+              tension: 0.4,
+              fill: false
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top'
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false,
+                min: 3.0,
+                max: 4.2,
+                ticks: {
+                  callback: function(value) {
+                    return value + '億円';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+
+      // インタラクション機能
+      function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = {
+          'success': 'bg-green-500',
+          'warning': 'bg-yellow-500',
+          'error': 'bg-red-500',
+          'info': 'bg-indigo-500'
+        }[type] || 'bg-indigo-500';
+        
+        const icon = {
+          'success': 'fas fa-check',
+          'warning': 'fas fa-exclamation-triangle',
+          'error': 'fas fa-times',
+          'info': 'fas fa-info-circle'
+        }[type] || 'fas fa-info-circle';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300`;
+        notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+        notification.style.transform = 'translateX(100%)';
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        setTimeout(() => {
+          notification.style.transform = 'translateX(100%)';
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 300);
+        }, 4000);
+      }
+
+      // ボタンクリックイベント
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          e.preventDefault();
+          const text = this.textContent.trim();
+          
+          if (text.includes('詳細検討') || text.includes('投資承認')) {
+            showNotification('高額投資承認画面を開いています...', 'warning');
+          } else if (text.includes('契約承認') || text.includes('案件承認')) {
+            showNotification('重要案件承認画面を開いています...', 'info');
+          } else if (text.includes('予算承認')) {
+            showNotification('予算承認管理画面を開いています...', 'info');
+          } else if (text.includes('収益分析')) {
+            showNotification('収益分析詳細画面を開いています...', 'info');
+          } else if (text.includes('案件分析')) {
+            showNotification('案件分析詳細画面を開いています...', 'info');
+          } else if (text.includes('リスク管理')) {
+            showNotification('リスク管理画面を開いています...', 'warning');
+          } else if (text.includes('中期計画')) {
+            showNotification('中期経営計画画面を開いています...', 'info');
+          } else if (text.includes('原価管理')) {
+            showNotification('原価管理画面を開いています...', 'info');
+          } else if (text.includes('会議資料')) {
+            showNotification('取締役会資料管理画面を開いています...', 'info');
+          } else if (text.includes('対策会議') || text.includes('対策')) {
+            showNotification('対策会議画面を開いています...', 'warning');
+          } else if (text.includes('議題追加')) {
+            showNotification('経営会議議題管理画面を開いています...', 'info');
+          } else if (text.includes('詳細分析')) {
+            showNotification('詳細分析画面を開いています...', 'info');
+          } else if (text.includes('重要案件登録')) {
+            showNotification('重要案件登録画面を開いています...', 'info');
+          }
+        });
+      });
+
+      // 検索機能
+      const searchInput = document.querySelector('input[placeholder*="検索"]');
+      if (searchInput) {
+        searchInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            const query = this.value.trim();
+            if (query) {
+              showNotification(`全社統合検索: "${query}" を実行中...`, 'info');
+            }
+          }
+        });
+      }
+
+      // 関連画面リンク
+      const navLinks = document.querySelectorAll('nav a[href="#"]');
+      navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+          e.preventDefault();
+          const screenName = this.textContent.trim();
+          showNotification(`${screenName}に移動しています...`, 'info');
+        });
+      });
+
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-3px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 部門連携カードのインタラクション
+      const deptCards = document.querySelectorAll('.department-status');
+      deptCards.forEach(card => {
+        card.addEventListener('click', function() {
+          const deptNames = this.querySelector('h4').textContent;
+          showNotification(`${deptNames}の詳細連携状況を表示しています...`, 'info');
+        });
+      });
+
+      // KPIカードクリック
+      const kpiCards = document.querySelectorAll('.bg-gradient-to-br');
+      kpiCards.forEach(card => {
+        card.addEventListener('click', function() {
+          if (this.querySelector('.text-2xl')) {
+            const metric = this.querySelector('.text-sm').textContent;
+            showNotification(`${metric}の詳細分析を表示しています...`, 'info');
+          }
+        });
+      });
+
+      // 承認案件クリック
+      const approvalItems = document.querySelectorAll('.priority-high, .priority-medium, .priority-normal');
+      approvalItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const title = this.querySelector('.font-semibold').textContent;
+          showNotification(`案件 "${title}" の詳細を表示しています...`, 'info');
+        });
+      });
+
+      // ページ読み込み時のアニメーション
+      const elements = document.querySelectorAll('.card-hover, .bg-white');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 50);
+      });
+
+      // エグゼクティブウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('経営管理システムへようこそ、中村社長', 'success');
+      }, 1000);
+
+      // 定期的なKPI更新シミュレーション
+      setInterval(() => {
+        const kpiElements = document.querySelectorAll('.text-2xl.font-bold');
+        kpiElements.forEach(element => {
+          if (element.textContent.includes('%') && Math.random() > 0.95) {
+            let currentValue = parseFloat(element.textContent);
+            if (!isNaN(currentValue)) {
+              const newValue = Math.min(currentValue + 0.1, 100);
+              element.textContent = `${newValue.toFixed(1)}%`;
+            }
+          }
+        });
+      }, 30000);
+
+      // リアルタイム通知カウンター更新
+      setInterval(() => {
+        const notificationBadge = document.querySelector('.alert-pulse');
+        if (notificationBadge && Math.random() > 0.9) {
+          let current = parseInt(notificationBadge.textContent);
+          if (current < 15) {
+            notificationBadge.textContent = current + 1;
+          }
+        }
+      }, 45000);
+
+      // 経営会議議題のインタラクション
+      const meetingItems = document.querySelectorAll('[class*="border-l-4"]');
+      meetingItems.forEach(item => {
+        if (item.querySelector('h4')) {
+          item.addEventListener('click', function() {
+            const agenda = this.querySelector('h4').textContent;
+            showNotification(`議題 "${agenda}" の詳細資料を表示しています...`, 'info');
+          });
+        }
+      });
+
+      // システム連携確認ボタン
+      const syncButton = document.querySelector('button:contains("システム連携確認")');
+      if (syncButton) {
+        syncButton.addEventListener('click', function(e) {
+          e.preventDefault();
+          showNotification('全システム連携状況を確認中...', 'info');
+          setTimeout(() => {
+            showNotification('全システム正常稼働中です', 'success');
+          }, 2000);
+        });
+      }
+
+      // 部門別業績テーブルの行クリック
+      const tableRows = document.querySelectorAll('tbody tr');
+      tableRows.forEach(row => {
+        row.addEventListener('click', function() {
+          const department = this.querySelector('.font-semibold').textContent;
+          showNotification(`${department}の詳細業績分析を表示しています...`, 'info');
+        });
+      });
+
+      // プログレスバーのアニメーション
+      const progressBars = document.querySelectorAll('[style*="width:"]');
+      progressBars.forEach((bar, index) => {
+        setTimeout(() => {
+          bar.style.transition = 'width 1s ease-in-out';
+        }, index * 100);
+      });
+
+      // エグゼクティブバッジクリック
+      const execBadges = document.querySelectorAll('.executive-badge');
+      execBadges.forEach(badge => {
+        badge.addEventListener('click', function(e) {
+          e.stopPropagation();
+          showNotification('経営層専用機能にアクセスしています...', 'info');
+        });
+      });
+
+      // ページ離脱時の確認（重要な承認待ちがある場合）
+      window.addEventListener('beforeunload', function(e) {
+        const urgentItems = document.querySelectorAll('.bg-red-100');
+        if (urgentItems.length > 0) {
+          e.preventDefault();
+          e.returnValue = '承認待ちの重要案件があります。ページを離れてもよろしいですか？';
+        }
+      });
+
+      console.log('経営管理HUBが正常に初期化されました');
+    });
+
+    // 外部から呼び出し可能な関数
+    window.executiveHub = {
+      refreshKPI: function() {
+        showNotification('全社KPIデータを更新しています...', 'info');
+        setTimeout(() => {
+          showNotification('KPIデータ更新が完了しました', 'success');
+        }, 2000);
+      },
+      
+      openApproval: function(type) {
+        showNotification(`${type}承認画面を開いています...`, 'warning');
+      },
+      
+      showRiskDetails: function() {
+        showNotification('全社リスク詳細分析画面を開いています...', 'warning');
+      },
+      
+      generateReport: function(reportType) {
+        showNotification(`${reportType}レポートを生成しています...`, 'info');
+      }
+    };
+  </script>
+</body>
+</html>

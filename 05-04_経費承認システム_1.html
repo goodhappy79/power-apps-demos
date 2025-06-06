@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>経費承認システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .approval-flow {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem 0;
+    }
+    .approval-flow::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      z-index: 1;
+    }
+    .approval-step {
+      position: relative;
+      z-index: 2;
+      background: white;
+      padding: 0.5rem;
+      border-radius: 50%;
+      border: 3px solid #10b981;
+      min-width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .approval-step.pending {
+      border-color: #f59e0b;
+      background: #fef3c7;
+    }
+    .approval-step.completed {
+      border-color: #10b981;
+      background: #d1fae5;
+    }
+    .approval-step.current {
+      border-color: #3b82f6;
+      background: #dbeafe;
+      animation: pulse 2s infinite;
+    }
+    .copilot-suggestion {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 1rem;
+      color: white;
+      margin: 1rem 0;
+    }
+    .receipt-preview {
+      border: 2px dashed #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      background: #f9fafb;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .receipt-preview:hover {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .expense-category {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .category-travel {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .category-meals {
+      background: #fef3c7;
+      color: #d97706;
+    }
+    .category-supplies {
+      background: #d1fae5;
+      color: #059669;
+    }
+    .category-transport {
+      background: #fce7f3;
+      color: #be185d;
+    }
+    .regulation-check {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: white;
+    }
+    .regulation-warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: white;
+    }
+    .regulation-error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      border-radius: 8px;
+      padding: 0.75rem;
+      color: white;
+    }
+    .expense-timeline {
+      position: relative;
+      padding-left: 2rem;
+    }
+    .expense-timeline::before {
+      content: '';
+      position: absolute;
+      left: 0.75rem;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #e5e7eb;
+    }
+    .timeline-item {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -1.75rem;
+      top: 0.5rem;
+      width: 0.75rem;
+      height: 0.75rem;
+      border-radius: 50%;
+      background: #3b82f6;
+      border: 2px solid white;
+      box-shadow: 0 0 0 2px #3b82f6;
+    }
+    .amount-highlight {
+      font-size: 1.875rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-green-800 to-emerald-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-receipt text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">経費承認システム</h1>
+              <p class="text-green-200 text-sm">Expense Approval System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-green-700 px-3 py-1 rounded-full text-sm font-medium">総務・人事部門</span>
+            <div class="text-center">
+              <div class="text-xs text-green-200">処理効率向上</div>
+              <div class="text-lg font-bold text-white">92%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-green-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">山田 花子</div>
+              <div class="text-sm text-green-200">総務部長</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-green-800 rounded-full flex items-center justify-center font-bold text-lg">
+              YH
+            </div>
+          </div>
+          <button class="text-green-200 hover:text-white text-sm">
+            <i class="fas fa-cog mr-1"></i>設定
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">総務・人事HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">承認管理</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">経費承認</span>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-blue-600 font-semibold">EXP-2025-0287</span>
+    </nav>
+
+    <!-- 経費申請概要カード -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center">
+            <i class="fas fa-plane text-white text-2xl"></i>
+          </div>
+          <div>
+            <h2 class="text-2xl font-bold text-gray-800">技術研修・出張費</h2>
+            <div class="flex items-center space-x-4 text-sm text-gray-600 mt-2">
+              <span class="flex items-center"><i class="fas fa-hashtag mr-1 text-green-500"></i>EXP-2025-0287</span>
+              <span class="flex items-center"><i class="fas fa-calendar mr-1 text-blue-500"></i>2025/05/19</span>
+              <span class="flex items-center"><i class="fas fa-user mr-1 text-purple-500"></i>佐藤健太</span>
+              <span class="flex items-center"><i class="fas fa-building mr-1 text-orange-500"></i>技術部</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div class="text-right">
+            <div class="amount-highlight">¥125,800</div>
+            <div class="text-sm text-gray-500">申請金額</div>
+          </div>
+          <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+
+      <!-- 承認フロー -->
+      <div class="bg-gray-50 rounded-xl p-4 mb-4">
+        <h3 class="font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-route text-green-600 mr-2"></i>
+          承認ワークフロー
+        </h3>
+        <div class="approval-flow">
+          <div class="flex-1 flex justify-between items-center">
+            <div class="text-center">
+              <div class="approval-step completed">
+                <i class="fas fa-user text-green-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">申請者</div>
+              <div class="text-xs text-gray-500">佐藤健太</div>
+              <div class="text-xs text-green-600">提出済</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step current">
+                <i class="fas fa-user-tie text-blue-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">直属上長</div>
+              <div class="text-xs text-gray-500">田中修一</div>
+              <div class="text-xs text-green-600">承認済</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step current">
+                <i class="fas fa-user-cog text-blue-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">総務部長</div>
+              <div class="text-xs text-gray-500">山田花子</div>
+              <div class="text-xs text-blue-600">承認待ち</div>
+            </div>
+            <div class="text-center">
+              <div class="approval-step pending">
+                <i class="fas fa-calculator text-yellow-600"></i>
+              </div>
+              <div class="mt-2 text-xs font-medium">経理確認</div>
+              <div class="text-xs text-gray-500">システム処理</div>
+              <div class="text-xs text-yellow-600">待機中</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインコンテンツ -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- Copilotアシスタント -->
+        <div class="copilot-suggestion card-hover">
+          <div class="flex items-center mb-3">
+            <div class="w-10 h-10 bg-white bg-opacity-20 rounded-xl flex items-center justify-center mr-3">
+              <i class="fas fa-robot text-white"></i>
+            </div>
+            <div>
+              <h3 class="text-white font-bold">Copilot 経費分析</h3>
+              <p class="text-white text-opacity-80 text-sm">AI支援による経費妥当性分析</p>
+            </div>
+          </div>
+          
+          <div class="space-y-3">
+            <!-- 規程整合性分析 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-shield-alt text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">規程整合性チェック</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 出張旅費規程: <span class="font-bold text-green-300">適合</span></div>
+                <div>• 宿泊費上限: <span class="font-bold text-green-300">¥15,000以内 (実績¥12,800)</span></div>
+                <div>• 日当・交通費: <span class="font-bold text-green-300">規程内</span></div>
+                <div>• 研修費用: <span class="font-bold text-yellow-300">事前承認確認済み</span></div>
+              </div>
+            </div>
+            
+            <!-- 類似経費比較 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-chart-bar text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">類似経費比較分析</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 同種研修の過去実績: <span class="font-bold">¥118,000 ± 12%</span></div>
+                <div>• 申請金額妥当性: <span class="font-bold text-green-300">適正範囲内 (+6.6%)</span></div>
+                <div>• 技術部平均出張費: <span class="font-bold">¥89,000/月</span></div>
+              </div>
+            </div>
+            
+            <!-- 異常検知 -->
+            <div class="bg-white bg-opacity-10 rounded-lg p-3">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-search text-white mr-2"></i>
+                <span class="text-white font-medium text-sm">異常検知・推奨事項</span>
+              </div>
+              <div class="text-white text-opacity-90 text-sm space-y-1">
+                <div>• 領収書整合性: <span class="font-bold text-green-300">問題なし</span></div>
+                <div>• 金額計算: <span class="font-bold text-green-300">正確</span></div>
+                <div>• 推奨アクション: <span class="font-bold text-green-300">即座承認可能</span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="flex space-x-2 mt-4">
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-download mr-1"></i>詳細分析
+            </button>
+            <button class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg text-sm transition-all">
+              <i class="fas fa-history mr-1"></i>類似実績
+            </button>
+          </div>
+        </div>
+
+        <!-- 経費内容詳細 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-list-alt text-green-600 mr-2"></i>
+              経費明細
+            </h3>
+            <div class="text-sm text-gray-500">
+              出張期間: 2025/05/15 ～ 2025/05/17 (3日間)
+            </div>
+          </div>
+
+          <!-- 経費明細テーブル -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 border-b">
+                  <th class="text-left p-3 font-medium text-gray-700">日付</th>
+                  <th class="text-left p-3 font-medium text-gray-700">費目</th>
+                  <th class="text-left p-3 font-medium text-gray-700">内容</th>
+                  <th class="text-right p-3 font-medium text-gray-700">金額</th>
+                  <th class="text-center p-3 font-medium text-gray-700">領収書</th>
+                  <th class="text-center p-3 font-medium text-gray-700">承認状況</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">05/15</td>
+                  <td class="p-3">
+                    <span class="expense-category category-transport">交通費</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium">新幹線 (福岡→東京)</div>
+                    <div class="text-xs text-gray-500">指定席・往復</div>
+                  </td>
+                  <td class="p-3 text-right font-medium">¥45,600</td>
+                  <td class="p-3 text-center">
+                    <button class="text-green-600 hover:bg-green-100 p-1 rounded">
+                      <i class="fas fa-file-pdf"></i>
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">承認済</span>
+                  </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">05/15</td>
+                  <td class="p-3">
+                    <span class="expense-category category-travel">宿泊費</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium">ビジネスホテル品川</div>
+                    <div class="text-xs text-gray-500">2泊 (朝食付き)</div>
+                  </td>
+                  <td class="p-3 text-right font-medium">¥25,600</td>
+                  <td class="p-3 text-center">
+                    <button class="text-green-600 hover:bg-green-100 p-1 rounded">
+                      <i class="fas fa-file-pdf"></i>
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">承認済</span>
+                  </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">05/16</td>
+                  <td class="p-3">
+                    <span class="expense-category category-meals">日当</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium">出張日当</div>
+                    <div class="text-xs text-gray-500">3日分 (¥3,000/日)</div>
+                  </td>
+                  <td class="p-3 text-right font-medium">¥9,000</td>
+                  <td class="p-3 text-center">
+                    <span class="text-gray-400">-</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">規程内</span>
+                  </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">05/16</td>
+                  <td class="p-3">
+                    <span class="expense-category category-supplies">研修費</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium">省エネ制御システム技術研修</div>
+                    <div class="text-xs text-gray-500">3日間コース・修了証付</div>
+                  </td>
+                  <td class="p-3 text-right font-medium">¥38,000</td>
+                  <td class="p-3 text-center">
+                    <button class="text-green-600 hover:bg-green-100 p-1 rounded">
+                      <i class="fas fa-file-pdf"></i>
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">事前承認済</span>
+                  </td>
+                </tr>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">05/17</td>
+                  <td class="p-3">
+                    <span class="expense-category category-transport">交通費</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium">現地交通費</div>
+                    <div class="text-xs text-gray-500">電車・バス・タクシー</div>
+                  </td>
+                  <td class="p-3 text-right font-medium">¥7,600</td>
+                  <td class="p-3 text-center">
+                    <button class="text-green-600 hover:bg-green-100 p-1 rounded">
+                      <i class="fas fa-file-pdf"></i>
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">適正</span>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="bg-gray-100 border-t-2 border-gray-200">
+                  <td colspan="3" class="p-3 text-right text-lg font-bold text-gray-800">合計金額</td>
+                  <td class="p-3 text-right text-2xl font-bold text-green-600">¥125,800</td>
+                  <td colspan="2" class="p-3"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- 出張目的・成果 -->
+          <div class="mt-4 p-4 bg-blue-50 rounded-lg">
+            <h4 class="font-semibold text-blue-800 mb-2 flex items-center">
+              <i class="fas fa-target mr-2"></i>
+              出張目的・研修成果
+            </h4>
+            <div class="text-sm text-blue-700 space-y-1">
+              <div><strong>目的:</strong> 最新の省エネ制御技術習得・AI制御システム理解促進</div>
+              <div><strong>研修内容:</strong> IoT連携省エネシステム設計・導入事例研究</div>
+              <div><strong>期待効果:</strong> 技術力向上により顧客提案力強化・受注率向上</div>
+              <div><strong>成果物:</strong> 研修修了証・技術資料・導入ガイドライン</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 規程整合性チェック -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-shield-check text-green-600 mr-2"></i>
+            規程整合性チェック結果
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- 旅費規程チェック -->
+            <div class="regulation-check">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span class="font-medium">出張旅費規程</span>
+              </div>
+              <div class="text-sm space-y-1">
+                <div>• 宿泊費上限: ¥15,000 → 実績 ¥12,800 ✓</div>
+                <div>• 日当: ¥3,000/日 → 申請 ¥3,000/日 ✓</div>
+                <div>• 交通費: 実費精算 → 領収書完備 ✓</div>
+              </div>
+            </div>
+            
+            <!-- 研修費規程チェック -->
+            <div class="regulation-check">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-check-circle mr-2"></i>
+                <span class="font-medium">研修費規程</span>
+              </div>
+              <div class="text-sm space-y-1">
+                <div>• 事前承認: 取得済み (2025/04/25) ✓</div>
+                <div>• 研修費上限: ¥50,000 → 実績 ¥38,000 ✓</div>
+                <div>• 業務関連性: 技術職・業務直結 ✓</div>
+              </div>
+            </div>
+            
+            <!-- 支払方法チェック -->
+            <div class="regulation-check">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-credit-card mr-2"></i>
+                <span class="font-medium">支払方法</span>
+              </div>
+              <div class="text-sm space-y-1">
+                <div>• 法人カード使用: 適切 ✓</div>
+                <div>• 現金精算: 規程範囲内 ✓</div>
+                <div>• 領収書: 完備・適正 ✓</div>
+              </div>
+            </div>
+            
+            <!-- 税務関連チェック -->
+            <div class="regulation-check">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-calculator mr-2"></i>
+                <span class="font-medium">税務処理</span>
+              </div>
+              <div class="text-sm space-y-1">
+                <div>• 消費税区分: 適正 ✓</div>
+                <div>• 勘定科目: 旅費交通費・研修費 ✓</div>
+                <div>• 源泉徴収: 対象外 ✓</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 注意事項・推奨事項 -->
+          <div class="mt-4 p-4 bg-green-50 rounded-lg border-l-4 border-green-400">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-lightbulb text-green-600 mr-2"></i>
+              <span class="font-medium text-green-800">規程適合・推奨事項</span>
+            </div>
+            <div class="text-sm text-green-700 space-y-1">
+              <div>• 全項目で規程に適合しており、即座承認可能です</div>
+              <div>• 研修効果を最大化するため、社内共有会の開催を推奨</div>
+              <div>• 同種研修の定期実施により、技術部全体のスキル向上が期待できます</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 類似経費比較・履歴 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+            類似経費比較・分析
+          </h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <!-- 経費推移グラフ -->
+            <div class="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4">
+              <h4 class="font-medium text-gray-800 mb-3">技術研修費推移 (過去12ヶ月)</h4>
+              <div class="h-48">
+                <canvas id="expenseChart"></canvas>
+              </div>
+            </div>
+            
+            <!-- 部門別比較 -->
+            <div class="bg-gradient-to-br from-gray-50 to-white border border-gray-200 rounded-lg p-4">
+              <h4 class="font-medium text-gray-800 mb-3">部門別研修費比較 (今期)</h4>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-4 h-4 bg-blue-500 rounded mr-2"></div>
+                    <span class="text-sm">技術部</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-blue-500 h-2 rounded-full" style="width: 75%"></div>
+                    </div>
+                    <span class="text-sm font-medium">¥890,000</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
+                    <span class="text-sm">営業部</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
+                    </div>
+                    <span class="text-sm font-medium">¥640,000</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-4 h-4 bg-purple-500 rounded mr-2"></div>
+                    <span class="text-sm">カスタマー部</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-purple-500 h-2 rounded-full" style="width: 45%"></div>
+                    </div>
+                    <span class="text-sm font-medium">¥480,000</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="w-4 h-4 bg-orange-500 rounded mr-2"></div>
+                    <span class="text-sm">管理部門</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-24 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-orange-500 h-2 rounded-full" style="width: 30%"></div>
+                    </div>
+                    <span class="text-sm font-medium">¥320,000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 類似申請履歴 -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3">佐藤健太の過去6ヶ月経費実績</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-gray-50">
+                    <th class="text-left p-2 font-medium">申請日</th>
+                    <th class="text-left p-2 font-medium">内容</th>
+                    <th class="text-right p-2 font-medium">金額</th>
+                    <th class="text-center p-2 font-medium">承認状況</th>
+                    <th class="text-center p-2 font-medium">処理期間</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2">2025/03/15</td>
+                    <td class="p-2">IoT技術セミナー (大阪)</td>
+                    <td class="p-2 text-right">¥89,400</td>
+                    <td class="p-2 text-center"><span class="text-green-600 font-bold">承認</span></td>
+                    <td class="p-2 text-center">2日</td>
+                  </tr>
+                  <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2">2025/01/20</td>
+                    <td class="p-2">制御システム展示会 (東京)</td>
+                    <td class="p-2 text-right">¥112,800</td>
+                    <td class="p-2 text-center"><span class="text-green-600 font-bold">承認</span></td>
+                    <td class="p-2 text-center">1日</td>
+                  </tr>
+                  <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2">2024/12/08</td>
+                    <td class="p-2">省エネ技術研修 (名古屋)</td>
+                    <td class="p-2 text-right">¥67,200</td>
+                    <td class="p-2 text-center"><span class="text-green-600 font-bold">承認</span></td>
+                    <td class="p-2 text-center">1日</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 統計サマリー -->
+            <div class="grid grid-cols-3 gap-4 mt-4">
+              <div class="text-center p-3 bg-blue-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">¥92,467</div>
+                <div class="text-xs text-gray-500">月平均経費</div>
+              </div>
+              <div class="text-center p-3 bg-green-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">100%</div>
+                <div class="text-xs text-gray-500">承認率</div>
+              </div>
+              <div class="text-center p-3 bg-purple-50 rounded-lg">
+                <div class="text-2xl font-bold text-purple-600">1.3日</div>
+                <div class="text-xs text-gray-500">平均処理期間</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 領収書・添付ファイル -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-paperclip text-purple-600 mr-2"></i>
+            領収書・添付ファイル
+          </h3>
+          
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="receipt-preview">
+              <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-pdf text-red-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">新幹線チケット</div>
+              <div class="text-xs text-gray-500">¥45,600</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+                <button class="p-1 text-purple-600 hover:bg-purple-100 rounded">
+                  <i class="fas fa-search-plus text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="receipt-preview">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-pdf text-blue-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">ホテル領収書</div>
+              <div class="text-xs text-gray-500">¥25,600</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+                <button class="p-1 text-purple-600 hover:bg-purple-100 rounded">
+                  <i class="fas fa-search-plus text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="receipt-preview">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-pdf text-green-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">研修費領収書</div>
+              <div class="text-xs text-gray-500">¥38,000</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+                <button class="p-1 text-purple-600 hover:bg-purple-100 rounded">
+                  <i class="fas fa-search-plus text-xs"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="receipt-preview">
+              <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                <i class="fas fa-file-pdf text-orange-600 text-xl"></i>
+              </div>
+              <div class="text-sm font-medium text-gray-800">交通費まとめ</div>
+              <div class="text-xs text-gray-500">¥7,600</div>
+              <div class="mt-2 flex justify-center space-x-1">
+                <button class="p-1 text-blue-600 hover:bg-blue-100 rounded">
+                  <i class="fas fa-eye text-xs"></i>
+                </button>
+                <button class="p-1 text-green-600 hover:bg-green-100 rounded">
+                  <i class="fas fa-download text-xs"></i>
+                </button>
+                <button class="p-1 text-purple-600 hover:bg-purple-100 rounded">
+                  <i class="fas fa-search-plus text-xs"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- OCR解析結果 -->
+          <div class="bg-indigo-50 rounded-lg p-4 mb-4">
+            <h4 class="font-semibold text-indigo-800 mb-2 flex items-center">
+              <i class="fas fa-eye mr-2"></i>
+              OCR自動解析結果
+            </h4>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div class="text-indigo-700 space-y-1">
+                  <div>• 領収書データ自動抽出: <span class="font-bold text-green-600">完了</span></div>
+                  <div>• 金額検証: <span class="font-bold text-green-600">一致</span></div>
+                  <div>• 日付検証: <span class="font-bold text-green-600">正確</span></div>
+                </div>
+              </div>
+              <div>
+                <div class="text-indigo-700 space-y-1">
+                  <div>• 事業者名検証: <span class="font-bold text-green-600">適正</span></div>
+                  <div>• 税額計算: <span class="font-bold text-green-600">正確</span></div>
+                  <div>• 偽造検知: <span class="font-bold text-green-600">問題なし</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ファイル管理連携 -->
+          <div class="bg-purple-50 rounded-lg p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <h4 class="font-semibold text-purple-800 mb-1">統合ファイル管理連携</h4>
+                <div class="text-sm text-purple-600">経費管理フォルダ: 2025-EXP_佐藤健太_技術研修出張</div>
+              </div>
+              <button class="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                <i class="fas fa-folder-open mr-1"></i>フォルダを開く
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- 申請者情報 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-user text-blue-600 mr-2"></i>
+            申請者情報
+          </h3>
+          
+          <div class="space-y-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <i class="fas fa-user-tie text-blue-600"></i>
+              </div>
+              <div>
+                <div class="font-bold text-gray-800">佐藤 健太</div>
+                <div class="text-sm text-gray-500">技術部・主任技師</div>
+              </div>
+            </div>
+            
+            <!-- 職歴・資格情報 -->
+            <div class="grid grid-cols-1 gap-3">
+              <div class="p-3 bg-blue-50 rounded-lg">
+                <div class="font-medium text-blue-800 text-sm">保有資格</div>
+                <div class="text-xs text-blue-700 mt-1">
+                  <div>• 第一種電気工事士</div>
+                  <div>• エネルギー管理士</div>
+                  <div>• 計装士1級</div>
+                </div>
+              </div>
+              <div class="p-3 bg-green-50 rounded-lg">
+                <div class="font-medium text-green-800 text-sm">実績・評価</div>
+                <div class="text-xs text-green-700 mt-1">
+                  <div>• 在籍年数: 8年</div>
+                  <div>• 昨年度評価: A</div>
+                  <div>• 研修受講率: 100%</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 経費申請履歴 -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-2">今期経費実績</h4>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">研修・出張費</span>
+                  <span class="font-medium">¥395,200</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">一般経費</span>
+                  <span class="font-medium">¥78,400</span>
+                </div>
+                <div class="flex justify-between text-sm border-t pt-2">
+                  <span class="font-medium text-gray-800">合計</span>
+                  <span class="font-bold text-gray-800">¥473,600</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                  年間予算 ¥600,000 に対し 79%使用
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 承認判定支援 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-balance-scale text-green-600 mr-2"></i>
+            承認判定支援
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 総合評価 -->
+            <div class="text-center p-4 bg-green-50 rounded-lg border-2 border-green-200">
+              <div class="text-3xl font-bold text-green-600 mb-1">A+</div>
+              <div class="text-sm text-green-700 font-medium">総合適正評価</div>
+              <div class="text-xs text-green-600 mt-1">即座承認推奨</div>
+            </div>
+            
+            <!-- 評価項目 -->
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">規程適合性</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-green-600">100%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">金額妥当性</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 95%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-green-600">95%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">書類完備</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-green-600">100%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">業務関連性</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 98%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-green-600">98%</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 推奨アクション -->
+            <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+              <div class="flex items-center mb-1">
+                <i class="fas fa-thumbs-up text-green-600 mr-2"></i>
+                <span class="font-medium text-green-800 text-sm">承認推奨</span>
+              </div>
+              <div class="text-xs text-green-700">
+                全ての基準をクリアしており、迅速な承認処理を推奨します。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 処理期限・アクション -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-clock text-orange-600 mr-2"></i>
+            処理期限・スケジュール
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 期限情報 -->
+            <div class="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+              <div class="font-medium text-orange-800 mb-2">承認期限</div>
+              <div class="text-sm text-orange-700 space-y-1">
+                <div>• 申請受付: 2025/05/19 10:30</div>
+                <div>• 上長承認: 2025/05/19 15:45</div>
+                <div>• 承認期限: <span class="font-bold">2025/05/21 17:00</span></div>
+                <div>• 残り時間: <span class="font-bold text-red-600">1日 3時間</span></div>
+              </div>
+            </div>
+            
+            <!-- 処理フロー -->
+            <div>
+              <h4 class="font-medium text-gray-800 mb-3">今後の処理フロー</h4>
+              <div class="expense-timeline">
+                <div class="timeline-item">
+                  <div class="font-medium text-sm">総務部長承認</div>
+                  <div class="text-xs text-gray-500">承認後、自動で経理処理へ</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="font-medium text-sm">経理部確認・仕訳</div>
+                  <div class="text-xs text-gray-500">勘定科目確定・システム登録</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="font-medium text-sm">精算処理</div>
+                  <div class="text-xs text-gray-500">法人カード精算・現金支給</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="font-medium text-sm">申請者通知</div>
+                  <div class="text-xs text-gray-500">処理完了・支払予定通知</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 緊急度 -->
+            <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <div class="flex items-center mb-1">
+                <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                <span class="font-medium text-blue-800 text-sm">処理優先度</span>
+              </div>
+              <div class="text-xs text-blue-700">
+                法人カード決済分があるため、月末精算に間に合わせる必要があります。
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- コメント・履歴 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-comments text-indigo-600 mr-2"></i>
+            コメント・履歴
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 申請者コメント -->
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  佐
+                </div>
+                <div>
+                  <div class="font-medium text-sm">佐藤健太 (申請者)</div>
+                  <div class="text-xs text-gray-500">2025/05/19 10:30</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                IoT・AI技術の進歩が早いため、定期的な技術研修が必要不可欠です。今回の研修で習得した技術を社内展開し、提案力向上に活用します。
+              </div>
+            </div>
+            
+            <!-- 上長コメント -->
+            <div class="p-3 bg-green-50 rounded-lg">
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  田
+                </div>
+                <div>
+                  <div class="font-medium text-sm">田中修一 (技術部長)</div>
+                  <div class="text-xs text-gray-500">2025/05/19 15:45</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">
+                技術力向上は部門目標の一つです。研修内容を社内共有会で展開し、部門全体のスキルアップを図ってください。承認します。
+              </div>
+            </div>
+            
+            <!-- システム履歴 -->
+            <div class="space-y-2">
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-check text-green-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">上長承認完了</span>
+                  <span class="text-gray-500 text-xs ml-2">15:45</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-robot text-blue-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">Copilot分析完了</span>
+                  <span class="text-gray-500 text-xs ml-2">11:15</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-upload text-purple-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">領収書ファイル完備</span>
+                  <span class="text-gray-500 text-xs ml-2">10:45</span>
+                </div>
+              </div>
+              <div class="flex items-center text-sm">
+                <div class="w-6 h-6 bg-orange-100 rounded-full flex items-center justify-center mr-2">
+                  <i class="fas fa-paper-plane text-orange-600 text-xs"></i>
+                </div>
+                <div>
+                  <span class="font-medium">申請提出</span>
+                  <span class="text-gray-500 text-xs ml-2">10:30</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- コメント入力 -->
+            <div class="border-t pt-4">
+              <textarea 
+                placeholder="承認コメントを入力..." 
+                class="w-full p-3 border border-gray-300 rounded-lg text-sm resize-none"
+                rows="3"></textarea>
+              <div class="flex justify-end mt-2">
+                <button class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">
+                  <i class="fas fa-comment mr-1"></i>コメント追加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 承認アクションバー -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg p-4">
+      <div class="container mx-auto flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">申請金額:</span>
+            <span class="text-2xl font-bold text-green-600 ml-2">¥125,800</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">承認期限:</span>
+            <span class="text-red-600 font-bold ml-2">2025/05/21 17:00</span>
+          </div>
+          <div class="text-sm text-gray-600">
+            <span class="font-medium">Copilot評価:</span>
+            <span class="text-green-600 font-bold ml-2">A+ (承認推奨)</span>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <!-- 承認オプション -->
+          <div class="flex items-center space-x-2">
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>条件付き承認</span>
+            </label>
+            <label class="flex items-center text-sm">
+              <input type="checkbox" class="mr-2">
+              <span>社内共有指示</span>
+            </label>
+          </div>
+          
+          <!-- アクションボタン -->
+          <button class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+            <i class="fas fa-download mr-2"></i>一括DL
+          </button>
+          <button class="px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+            <i class="fas fa-undo mr-2"></i>差戻し
+          </button>
+          <button class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <i class="fas fa-times mr-2"></i>却下
+          </button>
+          <button class="px-8 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition-all shadow-lg">
+            <i class="fas fa-check mr-2"></i>承認する
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 余白（固定バー用） -->
+    <div class="h-20"></div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 経費推移チャート
+      const ctx = document.getElementById('expenseChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['2024/06', '2024/07', '2024/08', '2024/09', '2024/10', '2024/11', '2024/12', '2025/01', '2025/02', '2025/03', '2025/04', '2025/05'],
+          datasets: [{
+            label: '技術研修費',
+            data: [45000, 23000, 89400, 67000, 34000, 67200, 45000, 112800, 56000, 89400, 78000, 125800],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.4,
+            fill: true
+          }, {
+            label: '部門平均',
+            data: [55000, 52000, 58000, 61000, 49000, 53000, 47000, 69000, 51000, 64000, 58000, 62000],
+            borderColor: 'rgb(156, 163, 175)',
+            backgroundColor: 'rgba(156, 163, 175, 0.1)',
+            borderDash: [5, 5],
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'bottom'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 150000,
+              ticks: {
+                callback: function(value) {
+                  return '¥' + (value / 1000).toFixed(0) + 'K';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // カードホバー効果
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-2px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 承認ボタンのクリック処理
+      const approveButton = document.querySelector('.bg-gradient-to-r.from-green-600');
+      if (approveButton) {
+        approveButton.addEventListener('click', function() {
+          if (confirm('この経費申請を承認しますか？\n\n申請金額: ¥125,800\n申請者: 佐藤健太 (技術部)\n内容: 技術研修・出張費')) {
+            // 承認処理のシミュレーション
+            this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+              showNotification('経費申請の承認が完了しました。経理部門で精算処理を開始します。', 'success');
+              
+              // 承認ステップの更新
+              const currentStep = document.querySelector('.approval-step.current');
+              if (currentStep) {
+                currentStep.classList.remove('current');
+                currentStep.classList.add('completed');
+                currentStep.innerHTML = '<i class="fas fa-check text-green-600"></i>';
+                
+                // 次のステップ（経理確認）をアクティブに
+                const nextStep = currentStep.parentElement.parentElement.querySelector('.approval-step.pending');
+                if (nextStep) {
+                  nextStep.classList.remove('pending');
+                  nextStep.classList.add('current');
+                }
+              }
+              
+              // アクションバーを非表示
+              document.querySelector('.fixed.bottom-0').style.display = 'none';
+              
+            }, 2000);
+          }
+        });
+      }
+
+      // その他のイベントハンドラー
+      addEventHandlers();
+      
+      // 初期化処理
+      updateDeadlineCountdown();
+      setInterval(updateDeadlineCountdown, 60000);
+
+      // ページ読み込み時のアニメーション
+      animatePageLoad();
+
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('経費承認システムへようこそ。Copilot分析により迅速な判断を支援します。', 'success');
+      }, 1000);
+    });
+
+    function addEventHandlers() {
+      // 差戻しボタン
+      const rejectButton = document.querySelector('.bg-yellow-600');
+      if (rejectButton) {
+        rejectButton.addEventListener('click', function() {
+          const reason = prompt('差戻し理由を入力してください：');
+          if (reason && reason.trim()) {
+            showNotification(`経費申請を差戻ししました。理由: ${reason}`, 'warning');
+          }
+        });
+      }
+
+      // 却下ボタン
+      const denyButton = document.querySelector('.bg-red-600');
+      if (denyButton) {
+        denyButton.addEventListener('click', function() {
+          const reason = prompt('却下理由を入力してください：');
+          if (reason && reason.trim()) {
+            if (confirm('この経費申請を却下しますか？この操作は取り消せません。')) {
+              showNotification(`経費申請を却下しました。理由: ${reason}`, 'error');
+            }
+          }
+        });
+      }
+
+      // 領収書プレビュー
+      const receiptButtons = document.querySelectorAll('.fa-eye');
+      receiptButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const receiptName = this.closest('.receipt-preview').querySelector('.font-medium').textContent;
+          showNotification(`${receiptName} をプレビューします`, 'info');
+        });
+      });
+
+      // 領収書ダウンロード
+      const downloadButtons = document.querySelectorAll('.fa-download');
+      downloadButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const receiptName = this.closest('.receipt-preview').querySelector('.font-medium').textContent;
+          showNotification(`${receiptName} をダウンロードしました`, 'success');
+        });
+      });
+
+      // 領収書拡大表示
+      const zoomButtons = document.querySelectorAll('.fa-search-plus');
+      zoomButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const receiptName = this.closest('.receipt-preview').querySelector('.font-medium').textContent;
+          showNotification(`${receiptName} を拡大表示します`, 'info');
+        });
+      });
+
+      // フォルダ連携ボタン
+      const folderButton = document.querySelector('.bg-purple-600');
+      if (folderButton) {
+        folderButton.addEventListener('click', function() {
+          showNotification('統合ファイル管理システムで経費フォルダを開いています...', 'info');
+        });
+      }
+
+      // Copilotアシスタント詳細分析
+      const detailAnalysisButtons = document.querySelectorAll('.bg-white.bg-opacity-20');
+      detailAnalysisButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          if (button.textContent.includes('詳細分析')) {
+            showNotification('Copilot詳細分析レポートを生成しています...', 'info');
+          } else if (button.textContent.includes('類似実績')) {
+            showNotification('類似経費実績データを表示しています...', 'info');
+          }
+        });
+      });
+
+      // 一括ダウンロード機能
+      const bulkDownloadButton = document.querySelector('.bg-gray-500');
+      if (bulkDownloadButton && bulkDownloadButton.textContent.includes('一括DL')) {
+        bulkDownloadButton.addEventListener('click', function() {
+          showNotification('全ての添付ファイルを一括ダウンロードしています...', 'info');
+        });
+      }
+
+      // コメント追加機能
+      const commentButton = document.querySelector('.bg-gray-500');
+      const commentTextarea = document.querySelector('textarea');
+      if (commentButton && commentTextarea && commentButton.textContent.includes('コメント追加')) {
+        commentButton.addEventListener('click', function() {
+          const comment = commentTextarea.value.trim();
+          if (comment) {
+            const commentSection = document.querySelector('.space-y-4');
+            const newComment = document.createElement('div');
+            newComment.className = 'p-3 bg-purple-50 rounded-lg border-l-4 border-purple-400';
+            newComment.innerHTML = `
+              <div class="flex items-center mb-2">
+                <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-sm font-bold mr-2">
+                  山
+                </div>
+                <div>
+                  <div class="font-medium text-sm">山田花子 (総務部長)</div>
+                  <div class="text-xs text-gray-500">${new Date().toLocaleString('ja-JP')}</div>
+                </div>
+              </div>
+              <div class="text-sm text-gray-700">${comment}</div>
+            `;
+            commentSection.insertBefore(newComment, commentSection.lastElementChild);
+            commentTextarea.value = '';
+            showNotification('コメントを追加しました', 'success');
+          }
+        });
+      }
+
+      // 承認オプションチェックボックス
+      const conditionCheckbox = document.querySelector('input[type="checkbox"]');
+      if (conditionCheckbox) {
+        conditionCheckbox.addEventListener('change', function() {
+          if (this.checked) {
+            const condition = prompt('承認条件を入力してください：');
+            if (!condition || !condition.trim()) {
+              this.checked = false;
+            }
+          }
+        });
+      }
+    }
+
+    function updateDeadlineCountdown() {
+      const deadlineText = document.querySelector('.text-red-600.font-bold');
+      if (deadlineText && deadlineText.textContent.includes('2025/05/21')) {
+        const deadline = new Date('2025-05-21T17:00:00');
+        const now = new Date();
+        const diff = deadline - now;
+        
+        if (diff > 0) {
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          
+          if (days > 0) {
+            deadlineText.textContent = `残り ${days}日${hours}時間`;
+          } else {
+            deadlineText.textContent = `残り ${hours}時間${minutes}分`;
+          }
+        }
+      }
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+  </script>
+</body>
+</html>

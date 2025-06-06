@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全社共通 稟議承認システム（設計仕様書v24準拠）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* 承認ステータス別スタイル */
+    .approval-pending { @apply bg-amber-50 border-l-4 border-amber-500; }
+    .approval-approved { @apply bg-green-50 border-l-4 border-green-500; }
+    .approval-rejected { @apply bg-red-50 border-l-4 border-red-500; }
+    .approval-draft { @apply bg-blue-50 border-l-4 border-blue-500; }
+    .approval-urgent { @apply bg-red-100 border-l-4 border-red-600; }
+    
+    /* 優先度別スタイル */
+    .priority-urgent { @apply bg-red-100 text-red-800 border border-red-300; }
+    .priority-high { @apply bg-amber-100 text-amber-800 border border-amber-300; }
+    .priority-normal { @apply bg-blue-100 text-blue-800 border border-blue-300; }
+    .priority-low { @apply bg-gray-100 text-gray-800 border border-gray-300; }
+    
+    /* アニメーション */
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    /* Copilotアシスタントスタイル */
+    .copilot-suggestion {
+      @apply bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-3;
+    }
+    
+    /* 稟議金額レベル */
+    .amount-level-1 { @apply bg-green-100 text-green-800; } /* 100万円未満 */
+    .amount-level-2 { @apply bg-yellow-100 text-yellow-800; } /* 100万円-500万円 */
+    .amount-level-3 { @apply bg-orange-100 text-orange-800; } /* 500万円-1000万円 */
+    .amount-level-4 { @apply bg-red-100 text-red-800; } /* 1000万円以上 */
+    
+    /* 規程チェック結果 */
+    .regulation-ok { @apply bg-green-50 border-green-200 text-green-800; }
+    .regulation-warning { @apply bg-amber-50 border-amber-200 text-amber-800; }
+    .regulation-error { @apply bg-red-50 border-red-200 text-red-800; }
+    
+    /* プログレスバー */
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring circle {
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.35s;
+    }
+    
+    /* 予算チェック */
+    .budget-ok { @apply bg-green-100 text-green-800 border border-green-300; }
+    .budget-warning { @apply bg-amber-100 text-amber-800 border border-amber-300; }
+    .budget-over { @apply bg-red-100 text-red-800 border border-red-300; }
+    
+    /* ファイルタイプアイコン */
+    .file-pdf { @apply text-red-500; }
+    .file-excel { @apply text-green-500; }
+    .file-word { @apply text-blue-500; }
+    .file-image { @apply text-purple-500; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-indigo-800 to-indigo-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-file-signature text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">全社共通 稟議承認システム</h1>
+              <p class="text-indigo-200 text-sm">Comprehensive Approval System v24 with Copilot</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-3">
+            <span class="bg-indigo-700 px-3 py-1 rounded-full text-sm font-medium">全社共通</span>
+            <div class="text-center">
+              <div class="text-xs text-indigo-200">処理効率化</div>
+              <div class="text-sm font-bold text-white">73%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <button class="p-2 hover:bg-indigo-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-lg"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">8</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-right">
+              <div class="font-semibold text-sm">山田 健太郎</div>
+              <div class="text-xs text-indigo-200">営業部長・管理職</div>
+            </div>
+            <div class="w-10 h-10 bg-gradient-to-br from-white to-gray-200 text-indigo-800 rounded-full flex items-center justify-center font-bold">
+              YK
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <div class="flex items-center text-sm text-gray-600 mb-4">
+      <a href="#" class="hover:text-indigo-600 flex items-center">
+        <i class="fas fa-home mr-1"></i> ホーム
+      </a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
+      <a href="#" class="hover:text-indigo-600">全社ポータル</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
+      <span class="text-gray-800 font-medium">稟議承認管理</span>
+    </div>
+
+    <!-- タイトルとアクションエリア -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+      <div>
+        <h2 class="text-3xl font-bold text-gray-800">稟議承認管理</h2>
+        <p class="text-gray-600 mt-1">Copilot支援による効率的な稟議審査・規程整合性チェック・予算管理</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-lg flex items-center shadow-md transition-all">
+          <i class="fas fa-plus mr-2"></i> 新規稟議
+        </button>
+        <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center shadow-md transition-all">
+          <i class="fas fa-robot mr-2"></i> Copilot設定
+        </button>
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center shadow-md transition-all">
+          <i class="fas fa-chart-bar mr-2"></i> 承認分析
+        </button>
+        <button class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg flex items-center shadow-md transition-all">
+          <i class="fas fa-book mr-2"></i> 稟議規程
+        </button>
+      </div>
+    </div>
+
+    <!-- 稟議承認状況ダッシュボード -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">承認待ち稟議</p>
+            <p class="text-3xl font-bold text-amber-600">12件</p>
+            <div class="flex items-center mt-2">
+              <span class="text-red-600 text-sm flex items-center">
+                <i class="fas fa-exclamation-triangle mr-1"></i> 緊急5件
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-clock text-amber-500 text-xl"></i>
+          </div>
+        </div>
+        <button class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+          緊急稟議処理
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">今日処理済み</p>
+            <p class="text-3xl font-bold text-green-600">18件</p>
+            <div class="flex items-center mt-2">
+              <span class="text-green-600 text-sm flex items-center">
+                <i class="fas fa-arrow-up mr-1"></i> 前日比 +6件
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-check-circle text-green-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-xs text-gray-600">平均処理時間: 2.1時間</div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">規程違反検出</p>
+            <p class="text-3xl font-bold text-red-600">3件</p>
+            <div class="flex items-center mt-2">
+              <span class="text-red-600 text-sm flex items-center">
+                <i class="fas fa-shield-alt mr-1"></i> 要確認
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-red-500 text-xl"></i>
+          </div>
+        </div>
+        <button class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+          違反事項確認
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">Copilot効率化</p>
+            <p class="text-3xl font-bold text-purple-600">73%</p>
+            <div class="flex items-center mt-2">
+              <span class="text-purple-600 text-sm flex items-center">
+                <i class="fas fa-robot mr-1"></i> AI支援率
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-brain text-purple-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-xs text-gray-600">類似稟議分析: 35件/月</div>
+      </div>
+    </div>
+
+    <!-- 緊急承認・高額稟議セクション -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+      <!-- 緊急承認待ち稟議 -->
+      <div class="xl:col-span-2">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mr-3">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">緊急・高額稟議 承認待ち</h3>
+                <p class="text-sm text-gray-600">優先処理が必要な稟議案件</p>
+              </div>
+              <span class="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm px-3 py-1 rounded-full font-semibold">5</span>
+            </div>
+            <button class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">すべて表示</button>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- 設備投資稟議（高額） -->
+            <div class="approval-urgent rounded-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-industry text-red-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">ABC工場 制御システム更新投資</span>
+                    <span class="ml-2 amount-level-4 px-2 py-1 rounded-full text-xs">高額案件</span>
+                    <span class="ml-2 priority-urgent px-2 py-1 rounded-full text-xs">緊急</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">投資金額: 2,800万円 | 申請者：田中博之（技術部長）</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-3">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span>申請日: 2025/05/17 | 期限: 2025/05/20 17:00（残り8時間）</span>
+                    <span class="mx-2">•</span>
+                    <span>計装士1級案件・DCS更新</span>
+                  </div>
+                  
+                  <!-- Copilotアシスタント -->
+                  <div class="copilot-suggestion mb-3">
+                    <div class="flex items-center mb-2">
+                      <i class="fas fa-robot text-purple-600 mr-2"></i>
+                      <span class="text-sm font-semibold text-purple-800">Copilot分析結果</span>
+                    </div>
+                    <ul class="text-xs text-purple-700 space-y-1">
+                      <li>• 類似投資案件との比較: 単価適正（±3%以内）</li>
+                      <li>• 予算枠確認: 設備投資予算残 4,200万円（範囲内）</li>
+                      <li>• 規程チェック: 投資稟議規程§5.2-5.4準拠</li>
+                      <li>⚠️ ROI計算書の添付が不足しています</li>
+                      <li>✅ 技術仕様は制御系統図と整合性あり</li>
+                    </ul>
+                  </div>
+                  
+                  <!-- 予算・規程チェック結果 -->
+                  <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="budget-ok rounded-lg p-2 text-xs">
+                      <div class="font-semibold">予算チェック</div>
+                      <div>設備投資枠内（67%使用）</div>
+                    </div>
+                    <div class="regulation-warning border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>IT投資規程</span>
+                  <span class="font-semibold">85%準拠</span>
+                </div>
+              </div>
+              <div class="regulation-error border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>経費稟議規程</span>
+                  <span class="font-semibold">72%準拠</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 承認者別状況 -->
+          <div>
+            <div class="text-sm font-semibold text-gray-800 mb-3">承認者別処理状況</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="text-sm text-gray-800">山田部長</span>
+                  <span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">迅速処理</span>
+                </div>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-green-600">11/12件</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="text-sm text-gray-800">鈴木役員</span>
+                  <span class="ml-2 text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">処理中</span>
+                </div>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-amber-500 h-2 rounded-full" style="width: 60%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-amber-600">3/5件</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <span class="text-sm text-gray-800">社長</span>
+                  <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">待機中</span>
+                </div>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 0%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-blue-600">0/2件</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Copilot改善実績 -->
+          <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-robot text-purple-600 mr-2"></i>
+              <div>
+                <div class="text-sm font-semibold text-gray-800">Copilot改善実績</div>
+                <div class="text-xs text-gray-600">今週の自動化効果</div>
+              </div>
+            </div>
+            <div class="space-y-1 text-sm">
+              <div class="flex items-center justify-between">
+                <span>規程違反検出</span>
+                <span class="font-semibold text-purple-600">8件</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>類似稟議分析</span>
+                <span class="font-semibold text-purple-600">35件</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>処理時間短縮</span>
+                <span class="font-semibold text-purple-600">31%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 稟議一覧（詳細版） -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+      <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-gray-50 to-gray-100">
+        <div>
+          <h3 class="font-bold text-gray-700">稟議一覧・承認状況</h3>
+          <p class="text-sm text-gray-500">全社稟議案件（Copilot分析・規程チェック付き）</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center">
+            <label class="text-sm text-gray-600 mr-2">種別:</label>
+            <select class="border rounded p-1 text-sm">
+              <option value="all" selected>すべて</option>
+              <option value="investment">投資稟議</option>
+              <option value="hr">人事稟議</option>
+              <option value="expense">経費稟議</option>
+              <option value="other">その他</option>
+            </select>
+          </div>
+          <div class="flex items-center">
+            <label class="text-sm text-gray-600 mr-2">金額:</label>
+            <select class="border rounded p-1 text-sm">
+              <option value="all" selected>すべて</option>
+              <option value="low">100万円未満</option>
+              <option value="medium">100-500万円</option>
+              <option value="high">500万円以上</option>
+            </select>
+          </div>
+          <div class="flex items-center">
+            <label class="text-sm text-gray-600 mr-2">状態:</label>
+            <select class="border rounded p-1 text-sm">
+              <option value="all" selected>すべて</option>
+              <option value="pending">承認待ち</option>
+              <option value="approved">承認済み</option>
+              <option value="rejected">差戻し</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50 border-b">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">稟議情報</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">種別・金額</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認状況</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Copilot分析</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">規程チェック</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">アクション</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <!-- 設備投資稟議 -->
+            <tr class="hover:bg-red-50 approval-urgent">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">RIN-2025-0324</span>
+                    <span class="priority-urgent px-2 py-1 rounded-full text-xs">緊急</span>
+                  </div>
+                  <div class="text-sm font-medium text-indigo-600">ABC工場制御システム更新投資</div>
+                  <div class="text-xs text-gray-500">申請者: 田中博之（技術部長）</div>
+                  <div class="text-xs text-red-600">期限: 2025/05/20 17:00（残り8時間）</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <span class="amount-level-4 px-2 py-1 rounded-full text-xs font-medium">設備投資</span>
+                  <div class="text-lg font-semibold text-gray-800 mt-1">2,800万円</div>
+                  <div class="text-xs text-gray-500">DCS更新・制御盤</div>
+                  <div class="text-xs text-indigo-600">ROI: 2.3年</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
+                    <span class="text-sm">部長承認待ち</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    申請→課長: ✅完了<br>
+                    課長→部長: ⏳待機中<br>
+                    部長→役員: ⏸未到達
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">金額妥当</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-exclamation-triangle text-amber-500 mr-1"></i>
+                    <span class="text-amber-600">ROI計算書不足</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                    <span class="text-blue-600">類似案件比較OK</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="regulation-ok border rounded px-2 py-1 text-xs">
+                    投資規程準拠
+                  </div>
+                  <div class="regulation-warning border rounded px-2 py-1 text-xs">
+                    添付書類不足
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">承認</button>
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-xs">条件付</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">詳細</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 人事稟議 -->
+            <tr class="hover:bg-amber-50 approval-pending">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">RIN-2025-0325</span>
+                    <span class="priority-urgent px-2 py-1 rounded-full text-xs">緊急</span>
+                  </div>
+                  <div class="text-sm font-medium text-indigo-600">中途採用者緊急雇用承認</div>
+                  <div class="text-xs text-gray-500">申請者: 人事部長</div>
+                  <div class="text-xs text-gray-600">入社予定: 2025/06/01</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <span class="amount-level-2 px-2 py-1 rounded-full text-xs font-medium">人事案件</span>
+                  <div class="text-lg font-semibold text-gray-800 mt-1">480万円</div>
+                  <div class="text-xs text-gray-500">年収・電気施工管理士</div>
+                  <div class="text-xs text-green-600">即戦力</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
+                    <span class="text-sm">承認待ち</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    人事部→部長: ⏳待機中<br>
+                    承認者: 山田部長
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">給与水準適正</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">資格要件満たす</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                    <span class="text-blue-600">人員計画内</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="regulation-ok border rounded px-2 py-1 text-xs">
+                    人事規程準拠
+                  </div>
+                  <div class="regulation-ok border rounded px-2 py-1 text-xs">
+                    採用基準適合
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">承認</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">詳細</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- IT投資稟議 -->
+            <tr class="hover:bg-blue-50 approval-pending">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">RIN-2025-0326</span>
+                    <span class="priority-high px-2 py-1 rounded-full text-xs">高優先度</span>
+                  </div>
+                  <div class="text-sm font-medium text-indigo-600">基幹システム拡張投資</div>
+                  <div class="text-xs text-gray-500">申請者: IT部長</div>
+                  <div class="text-xs text-blue-600">Microsoft 365拡張</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <span class="amount-level-3 px-2 py-1 rounded-full text-xs font-medium">IT投資</span>
+                  <div class="text-lg font-semibold text-gray-800 mt-1">1,200万円</div>
+                  <div class="text-xs text-gray-500">3年契約・Power Platform</div>
+                  <div class="text-xs text-indigo-600">ROI: 145%</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
+                    <span class="text-sm">技術確認中</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    IT部→技術: ⏳確認中<br>
+                    技術→部長: ⏸未到達
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">ROI算定適正</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">効果算定具体的</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                    <span class="text-blue-600">現行システム整合</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="regulation-ok border rounded px-2 py-1 text-xs">
+                    IT投資規程準拠
+                  </div>
+                  <div class="regulation-ok border rounded px-2 py-1 text-xs">
+                    セキュリティ基準適合
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">承認</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">ROI確認</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 承認済み稟議 -->
+            <tr class="hover:bg-green-50 approval-approved">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">RIN-2025-0323</span>
+                    <span class="priority-normal px-2 py-1 rounded-full text-xs">通常</span>
+                  </div>
+                  <div class="text-sm font-medium text-indigo-600">営業車両リース契約更新</div>
+                  <div class="text-xs text-gray-500">申請者: 総務部長</div>
+                  <div class="text-xs text-green-600">承認完了: 2025/05/18 15:30</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <span class="amount-level-1 px-2 py-1 rounded-full text-xs font-medium">経費</span>
+                  <div class="text-lg font-semibold text-gray-800 mt-1">84万円</div>
+                  <div class="text-xs text-gray-500">年間リース料</div>
+                  <div class="text-xs text-green-600">継続契約</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-green-600">承認完了</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    処理時間: 1時間45分<br>
+                    承認者: 山田部長
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">前年同額</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">契約条件良好</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="regulation-ok border rounded px-2 py-1 text-xs">
+                    経費規程準拠
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-gray-400 text-white px-3 py-1 rounded text-xs" disabled>承認済み</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">詳細</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 稟議詳細表示モーダル（サンプル） -->
+    <div class="hidden" id="detailModal">
+      <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div class="p-6 border-b border-gray-200">
+            <div class="flex justify-between items-center">
+              <h3 class="text-2xl font-bold text-gray-800">稟議詳細 - RIN-2025-0324</h3>
+              <button class="text-gray-500 hover:text-gray-700" onclick="closeModal()">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- 基本情報 -->
+              <div class="bg-gray-50 rounded-xl p-4">
+                <h4 class="font-semibold text-gray-800 mb-3">基本情報</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">稟議番号:</span>
+                    <span class="font-medium">RIN-2025-0324</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">件名:</span>
+                    <span class="font-medium">ABC工場制御システム更新投資</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">申請者:</span>
+                    <span class="font-medium">田中博之（技術部長）</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">申請日:</span>
+                    <span class="font-medium">2025/05/17</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">希望決裁日:</span>
+                    <span class="font-medium text-red-600">2025/05/20</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 予算・金額 -->
+              <div class="bg-blue-50 rounded-xl p-4">
+                <h4 class="font-semibold text-gray-800 mb-3">予算・金額</h4>
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">申請金額:</span>
+                    <span class="font-bold text-lg text-blue-600">28,000,000円</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">予算区分:</span>
+                    <span class="font-medium">設備投資</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">予算残高:</span>
+                    <span class="font-medium text-green-600">42,000,000円</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">予算使用率:</span>
+                    <span class="font-medium">67%（承認後）</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Copilot分析結果 -->
+              <div class="lg:col-span-2">
+                <div class="copilot-suggestion">
+                  <div class="flex items-center mb-3">
+                    <i class="fas fa-robot text-purple-600 mr-2 text-lg"></i>
+                    <h4 class="font-semibold text-purple-800">Copilot総合分析</h4>
+                  </div>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div class="font-semibold text-purple-800 mb-2">妥当性分析</div>
+                      <ul class="space-y-1 text-purple-700">
+                        <li>✅ 類似投資案件との金額比較: ±3%以内</li>
+                        <li>✅ 技術仕様の妥当性: 制御系統図と整合</li>
+                        <li>✅ 投資効果算定: ROI 2.3年（業界平均2.8年）</li>
+                        <li>⚠️ ROI計算書の詳細が不足</li>
+                      </ul>
+                    </div>
+                    <div>
+                      <div class="font-semibold text-purple-800 mb-2">リスク分析</div>
+                      <ul class="space-y-1 text-purple-700">
+                        <li>✅ 予算枠内での投資</li>
+                        <li>✅ 技術リスク: 低（実績あり）</li>
+                        <li>⚠️ 工期リスク: 中（繁忙期重複）</li>
+                        <li>✅ 投資回収期間: 適正範囲</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 添付ファイル -->
+              <div class="lg:col-span-2">
+                <h4 class="font-semibold text-gray-800 mb-3">添付ファイル</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-file-pdf file-pdf text-xl mr-3"></i>
+                    <div class="flex-1">
+                      <div class="font-medium text-sm">投資計画書.pdf</div>
+                      <div class="text-xs text-gray-500">2.3MB | 2025/05/17</div>
+                    </div>
+                    <button class="text-indigo-600 hover:text-indigo-800 text-sm">表示</button>
+                  </div>
+                  <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-file-excel file-excel text-xl mr-3"></i>
+                    <div class="flex-1">
+                      <div class="font-medium text-sm">投資効果試算.xlsx</div>
+                      <div class="text-xs text-gray-500">1.8MB | 2025/05/17</div>
+                    </div>
+                    <button class="text-indigo-600 hover:text-indigo-800 text-sm">表示</button>
+                  </div>
+                  <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-file-image file-image text-xl mr-3"></i>
+                    <div class="flex-1">
+                      <div class="font-medium text-sm">制御系統図.png</div>
+                      <div class="text-xs text-gray-500">4.1MB | 2025/05/16</div>
+                    </div>
+                    <button class="text-indigo-600 hover:text-indigo-800 text-sm">表示</button>
+                  </div>
+                  <div class="flex items-center p-3 border rounded-lg hover:bg-gray-50">
+                    <i class="fas fa-file-word file-word text-xl mr-3"></i>
+                    <div class="flex-1">
+                      <div class="font-medium text-sm">見積書比較.docx</div>
+                      <div class="text-xs text-gray-500">1.2MB | 2025/05/16</div>
+                    </div>
+                    <button class="text-indigo-600 hover:text-indigo-800 text-sm">表示</button>
+                  </div>
+                </div>
+                
+                <!-- 不足ファイル警告 -->
+                <div class="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div class="flex items-center text-amber-800">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    <span class="font-semibold text-sm">添付ファイル不足</span>
+                  </div>
+                  <div class="text-xs text-amber-700 mt-1">
+                    投資稟議規程により「ROI詳細計算書」の添付が必要です
+                  </div>
+                </div>
+              </div>
+
+              <!-- 承認履歴 -->
+              <div class="lg:col-span-2">
+                <h4 class="font-semibold text-gray-800 mb-3">承認履歴・ワークフロー</h4>
+                <div class="space-y-3">
+                  <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                      <i class="fas fa-check text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <div class="font-medium text-sm">申請者提出</div>
+                          <div class="text-xs text-gray-600">田中博之（技術部長）</div>
+                        </div>
+                        <div class="text-xs text-gray-500">2025/05/17 14:30</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="flex items-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-3">
+                      <i class="fas fa-check text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <div class="font-medium text-sm">課長承認完了</div>
+                          <div class="text-xs text-gray-600">佐藤課長 - コメント: 技術仕様適正</div>
+                        </div>
+                        <div class="text-xs text-gray-500">2025/05/17 16:45</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="flex items-center p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div class="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center mr-3">
+                      <i class="fas fa-clock text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <div class="font-medium text-sm">部長承認待ち</div>
+                          <div class="text-xs text-gray-600">山田健太郎（営業部長・管理職）</div>
+                        </div>
+                        <div class="text-xs text-amber-600">処理中</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="flex items-center p-3 bg-gray-100 border border-gray-200 rounded-lg">
+                    <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center mr-3">
+                      <i class="fas fa-pause text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex justify-between items-center">
+                        <div>
+                          <div class="font-medium text-sm">役員承認待機</div>
+                          <div class="text-xs text-gray-600">鈴木役員</div>
+                        </div>
+                        <div class="text-xs text-gray-500">待機中</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 承認アクション -->
+            <div class="mt-6 border-t pt-6">
+              <div class="flex flex-wrap gap-3 justify-end">
+                <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium">
+                  <i class="fas fa-check mr-2"></i> 承認
+                </button>
+                <button class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium">
+                  <i class="fas fa-edit mr-2"></i> 条件付承認
+                </button>
+                <button class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium">
+                  <i class="fas fa-times mr-2"></i> 差戻し
+                </button>
+                <button class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
+                  <i class="fas fa-comment mr-2"></i> コメント追加
+                </button>
+                <button class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-medium" onclick="closeModal()">
+                  <i class="fas fa-times mr-2"></i> 閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 新規稟議申請メニュー -->
+    <div class="mb-8">
+      <div class="flex items-center mb-6">
+        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center mr-3">
+          <i class="fas fa-plus-circle text-white"></i>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold text-gray-800">新規稟議申請メニュー</h3>
+          <p class="text-sm text-gray-600">Copilot支援による効率的な稟議作成・規程準拠チェック</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- 設備投資稟議 -->
+        <div class="bg-gradient-to-br from-white to-blue-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-blue-100">
+          <div class="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-lg">設備投資稟議</h4>
+              <i class="fas fa-industry text-2xl opacity-80"></i>
+            </div>
+          </div>
+          <div class="p-6">
+            <p class="text-gray-600 mb-4">機械設備・電気設備・制御システム投資。技術的妥当性とROI自動算定支援</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">ROI自動計算</span>
+              <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full">技術仕様チェック</span>
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">予算枠確認</span>
+            </div>
+            <button class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+              <i class="fas fa-plus mr-2"></i> 設備投資稟議を作成
+            </button>
+          </div>
+        </div>
+
+        <!-- 人事稟議 -->
+        <div class="bg-gradient-to-br from-white to-green-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-green-100">
+          <div class="bg-gradient-to-r from-green-600 to-green-700 text-white p-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-lg">人事稟議</h4>
+              <i class="fas fa-users text-2xl opacity-80"></i>
+            </div>
+          </div>
+          <div class="p-6">
+            <p class="text-gray-600 mb-4">採用・昇進・異動・研修等の人事案件。人事規程準拠と給与水準自動チェック</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">給与水準比較</span>
+              <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full">人事規程準拠</span>
+              <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">人員計画確認</span>
+            </div>
+            <button class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+              <i class="fas fa-plus mr-2"></i> 人事稟議を作成
+            </button>
+          </div>
+        </div>
+
+        <!-- IT投資稟議 -->
+        <div class="bg-gradient-to-br from-white to-purple-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-purple-100">
+          <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-lg">IT投資稟議</h4>
+              <i class="fas fa-server text-2xl opacity-80"></i>
+            </div>
+          </div>
+          <div class="p-6">
+            <p class="text-gray-600 mb-4">システム・ソフトウェア・IT機器投資。セキュリティ基準と効果算定支援</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="bg-purple-100 text-purple-800 text-xs px-3 py-1 rounded-full">セキュリティチェック</span>
+              <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">効果算定支援</span>
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">システム整合性</span>
+            </div>
+            <button class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+              <i class="fas fa-plus mr-2"></i> IT投資稟議を作成
+            </button>
+          </div>
+        </div>
+
+        <!-- 経費稟議 -->
+        <div class="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-amber-100">
+          <div class="bg-gradient-to-r from-amber-600 to-amber-700 text-white p-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-lg">経費稟議</h4>
+              <i class="fas fa-receipt text-2xl opacity-80"></i>
+            </div>
+          </div>
+          <div class="p-6">
+            <p class="text-gray-600 mb-4">出張・研修・交際費等の経費申請。経費規程準拠と予算残高自動確認</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full">経費規程チェック</span>
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">予算残高確認</span>
+              <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">類似経費比較</span>
+            </div>
+            <button class="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+              <i class="fas fa-plus mr-2"></i> 経費稟議を作成
+            </button>
+          </div>
+        </div>
+
+        <!-- 契約稟議 -->
+        <div class="bg-gradient-to-br from-white to-indigo-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-indigo-100">
+          <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-lg">契約稟議</h4>
+              <i class="fas fa-file-contract text-2xl opacity-80"></i>
+            </div>
+          </div>
+          <div class="p-6">
+            <p class="text-gray-600 mb-4">外部契約・業務委託・保守契約等。契約条項リスク分析と法務連携</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="bg-indigo-100 text-indigo-800 text-xs px-3 py-1 rounded-full">契約条項分析</span>
+              <span class="bg-red-100 text-red-800 text-xs px-3 py-1 rounded-full">リスク評価</span>
+              <span class="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">法務連携</span>
+            </div>
+            <button class="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+              <i class="fas fa-plus mr-2"></i> 契約稟議を作成
+            </button>
+          </div>
+        </div>
+
+        <!-- その他稟議 -->
+        <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg overflow-hidden card-hover border border-gray-100">
+          <div class="bg-gradient-to-r from-gray-600 to-gray-700 text-white p-4">
+            <div class="flex justify-between items-center">
+              <h4 class="font-bold text-lg">その他稟議</h4>
+              <i class="fas fa-ellipsis-h text-2xl opacity-80"></i>
+            </div>
+          </div>
+          <div class="p-6">
+            <p class="text-gray-600 mb-4">上記以外の特殊案件・緊急案件等。柔軟な承認ルート設定と規程確認</p>
+            <div class="flex flex-wrap gap-2 mb-4">
+              <span class="bg-gray-100 text-gray-800 text-xs px-3 py-1 rounded-full">柔軟承認ルート</span>
+              <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full">特殊案件対応</span>
+              <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full">緊急処理</span>
+            </div>
+            <button class="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white py-3 rounded-xl font-medium transition-all shadow-md">
+              <i class="fas fa-plus mr-2"></i> その他稟議を作成
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 技術バックグラウンド活用・規程管理 -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+      <!-- 技術バックグラウンド活用状況 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-cogs text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">技術バックグラウンド活用</h3>
+            <p class="text-sm text-gray-600">16年営業経験・技術資格による専門判断支援</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 資格活用状況 -->
+          <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-2">今月の技術的判断支援実績</div>
+            <div class="grid grid-cols-3 gap-4">
+              <div class="text-center">
+                <div class="text-xl font-bold text-blue-600">26件</div>
+                <div class="text-xs text-gray-600">計装士1級活用</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xl font-bold text-green-600">18件</div>
+                <div class="text-xs text-gray-600">電気施工管理1級</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xl font-bold text-purple-600">12件</div>
+                <div class="text-xs text-gray-600">管工事施工管理1級</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 技術分野別稟議支援 -->
+          <div>
+            <div class="text-sm font-semibold text-gray-800 mb-3">技術分野別支援状況</div>
+            <div class="space-y-3">
+              <div class="bg-blue-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">制御システム案件</span>
+                  <span class="text-sm font-bold text-blue-600">8件</span>
+                </div>
+                <div class="text-xs text-gray-600">DCS・PLC・計装設備の技術妥当性判断</div>
+              </div>
+              <div class="bg-green-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">電気設備案件</span>
+                  <span class="text-sm font-bold text-green-600">12件</span>
+                </div>
+                <div class="text-xs text-gray-600">受変電・配電・制御盤の工期・コスト妥当性</div>
+              </div>
+              <div class="bg-purple-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">機械設備案件</span>
+                  <span class="text-sm font-bold text-purple-600">6件</span>
+                </div>
+                <div class="text-xs text-gray-600">空調・配管・衛生設備の技術仕様確認</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 営業経験活用 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-star text-indigo-600 mr-2"></i>
+              <span class="text-sm font-semibold text-gray-800">16年営業経験活用</span>
+            </div>
+            <div class="space-y-1 text-sm">
+              <div class="flex items-center justify-between">
+                <span>市場価格妥当性判断</span>
+                <span class="font-semibold text-indigo-600">23件</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>顧客信用度評価</span>
+                <span class="font-semibold text-indigo-600">15件</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>競合分析支援</span>
+                <span class="font-semibold text-indigo-600">18件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 規程管理・コンプライアンス -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-shield-alt text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">規程管理・コンプライアンス</h3>
+            <p class="text-sm text-gray-600">規程準拠性チェックと違反防止</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 規程準拠率 -->
+          <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm text-gray-600">総合規程準拠率</div>
+                <div class="text-2xl font-bold text-green-600">94%</div>
+              </div>
+              <div class="relative w-16 h-16">
+                <svg class="progress-ring w-16 h-16">
+                  <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                  <circle cx="32" cy="32" r="28" stroke="#16a34a" stroke-width="4" fill="none" 
+                          stroke-dasharray="175.93" stroke-dashoffset="10.56"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-green-600">
+                  94%
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-gray-600">目標: 95% | 前月比+2%向上</div>
+          </div>
+
+          <!-- 規程別準拠状況 -->
+          <div>
+            <div class="text-sm font-semibold text-gray-800 mb-3">規程別準拠状況</div>
+            <div class="space-y-2">
+              <div class="regulation-ok border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>投資稟議規程</span>
+                  <span class="font-semibold">98%</span>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">ROI計算・技術仕様確認強化</div>
+              </div>
+              <div class="regulation-ok border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>人事稟議規程</span>
+                  <span class="font-semibold">100%</span>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">採用・昇進基準完全準拠</div>
+              </div>
+              <div class="regulation-warning border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>IT投資規程</span>
+                  <span class="font-semibold">85%</span>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">セキュリティ要件確認不足</div>
+              </div>
+              <div class="regulation-error border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>経費稟議規程</span>
+                  <span class="font-semibold">72%</span>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">領収書添付・上限額確認要改善</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 違反検出・予防 -->
+          <div class="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+              <div>
+                <div class="text-sm font-semibold text-gray-800">Copilot違反検出実績</div>
+                <div class="text-xs text-gray-600">今月の自動チェック結果</div>
+              </div>
+            </div>
+            <div class="space-y-1 text-sm">
+              <div class="flex items-center justify-between">
+                <span>規程違反検出</span>
+                <span class="font-semibold text-red-600">8件</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>添付書類不足検出</span>
+                <span class="font-semibold text-amber-600">12件</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>予算超過事前警告</span>
+                <span class="font-semibold text-blue-600">5件</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 規程改善提案 -->
+          <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-lightbulb text-purple-600 mr-2"></i>
+              <span class="text-sm font-semibold text-gray-800">規程改善提案</span>
+            </div>
+            <div class="space-y-1 text-xs text-purple-700">
+              <div>• IT投資規程のセキュリティ要件明確化推奨</div>
+              <div>• 経費稟議の添付書類チェック自動化</div>
+              <div>• 技術系稟議の専門資格者確認フロー追加</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 承認分析・統計情報 -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <div class="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-gray-700">稟議承認分析・統計情報</h3>
+          <div class="flex gap-2">
+            <button class="text-indigo-600 hover:text-indigo-800 text-sm">月次レポート</button>
+            <button class="text-green-600 hover:text-green-800 text-sm">Excel出力</button>
+            <button class="text-purple-600 hover:text-purple-800 text-sm">規程分析</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 稟議種別別処理時間 -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-800 mb-4">稟議種別別処理時間分析</h4>
+            <div class="space-y-3">
+              <div class="bg-blue-50 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">設備投資稟議</span>
+                  <span class="text-sm font-bold text-blue-600">平均3.2時間</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 68%"></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">目標: 4.0時間 | 達成率: 85% | 技術確認要</div>
+              </div>
+              
+              <div class="bg-green-50 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">人事稟議</span>
+                  <span class="text-sm font-bold text-green-600">平均1.8時間</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 90%"></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">目標: 2.0時間 | 達成率: 95% | 規程準拠良好</div>
+              </div>
+              
+              <div class="bg-purple-50 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">IT投資稟議</span>
+                  <span class="text-sm font-bold text-purple-600">平均2.5時間</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 75%"></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">目標: 3.0時間 | 達成率: 80% | セキュリティ確認時間</div>
+              </div>
+
+              <div class="bg-amber-50 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">経費稟議</span>
+                  <span class="text-sm font-bold text-amber-600">平均1.2時間</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-amber-500 h-2 rounded-full" style="width: 95%"></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">目標: 1.0時間 | 達成率: 75% | 書類確認要改善</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 月別稟議件数・金額推移 -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-800 mb-4">月別稟議件数・承認金額推移</h4>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">1月</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-indigo-500 h-3 rounded-full" style="width: 60%"></div>
+                  </div>
+                  <span class="text-sm font-semibold">28件</span>
+                  <span class="text-xs text-gray-500 ml-2">2.3億円</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">2月</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-indigo-500 h-3 rounded-full" style="width: 75%"></div>
+                  </div>
+                  <span class="text-sm font-semibold">35件</span>
+                  <span class="text-xs text-gray-500 ml-2">1.8億円</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">3月</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-indigo-500 h-3 rounded-full" style="width: 85%"></div>
+                  </div>
+                  <span class="text-sm font-semibold">42件</span>
+                  <span class="text-xs text-gray-500 ml-2">3.1億円</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">4月</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-indigo-500 h-3 rounded-full" style="width: 90%"></div>
+                  </div>
+                  <span class="text-sm font-semibold">38件</span>
+                  <span class="text-xs text-gray-500 ml-2">2.7億円</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-green-600 font-medium">5月（今月）</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-green-500 h-3 rounded-full" style="width: 100%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-green-600">45件</span>
+                  <span class="text-xs text-green-500 ml-2">4.2億円</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 今月の特徴 -->
+            <div class="mt-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3">
+              <div class="text-sm font-semibold text-green-800 mb-1">今月の特徴</div>
+              <div class="text-xs text-green-700">
+                • 件数：前月比+18%増加（設備投資稟議増）<br>
+                • 金額：前月比+56%増加（大型IT投資含む）<br>
+                • 処理効率：Copilot導入により平均31%短縮<br>
+                • 規程準拠率：94%達成（目標95%）
+              </div>
+            </div>
+
+            <!-- 承認金額分布 -->
+            <div class="mt-4">
+              <div class="text-sm font-semibold text-gray-800 mb-2">承認金額分布（今月）</div>
+              <div class="space-y-1">
+                <div class="flex items-center justify-between text-xs">
+                  <span>100万円未満</span>
+                  <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
+                    </div>
+                    <span class="font-semibold">27件</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span>100万円-500万円</span>
+                  <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-yellow-500 h-2 rounded-full" style="width: 35%"></div>
+                    </div>
+                    <span class="font-semibold">12件</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span>500万円-1,000万円</span>
+                  <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-orange-500 h-2 rounded-full" style="width: 15%"></div>
+                    </div>
+                    <span class="font-semibold">4件</span>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span>1,000万円以上</span>
+                  <div class="flex items-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                      <div class="bg-red-500 h-2 rounded-full" style="width: 5%"></div>
+                    </div>
+                    <span class="font-semibold">2件</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フッター -->
+  <footer class="bg-gradient-to-r from-gray-800 to-gray-900 text-white mt-12">
+    <div class="container mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div>
+          <h4 class="text-lg font-bold mb-3">システム情報</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li>バージョン: v24.0</li>
+            <li>最終更新: 2025/05/31</li>
+            <li>Copilot統合・規程管理強化版</li>
+            <li>サポート: 内線3001</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-3">主要機能</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li>• Copilot支援承認</li>
+            <li>• 規程整合性チェック</li>
+            <li>• 類似稟議分析</li>
+            <li>• 予算連携確認</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-3">技術バックグラウンド活用</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li>• 計装士1級による制御系判断</li>
+            <li>• 電気施工管理1級活用</li>
+            <li>• 管工事施工管理1級活用</li>
+            <li>• 16年営業経験による市場判断</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-3">サポート・学習</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li><a href="#" class="hover:text-white">稟議規程マニュアル</a></li>
+            <li><a href="#" class="hover:text-white">Copilot活用ガイド</a></li>
+            <li><a href="#" class="hover:text-white">技術系稟議作成支援</a></li>
+            <li><a href="#" class="hover:text-white">規程準拠チェックリスト</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 mt-6 pt-6 text-center text-sm text-gray-400">
+        <p>© 2025 エネルギーサービス企業 全社共通稟議承認システム | 設計仕様書v24準拠 | 技術バックグラウンド活用版</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript機能 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // プログレスリングのアニメーション
+      const progressRings = document.querySelectorAll('.progress-ring circle:last-child');
+      progressRings.forEach(ring => {
+        const circumference = 2 * Math.PI * 28;
+        ring.style.strokeDasharray = circumference;
+      });
+
+      // カードホバー効果
+      document.querySelectorAll('.card-hover').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-4px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 稟議詳細モーダル表示
+      window.showDetail = function(ringiId) {
+        document.getElementById('detailModal').classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      };
+
+      window.closeModal = function() {
+        document.getElementById('detailModal').classList.add('hidden');
+        document.body.style.overflow = 'auto';
+      };
+
+      // 承認ボタンのクリック処理（デモ）
+      document.querySelectorAll('button').forEach(button => {
+        if (button.textContent.includes('承認') && !button.disabled) {
+          button.addEventListener('click', function() {
+            if (this.textContent === '承認') {
+              this.textContent = '処理中...';
+              this.disabled = true;
+              this.className = this.className.replace('hover:bg-green-600', 'bg-gray-400');
+              setTimeout(() => {
+                this.textContent = '承認完了';
+                this.className = this.className.replace('bg-green-500', 'bg-gray-500');
+              }, 2000);
+            }
+          });
+        }
+      });
+
+      // 詳細ボタンクリック処理
+      document.querySelectorAll('button').forEach(button => {
+        if (button.textContent.includes('詳細')) {
+          button.addEventListener('click', function() {
+            showDetail('RIN-2025-0324');
+          });
+        }
+      });
+
+      // リアルタイム通知シミュレーション
+      setInterval(() => {
+        const badge = document.querySelector('.fa-bell + span');
+        if (badge && Math.random() > 0.95) {
+          const currentCount = parseInt(badge.textContent);
+          badge.textContent = currentCount + 1;
+          
+          // 簡易通知表示
+          const notification = document.createElement('div');
+          notification.className = 'fixed top-4 right-4 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+          notification.textContent = '新しい稟議申請が到着しました';
+          document.body.appendChild(notification);
+          
+          setTimeout(() => {
+            notification.remove();
+          }, 3000);
+        }
+      }, 45000);
+
+      // Copilot分析結果の動的更新シミュレーション
+      setInterval(() => {
+        const analysisElements = document.querySelectorAll('.copilot-suggestion');
+        analysisElements.forEach(element => {
+          if (Math.random() > 0.9) {
+            element.style.background = 'linear-gradient(135deg, #f3f4f6, #e5e7eb)';
+            setTimeout(() => {
+              element.style.background = '';
+            }, 1000);
+          }
+        });
+      }, 20000);
+
+      // 処理効率の動的更新
+      setInterval(() => {
+        const efficiencyElements = document.querySelectorAll('.text-2xl.font-bold');
+        efficiencyElements.forEach(element => {
+          if (element.textContent.includes('%')) {
+            const currentValue = parseInt(element.textContent);
+            if (currentValue >= 70 && currentValue <= 95) {
+              const newValue = Math.max(70, Math.min(95, currentValue + Math.floor(Math.random() * 3) - 1));
+              element.textContent = newValue + '%';
+            }
+          }
+        });
+      }, 90000);
+
+      // 規程チェック状況の動的更新
+      setInterval(() => {
+        const regulationElements = document.querySelectorAll('.regulation-ok, .regulation-warning, .regulation-error');
+        regulationElements.forEach(element => {
+          if (Math.random() > 0.95) {
+            element.style.borderColor = '#3b82f6';
+            setTimeout(() => {
+              element.style.borderColor = '';
+            }, 2000);
+          }
+        });
+      }, 60000);
+
+      // 技術バックグラウンド活用件数の更新
+      setInterval(() => {
+        const techCounters = document.querySelectorAll('.text-xl.font-bold.text-blue-600, .text-xl.font-bold.text-green-600, .text-xl.font-bold.text-purple-600');
+        techCounters.forEach(counter => {
+          if (!counter.textContent.includes('%')) {
+            const currentValue = parseInt(counter.textContent);
+            if (currentValue > 0 && currentValue < 50) {
+              const newValue = Math.max(currentValue, currentValue + Math.floor(Math.random() * 2));
+              counter.textContent = newValue + '件';
+            }
+          }
+        });
+      }, 120000);
+    });
+  </script>
+</body>
+</html>
+              
+                 rounded-lg p-2 text-xs">
+                      <div class="font-semibold">規程チェック</div>
+                      <div>ROI計算書要添付</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 ml-4">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-check mr-1"></i> 承認
+                  </button>
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-edit mr-1"></i> 条件付承認
+                  </button>
+                  <button class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-times mr-1"></i> 差戻し
+                  </button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-file-alt mr-1"></i> 詳細
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 人事稟議（緊急） -->
+            <div class="approval-pending rounded-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-users text-amber-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">中途採用者 緊急雇用承認</span>
+                    <span class="ml-2 amount-level-2 px-2 py-1 rounded-full text-xs">人事案件</span>
+                    <span class="ml-2 priority-urgent px-2 py-1 rounded-full text-xs">緊急</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">年収: 480万円 | 申請者：人事部長</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-3">
+                    <i class="fas fa-calendar mr-1"></i>
+                    <span>申請日: 2025/05/18 | 入社予定: 2025/06/01</span>
+                    <span class="mx-2">•</span>
+                    <span>電気施工管理技士・即戦力</span>
+                  </div>
+                  
+                  <!-- Copilotアシスタント -->
+                  <div class="copilot-suggestion mb-3">
+                    <div class="flex items-center mb-2">
+                      <i class="fas fa-robot text-purple-600 mr-2"></i>
+                      <span class="text-sm font-semibold text-purple-800">Copilot分析結果</span>
+                    </div>
+                    <ul class="text-xs text-purple-700 space-y-1">
+                      <li>• 同職種平均年収: 450万円（+30万円）</li>
+                      <li>• 人員計画: 技術部門1名増員予定範囲内</li>
+                      <li>• 資格要件: 電気施工管理1級保有（条件満たす）</li>
+                      <li>✅ 人事規程第3章（採用基準）準拠</li>
+                    </ul>
+                  </div>
+                  
+                  <!-- 予算・規程チェック結果 -->
+                  <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="budget-ok rounded-lg p-2 text-xs">
+                      <div class="font-semibold">人件費予算</div>
+                      <div>技術部門枠内（23%使用）</div>
+                    </div>
+                    <div class="regulation-ok rounded-lg p-2 text-xs">
+                      <div class="font-semibold">規程チェック</div>
+                      <div>人事規程準拠</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 ml-4">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-check mr-1"></i> 承認
+                  </button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-eye mr-1"></i> 詳細確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- システム投資稟議 -->
+            <div class="approval-pending rounded-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-server text-blue-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">基幹システム拡張投資</span>
+                    <span class="ml-2 amount-level-3 px-2 py-1 rounded-full text-xs">IT投資</span>
+                    <span class="ml-2 priority-high px-2 py-1 rounded-full text-xs">高優先度</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">投資金額: 1,200万円 | 申請者：IT部長</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-3">
+                    <i class="fas fa-microchip mr-1"></i>
+                    <span>Microsoft 365拡張・Power Platform導入</span>
+                    <span class="mx-2">•</span>
+                    <span>3年間ROI: 145%</span>
+                  </div>
+                  
+                  <!-- Copilotアシスタント -->
+                  <div class="copilot-suggestion mb-3">
+                    <div class="flex items-center mb-2">
+                      <i class="fas fa-robot text-purple-600 mr-2"></i>
+                      <span class="text-sm font-semibold text-purple-800">Copilot分析結果</span>
+                    </div>
+                    <ul class="text-xs text-purple-700 space-y-1">
+                      <li>• 類似IT投資ROI: 平均128%（本案件145%）</li>
+                      <li>• 予算枠確認: IT投資予算残 2,100万円</li>
+                      <li>• 効果算定: 業務効率化65%向上見込み</li>
+                      <li>✅ 現行システム仕様書v24と整合</li>
+                    </ul>
+                  </div>
+                  
+                  <!-- 予算・規程チェック結果 -->
+                  <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div class="budget-ok rounded-lg p-2 text-xs">
+                      <div class="font-semibold">IT投資予算</div>
+                      <div>予算枠内（57%使用）</div>
+                    </div>
+                    <div class="regulation-ok rounded-lg p-2 text-xs">
+                      <div class="font-semibold">規程チェック</div>
+                      <div>IT投資規程準拠</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 ml-4">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-check mr-1"></i> 承認
+                  </button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-calculator mr-1"></i> ROI確認
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 承認フロー・規程チェック状況 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-route text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">承認フロー・規程状況</h3>
+            <p class="text-sm text-gray-600">処理状況と規程準拠性</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 承認処理効率 -->
+          <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-sm text-gray-600">今日の処理効率</div>
+                <div class="text-2xl font-bold text-green-600">73%</div>
+              </div>
+              <div class="relative w-16 h-16">
+                <svg class="progress-ring w-16 h-16">
+                  <circle cx="32" cy="32" r="28" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                  <circle cx="32" cy="32" r="28" stroke="#16a34a" stroke-width="4" fill="none" 
+                          stroke-dasharray="175.93" stroke-dashoffset="47.50"/>
+                </svg>
+                <div class="absolute inset-0 flex items-center justify-center text-sm font-bold text-green-600">
+                  73%
+                </div>
+              </div>
+            </div>
+            <div class="text-xs text-gray-600">目標: 80% | Copilot支援で+18%向上</div>
+          </div>
+
+          <!-- 規程準拠状況 -->
+          <div>
+            <div class="text-sm font-semibold text-gray-800 mb-3">規程準拠状況</div>
+            <div class="space-y-2">
+              <div class="regulation-ok border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>投資稟議規程</span>
+                  <span class="font-semibold">98%準拠</span>
+                </div>
+              </div>
+              <div class="regulation-ok border rounded-lg p-2">
+                <div class="flex items-center justify-between text-xs">
+                  <span>人事稟議規程</span>
+                  <span class="font-semibold">100%準拠</span>
+                </div>
+              </div>
+              <div class="regulation-warning

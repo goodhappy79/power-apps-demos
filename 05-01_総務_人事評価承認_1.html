@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>総務部門 人事評価承認画面（設計仕様書v24準拠）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <style>
+    /* 承認ステータス別スタイル */
+    .approval-pending { @apply bg-amber-50 border-l-4 border-amber-500; }
+    .approval-approved { @apply bg-green-50 border-l-4 border-green-500; }
+    .approval-rejected { @apply bg-red-50 border-l-4 border-red-500; }
+    .approval-review { @apply bg-blue-50 border-l-4 border-blue-500; }
+    
+    /* 評価レベル別スタイル */
+    .eval-excellent { @apply bg-green-100 text-green-800 border border-green-300; }
+    .eval-good { @apply bg-blue-100 text-blue-800 border border-blue-300; }
+    .eval-average { @apply bg-gray-100 text-gray-800 border border-gray-300; }
+    .eval-needs-improvement { @apply bg-amber-100 text-amber-800 border border-amber-300; }
+    .eval-poor { @apply bg-red-100 text-red-800 border border-red-300; }
+    
+    /* 技術資格スタイル */
+    .certification-level1 { @apply bg-purple-100 text-purple-800 border border-purple-300; }
+    .certification-level2 { @apply bg-indigo-100 text-indigo-800 border border-indigo-300; }
+    .certification-other { @apply bg-teal-100 text-teal-800 border border-teal-300; }
+    
+    /* アニメーション */
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    
+    /* Copilotアシスタントスタイル */
+    .copilot-suggestion {
+      @apply bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-3;
+    }
+    
+    /* 差分表示スタイル */
+    .diff-improved { @apply bg-green-100 text-green-800 px-1 rounded; }
+    .diff-declined { @apply bg-red-100 text-red-800 px-1 rounded; }
+    .diff-maintained { @apply bg-blue-100 text-blue-800 px-1 rounded; }
+    
+    /* 評価バランスチャート */
+    .balance-chart {
+      position: relative;
+      width: 200px;
+      height: 200px;
+    }
+    
+    /* 技術スキル評価 */
+    .tech-skill-bar {
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- ヘッダー -->
+  <header class="bg-gradient-to-r from-indigo-800 to-indigo-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-user-graduate text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-xl font-bold">人事評価承認システム</h1>
+              <p class="text-indigo-200 text-sm">HR Evaluation Approval Platform v24</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-3">
+            <span class="bg-indigo-700 px-3 py-1 rounded-full text-sm font-medium">総務・人事部</span>
+            <div class="text-center">
+              <div class="text-xs text-indigo-200">評価精度向上</div>
+              <div class="text-sm font-bold text-white">82%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <div class="relative">
+            <button class="p-2 hover:bg-indigo-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-lg"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">7</span>
+            </button>
+          </div>
+          <div class="flex items-center space-x-2">
+            <div class="text-right">
+              <div class="font-semibold text-sm">高橋 良子</div>
+              <div class="text-xs text-indigo-200">総務部長</div>
+            </div>
+            <div class="w-10 h-10 bg-gradient-to-br from-white to-gray-200 text-indigo-800 rounded-full flex items-center justify-center font-bold">
+              TR
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずリスト -->
+    <div class="flex items-center text-sm text-gray-600 mb-4">
+      <a href="#" class="hover:text-indigo-600 flex items-center">
+        <i class="fas fa-home mr-1"></i> ホーム
+      </a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
+      <a href="#" class="hover:text-indigo-600">総務・人事HUB</a>
+      <i class="fas fa-chevron-right mx-2 text-gray-400"></i>
+      <span class="text-gray-800 font-medium">人事評価承認</span>
+    </div>
+
+    <!-- タイトルとアクションエリア -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-6 gap-4">
+      <div>
+        <h2 class="text-3xl font-bold text-gray-800">人事評価承認管理</h2>
+        <p class="text-gray-600 mt-1">技術者のスキル評価とCopilot支援による公正な人事評価システム</p>
+      </div>
+      <div class="flex flex-wrap gap-3">
+        <button class="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-lg flex items-center shadow-md transition-all">
+          <i class="fas fa-plus mr-2"></i> 新規評価
+        </button>
+        <button class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center shadow-md transition-all">
+          <i class="fas fa-robot mr-2"></i> Copilot設定
+        </button>
+        <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center shadow-md transition-all">
+          <i class="fas fa-chart-bar mr-2"></i> 評価分析
+        </button>
+      </div>
+    </div>
+
+    <!-- 評価状況ダッシュボード -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">承認待ち評価</p>
+            <p class="text-3xl font-bold text-amber-600">15件</p>
+            <div class="flex items-center mt-2">
+              <span class="text-red-600 text-sm flex items-center">
+                <i class="fas fa-clock mr-1"></i> 期限迫る: 5件
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-user-clock text-amber-500 text-xl"></i>
+          </div>
+        </div>
+        <button class="w-full bg-amber-500 hover:bg-amber-600 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+          優先承認処理
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">今月承認完了</p>
+            <p class="text-3xl font-bold text-green-600">23件</p>
+            <div class="flex items-center mt-2">
+              <span class="text-green-600 text-sm flex items-center">
+                <i class="fas fa-arrow-up mr-1"></i> 前月比 +8件
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-check-circle text-green-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-xs text-gray-600">平均処理時間: 2.1日</div>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">技術者評価対象</p>
+            <p class="text-3xl font-bold text-purple-600">28名</p>
+            <div class="flex items-center mt-2">
+              <span class="text-purple-600 text-sm flex items-center">
+                <i class="fas fa-certificate mr-1"></i> 有資格者率: 89%
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-hard-hat text-purple-500 text-xl"></i>
+          </div>
+        </div>
+        <button class="w-full bg-purple-500 hover:bg-purple-600 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+          技術者評価一覧
+        </button>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <p class="text-sm text-gray-500 mb-1">Copilot精度</p>
+            <p class="text-3xl font-bold text-blue-600">82%</p>
+            <div class="flex items-center mt-2">
+              <span class="text-blue-600 text-sm flex items-center">
+                <i class="fas fa-robot mr-1"></i> 評価バランス分析
+              </span>
+            </div>
+          </div>
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+            <i class="fas fa-brain text-blue-500 text-xl"></i>
+          </div>
+        </div>
+        <div class="text-xs text-gray-600">偏り検出: 12件/月</div>
+      </div>
+    </div>
+
+    <!-- 承認待ち・優先対応セクション -->
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+      <!-- 優先承認待ち -->
+      <div class="xl:col-span-2">
+        <div class="bg-white rounded-2xl shadow-lg p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div class="flex items-center">
+              <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center mr-3">
+                <i class="fas fa-exclamation-triangle text-white"></i>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-800">優先承認待ち評価</h3>
+                <p class="text-sm text-gray-600">期限迫る・技術者重要評価の優先処理</p>
+              </div>
+              <span class="ml-4 bg-gradient-to-r from-red-500 to-red-600 text-white text-sm px-3 py-1 rounded-full font-semibold">5</span>
+            </div>
+            <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">すべて表示</button>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- 技術者評価（計装士1級） -->
+            <div class="approval-pending rounded-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-user-cog text-red-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">田中 修一（技術部・計装士1級）年次評価</span>
+                    <span class="ml-2 certification-level1 px-2 py-1 rounded-full text-xs">計装士1級</span>
+                    <span class="ml-2 bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">期限明日</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">技術部門・制御システム担当 | 評価者：技術部長 | 16年経験</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-3">
+                    <i class="fas fa-calendar mr-1"></i>
+                    <span>評価期間: 2024/04-2025/03 | 期限: 2025/05/20</span>
+                    <span class="mx-2">•</span>
+                    <span>昇格候補者</span>
+                  </div>
+                  
+                  <!-- 技術スキル評価 -->
+                  <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                    <div class="text-xs font-semibold text-gray-700 mb-2">技術スキル評価:</div>
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs">制御システム設計</span>
+                        <div class="w-24 h-2 bg-gray-200 rounded-full">
+                          <div class="tech-skill-bar rounded-full" style="width: 90%"></div>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600">90%</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs">PLC プログラミング</span>
+                        <div class="w-24 h-2 bg-gray-200 rounded-full">
+                          <div class="tech-skill-bar rounded-full" style="width: 85%"></div>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600">85%</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs">計装設計</span>
+                        <div class="w-24 h-2 bg-gray-200 rounded-full">
+                          <div class="tech-skill-bar rounded-full" style="width: 95%"></div>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600">95%</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Copilotアシスタント（技術者評価特化） -->
+                  <div class="copilot-suggestion mb-3">
+                    <div class="flex items-center mb-2">
+                      <i class="fas fa-robot text-purple-600 mr-2"></i>
+                      <span class="text-sm font-semibold text-purple-800">技術者評価バランス分析</span>
+                    </div>
+                    <ul class="text-xs text-purple-700 space-y-1">
+                      <li>• 技術評価: 優秀（部門内上位10%）</li>
+                      <li>• 資格活用度: 高（計装士1級の専門性を活用）</li>
+                      <li>• 前年比較: 制御システム設計スキル+15%向上</li>
+                      <li>⚠️ リーダーシップ評価が技術評価と比較して低め</li>
+                    </ul>
+                  </div>
+                  
+                  <!-- 前回評価との差分 -->
+                  <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                    <div class="text-xs font-semibold text-gray-700 mb-2">前回評価との変化:</div>
+                    <div class="space-y-1 text-xs">
+                      <div>技術力: <span class="diff-improved">A（前回B+）</span></div>
+                      <div>業務遂行: <span class="diff-maintained">A（前回A）</span></div>
+                      <div>指導力: <span class="diff-improved">B+（前回B）</span></div>
+                      <div>総合評価: <span class="diff-improved">A-（前回B+）</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 ml-4">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-check mr-1"></i> 承認
+                  </button>
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-edit mr-1"></i> 修正要求
+                  </button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-eye mr-1"></i> 詳細確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 技術者評価（電気施工管理1級） -->
+            <div class="approval-pending rounded-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-bolt text-amber-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">佐藤 智也（技術部・電気施工管理1級）中間評価</span>
+                    <span class="ml-2 certification-level1 px-2 py-1 rounded-full text-xs">電気施工1級</span>
+                    <span class="ml-2 bg-amber-100 text-amber-800 px-2 py-1 rounded-full text-xs">期限2日後</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">技術部門・電気設備担当 | 評価者：田中課長 | 8年経験</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-3">
+                    <i class="fas fa-calendar mr-1"></i>
+                    <span>中間評価期間: 2024/10-2025/03 | 期限: 2025/05/22</span>
+                  </div>
+                  
+                  <!-- 技術スキル評価 -->
+                  <div class="bg-gray-50 rounded-lg p-3 mb-3">
+                    <div class="text-xs font-semibold text-gray-700 mb-2">電気技術スキル評価:</div>
+                    <div class="space-y-2">
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs">受変電設備設計</span>
+                        <div class="w-24 h-2 bg-gray-200 rounded-full">
+                          <div class="tech-skill-bar rounded-full" style="width: 80%"></div>
+                        </div>
+                        <span class="text-xs font-semibold text-blue-600">80%</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs">電気工事管理</span>
+                        <div class="w-24 h-2 bg-gray-200 rounded-full">
+                          <div class="tech-skill-bar rounded-full" style="width: 88%"></div>
+                        </div>
+                        <span class="text-xs font-semibold text-green-600">88%</span>
+                      </div>
+                      <div class="flex justify-between items-center">
+                        <span class="text-xs">省エネ設計</span>
+                        <div class="w-24 h-2 bg-gray-200 rounded-full">
+                          <div class="tech-skill-bar rounded-full" style="width: 75%"></div>
+                        </div>
+                        <span class="text-xs font-semibold text-blue-600">75%</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Copilotアシスタント -->
+                  <div class="copilot-suggestion mb-3">
+                    <div class="flex items-center mb-2">
+                      <i class="fas fa-robot text-purple-600 mr-2"></i>
+                      <span class="text-sm font-semibold text-purple-800">中間評価分析</span>
+                    </div>
+                    <ul class="text-xs text-purple-700 space-y-1">
+                      <li>• 電気工事管理分野で着実な成長</li>
+                      <li>• 資格取得後の実践活用が順調</li>
+                      <li>• 省エネ設計スキル向上の余地あり</li>
+                      <li>✅ 年次目標達成ペースは良好</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 ml-4">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-check mr-1"></i> 承認
+                  </button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-eye mr-1"></i> 詳細確認
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 営業部門評価（技術バックグラウンド活用） -->
+            <div class="approval-pending rounded-xl p-4 card-hover">
+              <div class="flex items-center justify-between">
+                <div class="flex-1">
+                  <div class="flex items-center mb-2">
+                    <i class="fas fa-user-tie text-blue-500 mr-2"></i>
+                    <span class="font-semibold text-gray-800">山田 健太郎（営業部・技術営業）年次評価</span>
+                    <span class="ml-2 certification-level1 px-2 py-1 rounded-full text-xs">計装士1級</span>
+                    <span class="ml-2 certification-level1 px-2 py-1 rounded-full text-xs">電気施工1級</span>
+                  </div>
+                  <p class="text-sm text-gray-600 mb-2">営業部門・技術営業 | 評価者：営業部長 | 16年経験</p>
+                  <div class="flex items-center text-xs text-gray-500 mb-3">
+                    <i class="fas fa-trophy mr-1"></i>
+                    <span>技術資格活用営業・管理職候補</span>
+                  </div>
+                  
+                  <!-- 技術活用実績 -->
+                  <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-3">
+                    <div class="text-xs font-semibold text-gray-700 mb-2">技術バックグラウンド活用実績:</div>
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                      <div class="text-center">
+                        <div class="text-lg font-bold text-blue-600">28件</div>
+                        <div>計装士活用案件</div>
+                      </div>
+                      <div class="text-center">
+                        <div class="text-lg font-bold text-green-600">35件</div>
+                        <div>電気技術案件</div>
+                      </div>
+                      <div class="text-center">
+                        <div class="text-lg font-bold text-purple-600">15件</div>
+                        <div>複合技術案件</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Copilotアシスタント -->
+                  <div class="copilot-suggestion mb-3">
+                    <div class="flex items-center mb-2">
+                      <i class="fas fa-robot text-purple-600 mr-2"></i>
+                      <span class="text-sm font-semibold text-purple-800">技術営業評価分析</span>
+                    </div>
+                    <ul class="text-xs text-purple-700 space-y-1">
+                      <li>• 技術資格を活用した営業成果が優秀</li>
+                      <li>• 部下指導・技術伝承に積極的</li>
+                      <li>• 売上目標達成率: 112%（部門トップ）</li>
+                      <li>✅ 管理職昇進に適した総合評価</li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 ml-4">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-check mr-1"></i> 承認
+                  </button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i class="fas fa-crown mr-1"></i> 昇進推薦
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 評価統計・分析 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-chart-pie text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">評価統計・分析</h3>
+            <p class="text-sm text-gray-600">技術者評価の傾向とバランス</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 技術者資格分布 -->
+          <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-2">技術者資格分布</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">計装士1級</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: 35%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-purple-600">7名</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">電気施工管理1級</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 40%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-blue-600">8名</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">管工事施工管理1級</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 30%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-green-600">6名</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">その他技術資格</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-teal-500 h-2 rounded-full" style="width: 35%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-teal-600">7名</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 評価分布 -->
+          <div>
+            <div class="text-sm font-semibold text-gray-800 mb-3">今期評価分布</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">優秀（S・A）</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 25%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-green-600">25%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">良好（B+・B）</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 60%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-blue-600">60%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">標準（C+・C）</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-gray-500 h-2 rounded-full" style="width: 12%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-gray-600">12%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">要改善（D）</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-amber-500 h-2 rounded-full" style="width: 3%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-amber-600">3%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Copilot分析結果 -->
+          <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-robot text-green-600 mr-2"></i>
+              <div>
+                <div class="text-sm font-semibold text-gray-800">評価バランス分析</div>
+                <div class="text-xs text-gray-600">Copilot による公正性チェック</div>
+              </div>
+            </div>
+            <div class="space-y-1 text-sm">
+              <div class="flex items-center justify-between">
+                <span>評価分布適正性</span>
+                <span class="font-semibold text-green-600">良好</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>部門間バランス</span>
+                <span class="font-semibold text-green-600">適正</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>技術者優遇度</span>
+                <span class="font-semibold text-blue-600">適度</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 今月の承認実績 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4">
+            <div class="text-sm font-semibold text-gray-800 mb-2">今月の承認実績</div>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <div class="text-indigo-600 font-semibold">処理件数</div>
+                <div class="text-2xl font-bold text-indigo-600">23件</div>
+              </div>
+              <div>
+                <div class="text-purple-600 font-semibold">平均処理時間</div>
+                <div class="text-2xl font-bold text-purple-600">2.1日</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 人事評価一覧（詳細版） -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden mb-8">
+      <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gradient-to-r from-gray-50 to-gray-100">
+        <div>
+          <h3 class="font-bold text-gray-700">人事評価一覧</h3>
+          <p class="text-sm text-gray-500">技術者評価とCopilot分析結果</p>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center">
+            <label class="text-sm text-gray-600 mr-2">部門:</label>
+            <select class="border rounded p-1 text-sm">
+              <option value="all" selected>全部門</option>
+              <option value="technical">技術部</option>
+              <option value="sales">営業部</option>
+              <option value="customer">カスタマー部</option>
+            </select>
+          </div>
+          <div class="flex items-center">
+            <label class="text-sm text-gray-600 mr-2">資格:</label>
+            <select class="border rounded p-1 text-sm">
+              <option value="all" selected>全資格</option>
+              <option value="keisou">計装士1級</option>
+              <option value="denki">電気施工管理1級</option>
+              <option value="kankou">管工事施工管理1級</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="min-w-full">
+          <thead class="bg-gray-50 border-b">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">評価対象者</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">技術資格・経験</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">評価結果</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Copilot分析</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">承認状況</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">アクション</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <!-- 計装士1級評価 -->
+            <tr class="hover:bg-purple-50 approval-pending">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">田中 修一</span>
+                    <span class="certification-level1 px-2 py-1 rounded-full text-xs">計装士1級</span>
+                  </div>
+                  <div class="text-sm font-medium text-blue-600">技術部・制御システム担当</div>
+                  <div class="text-xs text-gray-500">評価者: 技術部長 | 期限: 明日</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <div class="text-sm font-semibold text-gray-800">計装士1級（16年経験）</div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    • 制御システム設計: 専門<br>
+                    • PLCプログラミング: 上級<br>
+                    • 計装設計: エキスパート
+                  </div>
+                  <div class="text-xs text-purple-600 mt-1">昇格候補者</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center">
+                    <span class="eval-excellent px-2 py-1 rounded-full text-xs font-medium mr-2">A-</span>
+                    <span class="text-sm">総合評価</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    技術力: A | 業務: A | 指導: B+<br>
+                    前回比: <span class="diff-improved">B+ → A-</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">技術評価適正</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-arrow-up text-blue-500 mr-1"></i>
+                    <span class="text-blue-600">成長傾向良好</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-star text-purple-500 mr-1"></i>
+                    <span class="text-purple-600">昇進推奨</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
+                    <span class="text-sm">承認待ち</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    期限: 明日<br>
+                    重要度: 高
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">承認</button>
+                  <button class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded text-xs">修正</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">詳細</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 電気施工管理1級評価 -->
+            <tr class="hover:bg-blue-50 approval-pending">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">佐藤 智也</span>
+                    <span class="certification-level1 px-2 py-1 rounded-full text-xs">電気施工1級</span>
+                  </div>
+                  <div class="text-sm font-medium text-blue-600">技術部・電気設備担当</div>
+                  <div class="text-xs text-gray-500">評価者: 田中課長 | 期限: 2日後</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <div class="text-sm font-semibold text-gray-800">電気施工管理1級（8年経験）</div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    • 受変電設備設計: 中級<br>
+                    • 電気工事管理: 上級<br>
+                    • 省エネ設計: 中級
+                  </div>
+                  <div class="text-xs text-blue-600 mt-1">中間評価</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center">
+                    <span class="eval-good px-2 py-1 rounded-full text-xs font-medium mr-2">B+</span>
+                    <span class="text-sm">中間評価</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    技術力: B+ | 業務: A- | 向上心: A<br>
+                    目標達成: <span class="diff-improved">85%</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">順調な成長</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-certificate text-blue-500 mr-1"></i>
+                    <span class="text-blue-600">資格活用良好</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-arrow-up text-green-500 mr-1"></i>
+                    <span class="text-green-600">年次目標達成予定</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
+                    <span class="text-sm">承認待ち</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    期限: 2日後<br>
+                    重要度: 中
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">承認</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">詳細</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 技術営業評価 -->
+            <tr class="hover:bg-green-50 approval-approved">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">山田 健太郎</span>
+                    <span class="certification-level1 px-2 py-1 rounded-full text-xs">計装士1級</span>
+                    <span class="certification-level1 px-2 py-1 rounded-full text-xs">電気施工1級</span>
+                  </div>
+                  <div class="text-sm font-medium text-blue-600">営業部・技術営業</div>
+                  <div class="text-xs text-green-600">承認完了: 2025/05/15</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <div class="text-sm font-semibold text-gray-800">複数資格（16年経験）</div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    • 計装士1級 + 電気施工1級<br>
+                    • 管工事施工管理1級<br>
+                    • 技術営業のエキスパート
+                  </div>
+                  <div class="text-xs text-purple-600 mt-1">管理職候補</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center">
+                    <span class="eval-excellent px-2 py-1 rounded-full text-xs font-medium mr-2">A</span>
+                    <span class="text-sm">年次評価</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    営業: A | 技術: A | 指導: A-<br>
+                    売上達成: <span class="diff-improved">112%</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-star text-gold-500 mr-1"></i>
+                    <span class="text-green-600">トップパフォーマー</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-users text-blue-500 mr-1"></i>
+                    <span class="text-blue-600">優秀な指導力</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-crown text-purple-500 mr-1"></i>
+                    <span class="text-purple-600">昇進強く推奨</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                    <span class="text-sm text-green-600">承認完了</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    処理時間: 1.5日<br>
+                    承認者: 総務部長
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-gray-400 text-white px-3 py-1 rounded text-xs" disabled>承認済み</button>
+                  <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded text-xs">昇進推薦</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">詳細</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 管工事施工管理1級評価 -->
+            <tr class="hover:bg-teal-50 approval-review">
+              <td class="px-4 py-4">
+                <div>
+                  <div class="flex items-center space-x-2 mb-1">
+                    <span class="font-medium text-gray-900">鈴木 和也</span>
+                    <span class="certification-level2 px-2 py-1 rounded-full text-xs">管工事施工1級</span>
+                  </div>
+                  <div class="text-sm font-medium text-blue-600">技術部・配管空調担当</div>
+                  <div class="text-xs text-gray-500">評価者: 技術部長 | 期限: 3日後</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div>
+                  <div class="text-sm font-semibold text-gray-800">管工事施工管理1級（12年経験）</div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    • 配管設計: 上級<br>
+                    • 空調設計: 中級<br>
+                    • 省エネ改修: 上級
+                  </div>
+                  <div class="text-xs text-teal-600 mt-1">空調エキスパート</div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center">
+                    <span class="eval-good px-2 py-1 rounded-full text-xs font-medium mr-2">B+</span>
+                    <span class="text-sm">年次評価</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    技術力: A- | 業務: B+ | 協調: A<br>
+                    前回比: <span class="diff-maintained">B+ 維持</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-1">
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-check-circle text-green-500 mr-1"></i>
+                    <span class="text-green-600">安定した実績</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-handshake text-blue-500 mr-1"></i>
+                    <span class="text-blue-600">チームワーク良好</span>
+                  </div>
+                  <div class="flex items-center text-xs">
+                    <i class="fas fa-tools text-teal-500 mr-1"></i>
+                    <span class="text-teal-600">空調専門性活用</span>
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="space-y-2">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                    <span class="text-sm">レビュー中</span>
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    期限: 3日後<br>
+                    重要度: 中
+                  </div>
+                </div>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex space-x-1">
+                  <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs">承認</button>
+                  <button class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">詳細</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 技術者スキル開発・研修推奨 -->
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+      <!-- 技術者スキル開発状況 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-graduation-cap text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">技術者スキル開発状況</h3>
+            <p class="text-sm text-gray-600">資格取得・スキル向上の進捗管理</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 資格取得進捗 -->
+          <div class="bg-gradient-to-r from-teal-50 to-teal-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-2">今年度資格取得目標</div>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">計装士1級</span>
+                <div class="flex items-center">
+                  <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-purple-500 h-2 rounded-full" style="width: 67%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-purple-600">2/3名</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">電気施工管理1級</span>
+                <div class="flex items-center">
+                  <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 50%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-blue-600">1/2名</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">管工事施工管理1級</span>
+                <div class="flex items-center">
+                  <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-green-600">1/1名</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- スキル向上推奨 -->
+          <div>
+            <div class="text-sm font-semibold text-gray-800 mb-3">スキル向上推奨</div>
+            <div class="space-y-2">
+              <div class="bg-blue-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">IoT・デジタル技術</span>
+                  <span class="text-sm font-bold text-blue-600">推奨度: 高</span>
+                </div>
+                <div class="text-xs text-gray-600">計装士・電気技術者向けデジタル技術研修</div>
+              </div>
+              <div class="bg-green-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">省エネ最新技術</span>
+                  <span class="text-sm font-bold text-green-600">推奨度: 中</span>
+                </div>
+                <div class="text-xs text-gray-600">空調・電気設備の最新省エネ技術</div>
+              </div>
+              <div class="bg-purple-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">マネジメントスキル</span>
+                  <span class="text-sm font-bold text-purple-600">推奨度: 高</span>
+                </div>
+                <div class="text-xs text-gray-600">技術リーダー・管理職候補向け</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 今年度の技術者評価傾向 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4">
+            <div class="text-sm font-semibold text-gray-800 mb-2">技術者評価傾向</div>
+            <div class="space-y-1 text-sm">
+              <div class="flex items-center justify-between">
+                <span>技術力重視評価</span>
+                <span class="font-semibold text-indigo-600">78%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>資格活用度</span>
+                <span class="font-semibold text-green-600">89%</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>若手技術者成長率</span>
+                <span class="font-semibold text-blue-600">+12%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Copilot学習・改善提案 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mr-3">
+            <i class="fas fa-robot text-white"></i>
+          </div>
+          <div>
+            <h3 class="text-xl font-bold text-gray-800">Copilot学習・改善提案</h3>
+            <p class="text-sm text-gray-600">AI支援による評価精度向上と公正性確保</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <!-- 今月のCopilot分析結果 -->
+          <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-4">
+            <div class="text-sm text-gray-600 mb-2">今月のAI分析実績</div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <div class="text-2xl font-bold text-purple-600">47件</div>
+                <div class="text-xs text-gray-600">評価バランス分析</div>
+              </div>
+              <div>
+                <div class="text-2xl font-bold text-green-600">12件</div>
+                <div class="text-xs text-gray-600">偏り検出・修正</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 評価公正性分析 -->
+          <div>
+            <div class="text-sm font-semibold text-gray-800 mb-3">評価公正性分析</div>
+            <div class="space-y-3">
+              <div class="bg-green-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">部門間バランス</span>
+                  <span class="text-sm font-bold text-green-600">良好</span>
+                </div>
+                <div class="text-xs text-gray-600">技術部・営業部の評価分布が適正</div>
+              </div>
+              <div class="bg-blue-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">資格別評価適正性</span>
+                  <span class="text-sm font-bold text-blue-600">適正</span>
+                </div>
+                <div class="text-xs text-gray-600">資格に応じた適切な技術評価</div>
+              </div>
+              <div class="bg-amber-50 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-sm font-medium">経験年数バランス</span>
+                  <span class="text-sm font-bold text-amber-600">要注意</span>
+                </div>
+                <div class="text-xs text-gray-600">若手の評価がやや厳しめの傾向</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 改善推奨事項 -->
+          <div class="bg-gradient-to-r from-amber-50 to-amber-100 rounded-xl p-4">
+            <div class="flex items-center mb-3">
+              <i class="fas fa-lightbulb text-amber-600 mr-2"></i>
+              <span class="text-sm font-semibold text-gray-800">AI改善推奨</span>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div class="flex items-start">
+                <i class="fas fa-check-circle text-green-500 mr-2 mt-0.5 text-xs"></i>
+                <span>技術者の専門性評価基準を明確化</span>
+              </div>
+              <div class="flex items-start">
+                <i class="fas fa-exclamation-triangle text-amber-500 mr-2 mt-0.5 text-xs"></i>
+                <span>若手技術者の成長期待値を調整</span>
+              </div>
+              <div class="flex items-start">
+                <i class="fas fa-star text-purple-500 mr-2 mt-0.5 text-xs"></i>
+                <span>複数資格保有者の評価ウェイト見直し</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 学習精度向上 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-indigo-100 rounded-xl p-4">
+            <div class="text-sm font-semibold text-gray-800 mb-2">学習精度向上</div>
+            <div class="space-y-2">
+              <div class="flex justify-between items-center">
+                <span class="text-sm">評価パターン認識</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-indigo-500 h-2 rounded-full" style="width: 82%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-indigo-600">82%</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm">技術スキル分析</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 89%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-blue-600">89%</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-sm">公正性判定</span>
+                <div class="flex items-center">
+                  <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 94%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-green-600">94%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 技術バックグラウンド活用と部門横断評価 -->
+    <div class="bg-gradient-to-r from-teal-50 to-blue-50 rounded-xl shadow-lg p-6 mb-8 border border-teal-200">
+      <div class="flex items-center mb-4">
+        <i class="fas fa-network-wired text-teal-600 text-xl mr-3"></i>
+        <h3 class="text-lg font-semibold text-gray-800">技術バックグラウンド活用状況</h3>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white rounded-lg p-4">
+          <div class="flex items-center mb-2">
+            <i class="fas fa-cogs text-purple-500 mr-2"></i>
+            <span class="font-semibold text-purple-600">計装士1級評価軸</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">制御システム設計・PLC・計装設計の専門性重視評価</p>
+          <div class="text-xs text-purple-600">今月活用評価: 7件</div>
+        </div>
+        <div class="bg-white rounded-lg p-4">
+          <div class="flex items-center mb-2">
+            <i class="fas fa-bolt text-blue-500 mr-2"></i>
+            <span class="font-semibold text-blue-600">電気技術評価軸</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">受変電・配電・省エネ設計の技術力評価</p>
+          <div class="text-xs text-blue-600">今月活用評価: 8件</div>
+        </div>
+        <div class="bg-white rounded-lg p-4">
+          <div class="flex items-center mb-2">
+            <i class="fas fa-tools text-green-500 mr-2"></i>
+            <span class="font-semibold text-green-600">管工事技術評価軸</span>
+          </div>
+          <p class="text-sm text-gray-600 mb-2">配管・空調設備の設計・施工管理評価</p>
+          <div class="text-xs text-green-600">今月活用評価: 6件</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 評価承認分析・統計情報 -->
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+      <div class="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100">
+        <div class="flex justify-between items-center">
+          <h3 class="font-bold text-gray-700">評価承認分析・統計情報</h3>
+          <div class="flex gap-2">
+            <button class="text-indigo-600 hover:text-indigo-800 text-sm">年次レポート</button>
+            <button class="text-green-600 hover:text-green-800 text-sm">Excel出力</button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="p-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- 承認処理効率分析 -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-800 mb-4">承認処理効率分析</h4>
+            <div class="space-y-3">
+              <div class="bg-green-50 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">技術者評価</span>
+                  <span class="text-sm font-bold text-green-600">平均2.1日</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">目標: 2.5日 | 達成率: 85%</div>
+              </div>
+              
+              <div class="bg-blue-50 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">一般職評価</span>
+                  <span class="text-sm font-bold text-blue-600">平均1.8日</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 90%"></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">目標: 2.0日 | 達成率: 90%</div>
+              </div>
+              
+              <div class="bg-purple-50 rounded-lg p-3">
+                <div class="flex justify-between items-center mb-2">
+                  <span class="text-sm font-medium">管理職評価</span>
+                  <span class="text-sm font-bold text-purple-600">平均3.2日</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 75%"></div>
+                </div>
+                <div class="text-xs text-gray-600 mt-1">目標: 4.0日 | 達成率: 75%</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 技術者評価分布推移 -->
+          <div>
+            <h4 class="text-lg font-semibold text-gray-800 mb-4">技術者評価分布推移</h4>
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-sm">2023年度</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-blue-500 h-3 rounded-full" style="width: 70%"></div>
+                  </div>
+                  <span class="text-sm font-semibold">A評価率: 18%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm">2024年度</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-blue-500 h-3 rounded-full" style="width: 80%"></div>
+                  </div>
+                  <span class="text-sm font-semibold">A評価率: 22%</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-green-600 font-medium">2025年度（途中）</span>
+                <div class="flex items-center">
+                  <div class="w-24 bg-gray-200 rounded-full h-3 mr-2">
+                    <div class="bg-green-500 h-3 rounded-full" style="width: 85%"></div>
+                  </div>
+                  <span class="text-sm font-semibold text-green-600">A評価率: 25%</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-3">
+              <div class="text-sm font-semibold text-green-800 mb-1">技術者評価の向上</div>
+              <div class="text-xs text-green-700">
+                • 専門資格を活用した評価軸の明確化<br>
+                • 技術力重視の評価制度が成果<br>
+                • Copilot支援による公正性向上
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 部門別技術者評価サマリー -->
+        <div class="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-4">
+          <h4 class="text-lg font-semibold text-gray-800 mb-4">部門別技術者評価サマリー</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-lg p-4">
+              <div class="text-center mb-2">
+                <div class="text-lg font-bold text-blue-600">技術部</div>
+                <div class="text-2xl font-bold text-gray-800">18名</div>
+              </div>
+              <div class="space-y-1 text-xs">
+                <div class="flex justify-between">
+                  <span>計装士1級:</span>
+                  <span class="font-semibold">7名</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>電気施工1級:</span>
+                  <span class="font-semibold">6名</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>管工事施工1級:</span>
+                  <span class="font-semibold">5名</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4">
+              <div class="text-center mb-2">
+                <div class="text-lg font-bold text-green-600">営業部</div>
+                <div class="text-2xl font-bold text-gray-800">8名</div>
+              </div>
+              <div class="space-y-1 text-xs">
+                <div class="flex justify-between">
+                  <span>技術営業:</span>
+                  <span class="font-semibold">5名</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>複数資格保有:</span>
+                  <span class="font-semibold">3名</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>管理職候補:</span>
+                  <span class="font-semibold">2名</span>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg p-4">
+              <div class="text-center mb-2">
+                <div class="text-lg font-bold text-purple-600">カスタマー部</div>
+                <div class="text-2xl font-bold text-gray-800">2名</div>
+              </div>
+              <div class="space-y-1 text-xs">
+                <div class="flex justify-between">
+                  <span>現場技術者:</span>
+                  <span class="font-semibold">2名</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>保守技術:</span>
+                  <span class="font-semibold">専門</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>緊急対応:</span>
+                  <span class="font-semibold">24h対応</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フッター -->
+  <footer class="bg-gradient-to-r from-gray-800 to-gray-900 text-white mt-12">
+    <div class="container mx-auto px-4 py-8">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div>
+          <h4 class="text-lg font-bold mb-3">システム情報</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li>バージョン: v24.0</li>
+            <li>最終更新: 2025/05/18</li>
+            <li>人事評価AI統合版</li>
+            <li>サポート: 内線3002</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-3">評価機能</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li>• Copilot評価バランス分析</li>
+            <li>• 技術者専門性評価</li>
+            <li>• 前回評価差分表示</li>
+            <li>• 公正性自動チェック</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-3">技術者評価軸</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li>• 計装士1級専門性</li>
+            <li>• 電気施工管理1級</li>
+            <li>• 管工事施工管理1級</li>
+            <li>• 複合技術活用度</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-lg font-bold mb-3">サポート・研修</h4>
+          <ul class="space-y-2 text-sm text-gray-300">
+            <li><a href="#" class="hover:text-white">評価制度ガイド</a></li>
+            <li><a href="#" class="hover:text-white">Copilot活用マニュアル</a></li>
+            <li><a href="#" class="hover:text-white">技術者評価事例集</a></li>
+            <li><a href="#" class="hover:text-white">スキル開発プラン</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 mt-6 pt-6 text-center text-sm text-gray-400">
+        <p>© 2025 エネルギーサービス企業 人事評価承認システム | 設計仕様書v24準拠 | 技術者評価特化版</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript機能 -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // 技術スキルバーのアニメーション
+      const skillBars = document.querySelectorAll('.tech-skill-bar');
+      skillBars.forEach(bar => {
+        setTimeout(() => {
+          bar.style.transition = 'width 1s ease-in-out';
+        }, 500);
+      });
+
+      // カードホバー効果
+      document.querySelectorAll('.card-hover').forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-4px)';
+        });
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+        });
+      });
+
+      // 承認ボタンのクリック処理（デモ）
+      document.querySelectorAll('button').forEach(button => {
+        if (button.textContent.includes('承認')) {
+          button.addEventListener('click', function() {
+            if (this.textContent === '承認') {
+              this.textContent = '処理中...';
+              this.disabled = true;
+              setTimeout(() => {
+                this.textContent = '承認完了';
+                this.className = this.className.replace('bg-green-500', 'bg-gray-500');
+                this.className = this.className.replace('hover:bg-green-600', 'hover:bg-gray-600');
+                
+                // 承認完了通知
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                notification.textContent = '評価承認が完了しました';
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                  notification.remove();
+                }, 3000);
+              }, 2000);
+            }
+          });
+        }
+      });
+
+      // 技術者スキル評価の動的更新
+      setInterval(() => {
+        const skillPercentages = document.querySelectorAll('.tech-skill-bar');
+        skillPercentages.forEach(bar => {
+          if (Math.random() > 0.95) {
+            const parent = bar.parentElement;
+            const currentWidth = parseInt(bar.style.width) || 80;
+            const newWidth = Math.max(70, Math.min(95, currentWidth + Math.floor(Math.random() * 3) - 1));
+            bar.style.width = newWidth + '%';
+            
+            const percentageSpan = parent.parentElement.querySelector('span:last-child');
+            if (percentageSpan) {
+              percentageSpan.textContent = newWidth + '%';
+            }
+          }
+        });
+      }, 30000);
+
+      // Copilot分析結果の更新シミュレーション
+      setInterval(() => {
+        const copilotElements = document.querySelectorAll('.copilot-suggestion');
+        copilotElements.forEach(element => {
+          if (Math.random() > 0.92) {
+            element.style.background = 'linear-gradient(135deg, #f3f4f6, #e5e7eb)';
+            setTimeout(() => {
+              element.style.background = '';
+            }, 1000);
+          }
+        });
+      }, 20000);
+
+      // 評価分布の動的更新
+      setInterval(() => {
+        const distributionBars = document.querySelectorAll('.w-16.bg-gray-200 .bg-purple-500, .w-16.bg-gray-200 .bg-blue-500, .w-16.bg-gray-200 .bg-green-500');
+        distributionBars.forEach(bar => {
+          if (Math.random() > 0.97) {
+            const currentWidth = parseInt(bar.style.width) || 50;
+            const newWidth = Math.max(20, Math.min(90, currentWidth + Math.floor(Math.random() * 5) - 2));
+            bar.style.width = newWidth + '%';
+          }
+        });
+      }, 45000);
+
+      // 通知カウンターの更新
+      setInterval(() => {
+        const badge = document.querySelector('.fa-bell + span');
+        if (badge && Math.random() > 0.98) {
+          const currentCount = parseInt(badge.textContent);
+          badge.textContent = currentCount + 1;
+          
+          // 新しい評価通知
+          const notification = document.createElement('div');
+          notification.className = 'fixed top-4 right-4 bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+          notification.textContent = '新しい人事評価が申請されました';
+          document.body.appendChild(notification);
+          
+          setTimeout(() => {
+            notification.remove();
+          }, 4000);
+        }
+      }, 60000);
+    });
+  </script>
+</body>
+</html>
