@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>法規制対応管理システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+    }
+    .risk-high { border-left: 4px solid #ef4444; background: #fef2f2; }
+    .risk-medium { border-left: 4px solid #f59e0b; background: #fffbeb; }
+    .risk-low { border-left: 4px solid #10b981; background: #f0fdf4; }
+    .compliance-meter {
+      background: conic-gradient(from 0deg, #ef4444 0deg 54deg, #f59e0b 54deg 126deg, #10b981 126deg 360deg);
+      border-radius: 50%;
+      width: 120px;
+      height: 120px;
+      position: relative;
+    }
+    .compliance-meter::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      background: white;
+      border-radius: 50%;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .regulation-tab {
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .regulation-tab.active {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      border-radius: 8px 8px 0 0;
+      border-bottom-color: #3b82f6;
+    }
+    .status-indicator {
+      position: relative;
+      overflow: hidden;
+    }
+    .status-indicator::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.6s;
+    }
+    .status-indicator:hover::before {
+      left: 100%;
+    }
+    .law-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .checklist-item {
+      transition: all 0.3s ease;
+    }
+    .checklist-item:hover {
+      background: #f8fafc;
+      transform: translateX(4px);
+    }
+    .risk-pulse {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .deadline-urgent { 
+      background: linear-gradient(45deg, #ef4444, #dc2626);
+      color: white;
+    }
+    .deadline-warning { 
+      background: linear-gradient(45deg, #f59e0b, #d97706);
+      color: white;
+    }
+    .deadline-normal { 
+      background: linear-gradient(45deg, #10b981, #059669);
+      color: white;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-blue-900 to-purple-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-balance-scale text-3xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">法規制対応管理システム</h1>
+              <p class="text-blue-200 text-sm">Legal Compliance Management System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">コンプライアンス管理</span>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">遵守率</div>
+              <div class="text-lg font-bold text-white">94.2%</div>
+            </div>
+            <div class="risk-pulse">
+              <div class="bg-orange-500 px-2 py-1 rounded-full text-xs font-bold">
+                <i class="fas fa-exclamation-triangle mr-1"></i>要注意5件
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 法改正アラート -->
+          <div class="text-right text-sm">
+            <div class="text-blue-200">次回更新</div>
+            <div class="font-bold text-yellow-300">建設業許可 15日</div>
+          </div>
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">法務・コンプライアンス責任者</div>
+              <div class="text-sm text-blue-200">管理部</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-blue-800 rounded-full flex items-center justify-center font-bold text-lg">
+              法
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">監査・コンプライアンス</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">法規制対応管理</span>
+    </nav>
+
+    <!-- 法規制対応サマリー -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-book text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">管理対象</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">28件</div>
+        <div class="text-sm opacity-90">適用法令</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-check-circle text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">94.2%</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">132項目</div>
+        <div class="text-sm opacity-90">遵守要件</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-exclamation-triangle text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">要対応</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">5件</div>
+        <div class="text-sm opacity-90">リスク事項</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-sync text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">3件</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">12件</div>
+        <div class="text-sm opacity-90">更新予定</div>
+      </div>
+    </div>
+
+    <!-- タブナビゲーション -->
+    <div class="bg-white rounded-xl shadow-lg p-2 mb-6">
+      <div class="flex space-x-1">
+        <button class="regulation-tab active px-4 py-2 text-sm font-medium" data-tab="overview">
+          <i class="fas fa-tachometer-alt mr-1"></i>概要
+        </button>
+        <button class="regulation-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="laws">
+          <i class="fas fa-book mr-1"></i>適用法令
+        </button>
+        <button class="regulation-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="requirements">
+          <i class="fas fa-list-check mr-1"></i>要件管理
+        </button>
+        <button class="regulation-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="monitoring">
+          <i class="fas fa-search mr-1"></i>対応状況
+        </button>
+        <button class="regulation-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="risks">
+          <i class="fas fa-exclamation-triangle mr-1"></i>リスク評価
+        </button>
+        <button class="regulation-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="checklist">
+          <i class="fas fa-clipboard-check mr-1"></i>点検リスト
+        </button>
+        <div class="ml-auto flex items-center space-x-2">
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+            <i class="fas fa-download mr-1"></i>レポート
+          </button>
+          <button class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+            <i class="fas fa-plus mr-1"></i>新規法令
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 概要タブコンテンツ -->
+    <div id="overview" class="tab-content active">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <!-- 遵守状況ダッシュボード -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
+              法令遵守状況
+            </h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">
+                全法令
+              </button>
+              <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                重要法令
+              </button>
+              <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                期限間近
+              </button>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 遵守率チャート -->
+            <div class="relative">
+              <canvas id="complianceChart" width="300" height="300"></canvas>
+            </div>
+            
+            <!-- 主要法令状況 -->
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                  <div>
+                    <div class="font-medium text-gray-800">電気事業法</div>
+                    <div class="text-sm text-gray-500">主任技術者・保安規程</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-green-600">98%</div>
+                  <div class="text-xs text-gray-500">25/25項目</div>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
+                  <div>
+                    <div class="font-medium text-gray-800">建設業法</div>
+                    <div class="text-sm text-gray-500">許可・技術者配置</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-blue-600">95%</div>
+                  <div class="text-xs text-gray-500">18/19項目</div>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 bg-orange-500 rounded-full mr-3"></div>
+                  <div>
+                    <div class="font-medium text-gray-800">労働安全衛生法</div>
+                    <div class="text-sm text-gray-500">安全管理・教育</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-orange-600">88%</div>
+                  <div class="text-xs text-gray-500">22/25項目</div>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 bg-purple-500 rounded-full mr-3"></div>
+                  <div>
+                    <div class="font-medium text-gray-800">環境関連法令</div>
+                    <div class="text-sm text-gray-500">廃棄物・フロン</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-purple-600">92%</div>
+                  <div class="text-xs text-gray-500">23/25項目</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- コンプライアンススコア -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-award text-gold-600 mr-2"></i>
+            総合コンプライアンススコア
+          </h3>
+          
+          <!-- 総合スコア -->
+          <div class="text-center mb-6">
+            <div class="compliance-meter mx-auto mb-4">
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <div class="text-3xl font-bold text-green-600">94.2</div>
+                <div class="text-xs text-gray-500">総合スコア</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 分野別スコア -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">電気事業法</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 98%"></div>
+                </div>
+                <span class="text-sm font-bold text-green-600">98%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">建設業法</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 95%"></div>
+                </div>
+                <span class="text-sm font-bold text-blue-600">95%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">環境法令</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 92%"></div>
+                </div>
+                <span class="text-sm font-bold text-purple-600">92%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">労働安全</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-orange-500 h-2 rounded-full" style="width: 88%"></div>
+                </div>
+                <span class="text-sm font-bold text-orange-600">88%</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 改善提案 -->
+          <div class="mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <div class="flex items-center">
+              <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
+              <div class="text-sm">
+                <div class="font-medium text-blue-800">改善提案</div>
+                <div class="text-blue-700">安全教育記録の電子化で+5%向上</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 緊急対応事項・更新予定 -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        <!-- 緊急対応事項 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+              緊急対応事項
+            </h3>
+            <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+              5件
+            </span>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="risk-high rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">建設業許可証更新</h4>
+                <span class="deadline-urgent px-2 py-1 rounded-full text-xs font-bold">緊急</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                管工事業許可証の有効期限が6月30日まで。更新申請が必要。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">期限: 2025/06/30</div>
+                <div class="text-sm text-red-600 font-medium">残り15日</div>
+              </div>
+            </div>
+            
+            <div class="risk-medium rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">主任技術者講習受講</h4>
+                <span class="deadline-warning px-2 py-1 rounded-full text-xs font-bold">注意</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                電気主任技術者の法定講習受講期限が近づいています。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">期限: 2025/07/15</div>
+                <div class="text-sm text-orange-600 font-medium">残り30日</div>
+              </div>
+            </div>
+            
+            <div class="risk-medium rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">フロン点検記録</h4>
+                <span class="deadline-warning px-2 py-1 rounded-full text-xs font-bold">注意</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                フロン排出抑制法に基づく定期点検記録の提出が必要。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">期限: 2025/07/31</div>
+                <div class="text-sm text-orange-600 font-medium">残り46日</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 更新予定 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
+              更新予定・対応状況
+            </h3>
+            <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+              12件
+            </span>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="border border-green-200 bg-green-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">ISO14001更新</h4>
+                <span class="deadline-normal px-2 py-1 rounded-full text-xs font-bold">予定通り</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                環境マネジメントシステムの更新審査対応中。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">更新日: 2025/12/15</div>
+                <div class="w-20 bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="border border-blue-200 bg-blue-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">電気工事業登録</h4>
+                <span class="deadline-normal px-2 py-1 rounded-full text-xs font-bold">予定通り</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                電気工事業登録の更新手続きを実施中。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">更新日: 2025/09/30</div>
+                <div class="w-20 bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 60%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="border border-purple-200 bg-purple-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">産業廃棄物委託契約</h4>
+                <span class="deadline-normal px-2 py-1 rounded-full text-xs font-bold">予定通り</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                廃棄物処理委託契約の年次更新対応。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">更新日: 2025/11/30</div>
+                <div class="w-20 bg-gray-200 rounded-full h-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 40%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 法令改正情報 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-newspaper text-indigo-600 mr-2"></i>
+            法令改正・最新情報
+          </h3>
+          <div class="flex space-x-2">
+            <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+              <option>全て</option>
+              <option>電気事業法</option>
+              <option>建設業法</option>
+              <option>環境法令</option>
+            </select>
+            <button class="px-3 py-1 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+              <i class="fas fa-sync mr-1"></i>更新確認
+            </button>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- 施行済み改正 -->
+          <div class="p-4 bg-green-50 rounded-lg border border-green-200">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold text-green-800">電気事業法改正</h4>
+              <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">施行済み</span>
+            </div>
+            <div class="text-sm text-gray-700 mb-2">
+              DX推進に関する規制緩和措置が施行されました。
+            </div>
+            <div class="text-xs text-gray-500 mb-2">施行日: 2025/04/01</div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-green-600">対応完了</span>
+              <button class="text-xs text-blue-600 hover:underline">詳細確認</button>
+            </div>
+          </div>
+          
+          <!-- 施行予定改正 -->
+          <div class="p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold text-orange-800">建設業法改正</h4>
+              <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">施行予定</span>
+            </div>
+            <div class="text-sm text-gray-700 mb-2">
+              働き方改革関連の規制強化が予定されています。
+            </div>
+            <div class="text-xs text-gray-500 mb-2">施行予定: 2025/10/01</div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-orange-600">準備中</span>
+              <button class="text-xs text-blue-600 hover:underline">対応計画</button>
+            </div>
+          </div>
+          
+          <!-- 検討中改正 -->
+          <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-bold text-blue-800">環境省令改正</h4>
+              <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">検討中</span>
+            </div>
+            <div class="text-sm text-gray-700 mb-2">
+              脱炭素化推進に関する新たな規制が検討されています。
+            </div>
+            <div class="text-xs text-gray-500 mb-2">検討状況: パブコメ募集中</div>
+            <div class="flex justify-between items-center">
+              <span class="text-xs text-blue-600">情報収集</span>
+              <button class="text-xs text-blue-600 hover:underline">動向確認</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 適用法令タブコンテンツ -->
+    <div id="laws" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <!-- 法令分類別表示 -->
+        <div class="xl:col-span-3">
+          <div class="law-grid">
+            <!-- 電気事業法 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-blue-800 flex items-center">
+                  <i class="fas fa-bolt text-blue-600 mr-2"></i>
+                  電気事業法
+                </h3>
+                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  遵守率: 98%
+                </span>
+              </div>
+              
+              <div class="space-y-3 mb-4">
+                <div class="text-sm text-gray-600">
+                  <strong>適用範囲:</strong> 高圧受電設備(6.6kV)の設置・保安
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>主要要件:</strong> 主任技術者選任、保安規程届出、定期点検実施
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>所管官庁:</strong> 九州産業保安監督部
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="text-center p-2 bg-green-50 rounded">
+                  <div class="text-lg font-bold text-green-600">25</div>
+                  <div class="text-xs text-gray-600">遵守要件</div>
+                </div>
+                <div class="text-center p-2 bg-blue-50 rounded">
+                  <div class="text-lg font-bold text-blue-600">1名</div>
+                  <div class="text-xs text-gray-600">選任技術者</div>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <div class="text-sm">
+                  <span class="text-gray-600">次回更新:</span>
+                  <span class="font-medium">主任技術者講習</span>
+                </div>
+                <button class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm hover:bg-blue-200">
+                  詳細管理
+                </button>
+              </div>
+            </div>
+            
+            <!-- 建設業法 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-orange-800 flex items-center">
+                  <i class="fas fa-hard-hat text-orange-600 mr-2"></i>
+                  建設業法
+                </h3>
+                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                  遵守率: 95%
+                </span>
+              </div>
+              
+              <div class="space-y-3 mb-4">
+                <div class="text-sm text-gray-600">
+                  <strong>許可業種:</strong> 管工事業、電気工事業
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>主要要件:</strong> 技術者配置、施工体制台帳、適正な下請契約
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>所管官庁:</strong> 福岡県土整備部
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="text-center p-2 bg-green-50 rounded">
+                  <div class="text-lg font-bold text-green-600">19</div>
+                  <div class="text-xs text-gray-600">遵守要件</div>
+                </div>
+                <div class="text-center p-2 bg-orange-50 rounded">
+                  <div class="text-lg font-bold text-orange-600">3名</div>
+                  <div class="text-xs text-gray-600">配置技術者</div>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <div class="text-sm">
+                  <span class="text-gray-600">次回更新:</span>
+                  <span class="font-medium text-red-600">許可更新(15日)</span>
+                </div>
+                <button class="px-3 py-1 bg-orange-100 text-orange-800 rounded text-sm hover:bg-orange-200">
+                  詳細管理
+                </button>
+              </div>
+            </div>
+            
+            <!-- 労働安全衛生法 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-red-800 flex items-center">
+                  <i class="fas fa-shield-alt text-red-600 mr-2"></i>
+                  労働安全衛生法
+                </h3>
+                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                  遵守率: 88%
+                </span>
+              </div>
+              
+              <div class="space-y-3 mb-4">
+                <div class="text-sm text-gray-600">
+                  <strong>適用範囲:</strong> 常時50名以上の労働者を使用する事業場
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>主要要件:</strong> 安全管理者選任、安全教育実施、健康診断
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>所管官庁:</strong> 福岡労働基準監督署
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="text-center p-2 bg-green-50 rounded">
+                  <div class="text-lg font-bold text-green-600">25</div>
+                  <div class="text-xs text-gray-600">遵守要件</div>
+                </div>
+                <div class="text-center p-2 bg-red-50 rounded">
+                  <div class="text-lg font-bold text-red-600">3件</div>
+                  <div class="text-xs text-gray-600">未対応</div>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <div class="text-sm">
+                  <span class="text-gray-600">次回更新:</span>
+                  <span class="font-medium">安全教育記録</span>
+                </div>
+                <button class="px-3 py-1 bg-red-100 text-red-800 rounded text-sm hover:bg-red-200">
+                  詳細管理
+                </button>
+              </div>
+            </div>
+            
+            <!-- 環境関連法令 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-green-800 flex items-center">
+                  <i class="fas fa-leaf text-green-600 mr-2"></i>
+                  環境関連法令
+                </h3>
+                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                  遵守率: 92%
+                </span>
+              </div>
+              
+              <div class="space-y-3 mb-4">
+                <div class="text-sm text-gray-600">
+                  <strong>対象法令:</strong> 廃棄物処理法、フロン排出抑制法
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>主要要件:</strong> 適正処理、マニフェスト管理、定期点検
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>所管官庁:</strong> 福岡県環境部
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="text-center p-2 bg-green-50 rounded">
+                  <div class="text-lg font-bold text-green-600">25</div>
+                  <div class="text-xs text-gray-600">遵守要件</div>
+                </div>
+                <div class="text-center p-2 bg-green-50 rounded">
+                  <div class="text-lg font-bold text-green-600">23</div>
+                  <div class="text-xs text-gray-600">適合</div>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <div class="text-sm">
+                  <span class="text-gray-600">次回更新:</span>
+                  <span class="font-medium">フロン点検</span>
+                </div>
+                <button class="px-3 py-1 bg-green-100 text-green-800 rounded text-sm hover:bg-green-200">
+                  詳細管理
+                </button>
+              </div>
+            </div>
+            
+            <!-- 消防法 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-purple-800 flex items-center">
+                  <i class="fas fa-fire text-purple-600 mr-2"></i>
+                  消防法
+                </h3>
+                <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                  遵守率: 90%
+                </span>
+              </div>
+              
+              <div class="space-y-3 mb-4">
+                <div class="text-sm text-gray-600">
+                  <strong>適用範囲:</strong> 危険物取扱所、消防用設備
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>主要要件:</strong> 危険物取扱者選任、設備点検、消防計画
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>所管官庁:</strong> 福岡市消防局
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="text-center p-2 bg-green-50 rounded">
+                  <div class="text-lg font-bold text-green-600">18</div>
+                  <div class="text-xs text-gray-600">遵守要件</div>
+                </div>
+                <div class="text-center p-2 bg-purple-50 rounded">
+                  <div class="text-lg font-bold text-purple-600">1名</div>
+                  <div class="text-xs text-gray-600">取扱者</div>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <div class="text-sm">
+                  <span class="text-gray-600">次回更新:</span>
+                  <span class="font-medium">消防計画</span>
+                </div>
+                <button class="px-3 py-1 bg-purple-100 text-purple-800 rounded text-sm hover:bg-purple-200">
+                  詳細管理
+                </button>
+              </div>
+            </div>
+            
+            <!-- ISO規格 -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-indigo-800 flex items-center">
+                  <i class="fas fa-award text-indigo-600 mr-2"></i>
+                  ISO規格
+                </h3>
+                <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
+                  遵守率: 96%
+                </span>
+              </div>
+              
+              <div class="space-y-3 mb-4">
+                <div class="text-sm text-gray-600">
+                  <strong>取得規格:</strong> ISO14001、ISO9001
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>主要要件:</strong> 環境管理、品質管理、内部監査
+                </div>
+                <div class="text-sm text-gray-600">
+                  <strong>審査機関:</strong> JQA（日本品質保証機構）
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="text-center p-2 bg-green-50 rounded">
+                  <div class="text-lg font-bold text-green-600">24</div>
+                  <div class="text-xs text-gray-600">要求事項</div>
+                </div>
+                <div class="text-center p-2 bg-indigo-50 rounded">
+                  <div class="text-lg font-bold text-indigo-600">23</div>
+                  <div class="text-xs text-gray-600">適合</div>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <div class="text-sm">
+                  <span class="text-gray-600">次回更新:</span>
+                  <span class="font-medium">更新審査</span>
+                </div>
+                <button class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded text-sm hover:bg-indigo-200">
+                  詳細管理
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- サイドバー - 法令統計 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
+            法令統計
+          </h3>
+          
+          <!-- 分野別法令数 -->
+          <div class="space-y-3 mb-6">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">電気・保安</span>
+              <span class="font-bold text-blue-600">8件</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">建設・工事</span>
+              <span class="font-bold text-orange-600">6件</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">労働・安全</span>
+              <span class="font-bold text-red-600">5件</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">環境・廃棄物</span>
+              <span class="font-bold text-green-600">4件</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">消防・危険物</span>
+              <span class="font-bold text-purple-600">3件</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">品質・ISO</span>
+              <span class="font-bold text-indigo-600">2件</span>
+            </div>
+          </div>
+          
+          <!-- 期限管理 -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3">期限管理</h4>
+            <div class="space-y-2">
+              <div class="p-2 bg-red-50 rounded border-l-4 border-red-400">
+                <div class="text-xs font-medium text-red-800">緊急（15日以内）</div>
+                <div class="text-xs text-red-600">3件</div>
+              </div>
+              
+              <div class="p-2 bg-orange-50 rounded border-l-4 border-orange-400">
+                <div class="text-xs font-medium text-orange-800">注意（30日以内）</div>
+                <div class="text-xs text-orange-600">5件</div>
+              </div>
+              
+              <div class="p-2 bg-green-50 rounded border-l-4 border-green-400">
+                <div class="text-xs font-medium text-green-800">正常（30日超）</div>
+                <div class="text-xs text-green-600">20件</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- アクション -->
+          <div class="mt-6 space-y-2">
+            <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+              <i class="fas fa-plus mr-1"></i>新規法令追加
+            </button>
+            <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+              <i class="fas fa-download mr-1"></i>法令一覧出力
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 要件管理タブコンテンツ -->
+    <div id="requirements" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 要件一覧 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-list-check text-blue-600 mr-2"></i>
+              コンプライアンス要件管理
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>全要件</option>
+                <option>電気事業法</option>
+                <option>建設業法</option>
+                <option>労働安全衛生法</option>
+              </select>
+              <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm">
+                <i class="fas fa-plus mr-1"></i>要件追加
+              </button>
+            </div>
+          </div>
+          
+          <!-- 要件テーブル -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 border-b">
+                  <th class="text-left p-3 font-medium text-gray-700">法令</th>
+                  <th class="text-left p-3 font-medium text-gray-700">要件内容</th>
+                  <th class="text-center p-3 font-medium text-gray-700">期限</th>
+                  <th class="text-center p-3 font-medium text-gray-700">担当</th>
+                  <th class="text-center p-3 font-medium text-gray-700">状態</th>
+                  <th class="text-center p-3 font-medium text-gray-700">アクション</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-blue-800">電気事業法</div>
+                    <div class="text-xs text-gray-500">第42条</div>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">主任技術者の選任</div>
+                    <div class="text-xs text-gray-600">電気主任技術者の選任届出</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">常時</div>
+                    <div class="text-xs text-gray-500">継続義務</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">技術部</div>
+                    <div class="text-xs text-gray-500">佐藤主任</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">適合</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                      確認
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-blue-800">電気事業法</div>
+                    <div class="text-xs text-gray-500">第42条</div>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">定期点検の実施</div>
+                    <div class="text-xs text-gray-600">月次点検・年次点検の実施</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">毎月</div>
+                    <div class="text-xs text-gray-500">月末</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">技術部</div>
+                    <div class="text-xs text-gray-500">佐藤主任</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">要対応</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs hover:bg-red-200">
+                      対応
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-orange-800">建設業法</div>
+                    <div class="text-xs text-gray-500">第7条</div>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">技術者の配置</div>
+                    <div class="text-xs text-gray-600">主任技術者・監理技術者配置</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">工事毎</div>
+                    <div class="text-xs text-gray-500">着工前</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">工事部</div>
+                    <div class="text-xs text-gray-500">山田部長</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">適合</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                      確認
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-orange-800">建設業法</div>
+                    <div class="text-xs text-gray-500">第24条の7</div>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">施工体制台帳</div>
+                    <div class="text-xs text-gray-600">下請契約の施工体制台帳作成</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">工事毎</div>
+                    <div class="text-xs text-gray-500">着工時</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">工事部</div>
+                    <div class="text-xs text-gray-500">田中係長</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">未対応</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs hover:bg-orange-200">

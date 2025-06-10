@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>システム証跡管理 - Power Apps風デモ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ホバーエフェクトとトランジション */
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* タブのアクティブ状態のスタイル */
+    .app-tab {
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .app-tab.active {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      border-radius: 8px 8px 0 0;
+      border-bottom-color: #3b82f6;
+    }
+    /* タブコンテンツの表示/非表示 */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    /* リスクインジケーターのカラー */
+    .risk-high { border-left: 4px solid #ef4444; background: #fef2f2; }
+    .risk-medium { border-left: 4px solid #f59e0b; background: #fffbeb; }
+    .risk-low { border-left: 4px solid #10b981; background: #f0fdf4; }
+    /* グラデーション背景 */
+    .gradient-bg-header {
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+    }
+    .gradient-bg-card-blue {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    .gradient-bg-card-green {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    .gradient-bg-card-orange {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    .gradient-bg-card-purple {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    }
+    .activity-meter {
+      background: conic-gradient(from 0deg, #ef4444 0deg 90deg, #f59e0b 90deg 270deg, #10b981 270deg 360deg);
+      border-radius: 50%;
+      width: 120px;
+      height: 120px;
+      position: relative;
+    }
+    .activity-meter::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      background: white;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen font-sans">
+  <!-- ヘッダーセクション -->
+  <header class="gradient-bg-header text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-fingerprint text-3xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">システム証跡管理</h1>
+              <p class="text-blue-200 text-sm">System Audit Trail Management</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">監査対応支援</span>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">ログ件数 (24h)</div>
+              <div class="text-lg font-bold text-white">12,345</div>
+            </div>
+            <div class="bg-red-500 px-2 py-1 rounded-full text-xs font-bold">
+              <i class="fas fa-shield-alt mr-1"></i>不正アクセス検知2件
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- アラート -->
+          <div class="text-right text-sm">
+            <div class="text-blue-200">次回監査予定</div>
+            <div class="font-bold text-yellow-300">2025/11/01</div>
+          </div>
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">2</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">システム監査担当者</div>
+              <div class="text-sm text-blue-200">情報システム部</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-blue-800 rounded-full flex items-center justify-center font-bold text-lg">
+              監
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">セキュリティ・監査</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">システム証跡管理</span>
+    </nav>
+
+    <!-- 証跡管理サマリー -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="gradient-bg-card-blue text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-history text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">総件数</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">56,789件</div>
+        <div class="text-sm opacity-90">全操作ログ</div>
+      </div>
+      
+      <div class="gradient-bg-card-green text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-search-dollar text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">月間</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">1,234件</div>
+        <div class="text-sm opacity-90">変更ログ</div>
+      </div>
+      
+      <div class="gradient-bg-card-orange text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-user-shield text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">未対応</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">7件</div>
+        <div class="text-sm opacity-90">不正アクセス疑い</div>
+      </div>
+      
+      <div class="gradient-bg-card-purple text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-file-export text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">最新</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">3件</div>
+        <div class="text-sm opacity-90">生成済みレポート</div>
+      </div>
+    </div>
+
+    <!-- タブナビゲーション -->
+    <div class="bg-white rounded-xl shadow-lg p-2 mb-6">
+      <div class="flex space-x-1">
+        <button class="app-tab active px-4 py-2 text-sm font-medium" data-tab="approval-history">
+          <i class="fas fa-clipboard-check mr-1"></i>承認履歴一覧
+        </button>
+        <button class="app-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="change-log">
+          <i class="fas fa-search mr-1"></i>変更ログ検索
+        </button>
+        <button class="app-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="operation-analysis">
+          <i class="fas fa-chart-line mr-1"></i>操作証跡分析
+        </button>
+        <button class="app-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="unauthorized-access">
+          <i class="fas fa-exclamation-triangle mr-1"></i>不正アクセス検知
+        </button>
+        <button class="app-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="permission-history">
+          <i class="fas fa-user-lock mr-1"></i>権限変更履歴
+        </button>
+        <div class="ml-auto flex items-center space-x-2">
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700" data-tab="data-export">
+            <i class="fas fa-file-export mr-1"></i>データエクスポート
+          </button>
+          <button class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700" data-tab="audit-report">
+            <i class="fas fa-file-alt mr-1"></i>監査レポート生成
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- タブコンテンツエリア -->
+    <div id="approval-history" class="tab-content active">
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-clipboard-check text-blue-600 mr-2"></i>
+            承認履歴一覧
+          </h3>
+          <div class="flex space-x-2">
+            <input type="date" class="px-3 py-1 border border-gray-300 rounded text-sm">
+            <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+              <option>全て</option>
+              <option>承認済み</option>
+              <option>却下済み</option>
+              <option>保留中</option>
+            </select>
+            <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+              <i class="fas fa-filter mr-1"></i>フィルター
+            </button>
+          </div>
+        </div>
+        
+        <!-- 承認履歴テーブル -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 border-b">
+                <th class="text-left p-3 font-medium text-gray-700">申請ID</th>
+                <th class="text-left p-3 font-medium text-gray-700">申請内容</th>
+                <th class="text-center p-3 font-medium text-gray-700">申請者</th>
+                <th class="text-center p-3 font-medium text-gray-700">承認者</th>
+                <th class="text-center p-3 font-medium text-gray-700">申請日時</th>
+                <th class="text-center p-3 font-medium text-gray-700">承認日時</th>
+                <th class="text-center p-3 font-medium text-gray-700">ステータス</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">APP-001</td>
+                <td class="p-3">システム変更申請 (機能A追加)</td>
+                <td class="p-3 text-center">開発部 山田</td>
+                <td class="p-3 text-center">情報システム部 佐藤</td>
+                <td class="p-3 text-center">2025/06/01 10:00</td>
+                <td class="p-3 text-center">2025/06/01 11:30</td>
+                <td class="p-3 text-center"><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">承認済み</span></td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">APP-002</td>
+                <td class="p-3">データベースアクセス申請 (顧客データ)</td>
+                <td class="p-3 text-center">営業部 田中</td>
+                <td class="p-3 text-center">経理部 鈴木</td>
+                <td class="p-3 text-center">2025/06/02 14:15</td>
+                <td class="p-3 text-center">却下</td>
+                <td class="p-3 text-center"><span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">却下済み</span></td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">APP-003</td>
+                <td class="p-3">ユーザーアカウント作成申請 (新入社員)</td>
+                <td class="p-3 text-center">人事部 井上</td>
+                <td class="p-3 text-center">情報システム部 佐藤</td>
+                <td class="p-3 text-center">2025/06/03 09:45</td>
+                <td class="p-3 text-center">保留中</td>
+                <td class="p-3 text-center"><span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">保留中</span></td>
+              </tr>
+               <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">APP-004</td>
+                <td class="p-3">サーバ設定変更申請 (IPアドレス変更)</td>
+                <td class="p-3 text-center">インフラ部 木村</td>
+                <td class="p-3 text-center">情報システム部 佐藤</td>
+                <td class="p-3 text-center">2025/06/04 11:00</td>
+                <td class="p-3 text-center">2025/06/04 12:00</td>
+                <td class="p-3 text-center"><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">承認済み</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="change-log" class="tab-content">
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-search text-blue-600 mr-2"></i>
+            変更ログ検索
+          </h3>
+          <div class="flex space-x-2">
+            <input type="text" placeholder="キーワード検索" class="px-3 py-1 border border-gray-300 rounded text-sm">
+            <input type="date" class="px-3 py-1 border border-gray-300 rounded text-sm">
+            <input type="date" class="px-3 py-1 border border-gray-300 rounded text-sm">
+            <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+              <i class="fas fa-filter mr-1"></i>検索
+            </button>
+          </div>
+        </div>
+        
+        <!-- 変更ログテーブル -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 border-b">
+                <th class="text-left p-3 font-medium text-gray-700">日時</th>
+                <th class="text-left p-3 font-medium text-gray-700">ユーザー</th>
+                <th class="text-left p-3 font-medium text-gray-700">変更内容</th>
+                <th class="text-left p-3 font-medium text-gray-700">対象オブジェクト</th>
+                <th class="text-center p-3 font-medium text-gray-700">変更種別</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">2025/06/05 09:30</td>
+                <td class="p-3">開発部 山田</td>
+                <td class="p-3">機能Aのコード修正</td>
+                <td class="p-3">プロジェクト管理システム - コードベース</td>
+                <td class="p-3 text-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">更新</span></td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">2025/06/05 10:15</td>
+                <td class="p-3">営業部 田中</td>
+                <td class="p-3">顧客データ (ID:123) 住所変更</td>
+                <td class="p-3">顧客管理システム - 顧客マスタ</td>
+                <td class="p-3 text-center"><span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">更新</span></td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">2025/06/06 11:00</td>
+                <td class="p-3">人事部 井上</td>
+                <td class="p-3">新入社員アカウント作成</td>
+                <td class="p-3">認証システム - ユーザーアカウント</td>
+                <td class="p-3 text-center"><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">追加</span></td>
+              </tr>
+               <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">2025/06/06 14:00</td>
+                <td class="p-3">経理部 鈴木</td>
+                <td class="p-3">経費申請データ (ID:456) 削除</td>
+                <td class="p-3">経費精算システム - 申請データ</td>
+                <td class="p-3 text-center"><span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">削除</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="operation-analysis" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+            操作証跡トレンド分析
+          </h3>
+          <div class="mb-4">
+            <canvas id="operationTrendChart" width="600" height="250"></canvas>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-user-chart text-blue-600 mr-2"></i>
+            ユーザー別操作量
+          </h3>
+          <div class="activity-meter mx-auto mb-4">
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <div class="text-3xl font-bold text-green-600">85%</div>
+              <div class="text-xs text-gray-500">標準範囲内</div>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">佐藤主任</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 85%"></div>
+                </div>
+                <span class="text-sm font-bold text-green-600">850件</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">田中係長</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-orange-500 h-2 rounded-full" style="width: 60%"></div>
+                </div>
+                <span class="text-sm font-bold text-orange-600">600件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="unauthorized-access" class="tab-content">
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+            不正アクセス検知
+          </h3>
+          <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+            2件の未解決アラート
+          </span>
+        </div>
+        
+        <div class="space-y-4">
+          <div class="risk-high rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-medium text-gray-800">異常なログイン試行</h4>
+              <span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">緊急</span>
+            </div>
+            <div class="text-sm text-gray-600 mb-2">
+              日本国外からの複数回ログイン失敗。
+            </div>
+            <div class="flex justify-between items-center">
+              <div class="text-sm text-gray-500">検知日時: 2025/06/07 03:22</div>
+              <button class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs hover:bg-red-200">
+                対応
+              </button>
+            </div>
+          </div>
+          
+          <div class="risk-medium rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-medium text-gray-800">短時間での大量データダウンロード</h4>
+              <span class="bg-orange-500 text-white px-2 py-1 rounded-full text-xs font-bold">注意</span>
+            </div>
+            <div class="text-sm text-gray-600 mb-2">
+              通常とは異なるパターンでのデータダウンロードを検知。
+            </div>
+            <div class="flex justify-between items-center">
+              <div class="text-sm text-gray-500">検知日時: 2025/06/07 10:45</div>
+              <button class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs hover:bg-orange-200">
+                確認
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="permission-history" class="tab-content">
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-user-lock text-blue-600 mr-2"></i>
+            権限変更履歴
+          </h3>
+          <div class="flex space-x-2">
+            <input type="text" placeholder="ユーザー名/変更内容" class="px-3 py-1 border border-gray-300 rounded text-sm">
+            <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+              <i class="fas fa-filter mr-1"></i>検索
+            </button>
+          </div>
+        </div>
+        
+        <!-- 権限変更履歴テーブル -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-gray-50 border-b">
+                <th class="text-left p-3 font-medium text-gray-700">日時</th>
+                <th class="text-left p-3 font-medium text-gray-700">操作者</th>
+                <th class="text-left p-3 font-medium text-gray-700">対象ユーザー/グループ</th>
+                <th class="text-left p-3 font-medium text-gray-700">変更内容</th>
+                <th class="text-center p-3 font-medium text-gray-700">承認</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">2025/05/20 15:00</td>
+                <td class="p-3">情報システム部 佐藤</td>
+                <td class="p-3">営業部 田中</td>
+                <td class="p-3">システムAへのアクセス権限を付与</td>
+                <td class="p-3 text-center"><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">済</span></td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">2025/05/22 09:00</td>
+                <td class="p-3">人事部 井上</td>
+                <td class="p-3">旧従業員グループ</td>
+                <td class="p-3">システムBへのアクセス権限を削除</td>
+                <td class="p-3 text-center"><span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">済</span></td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50">
+                <td class="p-3">2025/05/25 11:30</td>
+                <td class="p-3">情報システム部 佐藤</td>
+                <td class="p-3">開発部 山田</td>
+                <td class="p-3">データベース管理者権限を一時的に付与</td>
+                <td class="p-3 text-center"><span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">未</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="data-export" class="tab-content">
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-file-export text-blue-600 mr-2"></i>
+          データエクスポート
+        </h3>
+        <div class="space-y-4 max-w-md mx-auto">
+          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h4 class="font-semibold text-gray-700 mb-2">承認履歴のエクスポート</h4>
+            <p class="text-sm text-gray-600 mb-3">全ての承認履歴をCSV形式でエクスポートします。</p>
+            <button class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors">
+              <i class="fas fa-download mr-2"></i>CSVダウンロード
+            </button>
+          </div>
+          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h4 class="font-semibold text-gray-700 mb-2">変更ログのエクスポート</h4>
+            <p class="text-sm text-gray-600 mb-3">指定期間の変更ログをExcel形式でエクスポートします。</p>
+            <div class="flex space-x-2 mb-3">
+              <input type="date" class="flex-1 px-3 py-1 border border-gray-300 rounded text-sm">
+              <input type="date" class="flex-1 px-3 py-1 border border-gray-300 rounded text-sm">
+            </div>
+            <button class="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition-colors">
+              <i class="fas fa-file-excel mr-2"></i>Excelダウンロード
+            </button>
+          </div>
+          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h4 class="font-semibold text-gray-700 mb-2">不正アクセス検知ログ</h4>
+            <p class="text-sm text-gray-600 mb-3">不正アクセス検知の生ログをJSON形式でエクスポートします。</p>
+            <button class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600 transition-colors">
+              <i class="fas fa-file-code mr-2"></i>JSONダウンロード
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="audit-report" class="tab-content">
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-file-alt text-blue-600 mr-2"></i>
+          監査レポート生成
+        </h3>
+        <div class="space-y-6 max-w-xl mx-auto">
+          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h4 class="font-semibold text-gray-700 mb-2">月次操作履歴レポート</h4>
+            <p class="text-sm text-gray-600 mb-3">月ごとのシステム操作履歴の概要レポートを生成します。</p>
+            <div class="flex space-x-2 items-center mb-3">
+              <label for="month-select" class="text-sm text-gray-700">対象月:</label>
+              <input type="month" id="month-select" class="px-3 py-1 border border-gray-300 rounded text-sm flex-1">
+            </div>
+            <button class="w-full bg-blue-500 text-white py-2 rounded-md hover:bg-blue-600 transition-colors">
+              <i class="fas fa-file-pdf mr-2"></i>レポート生成 (PDF)
+            </button>
+          </div>
+
+          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h4 class="font-semibold text-gray-700 mb-2">ユーザー活動レポート</h4>
+            <p class="text-sm text-gray-600 mb-3">特定のユーザーのシステム内活動を詳細に追跡したレポートを生成します。</p>
+            <div class="flex space-x-2 items-center mb-3">
+              <label for="user-select" class="text-sm text-gray-700">ユーザー名:</label>
+              <input type="text" id="user-select" placeholder="例: 開発部 山田" class="px-3 py-1 border border-gray-300 rounded text-sm flex-1">
+            </div>
+            <button class="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition-colors">
+              <i class="fas fa-download mr-2"></i>レポート生成 (Excel)
+            </button>
+          </div>
+
+          <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <h4 class="font-semibold text-gray-700 mb-2">監査対応用カスタムレポート</h4>
+            <p class="text-sm text-gray-600 mb-3">必要な項目を選択し、カスタム監査レポートを生成します。</p>
+            <div class="mb-3 space-y-2">
+              <label class="flex items-center text-sm text-gray-700">
+                <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600 mr-2"> 承認履歴
+              </label>
+              <label class="flex items-center text-sm text-gray-700">
+                <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600 mr-2"> 変更ログ
+              </label>
+              <label class="flex items-center text-sm text-gray-700">
+                <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600 mr-2"> 不正アクセス検知ログ
+              </label>
+              <label class="flex items-center text-sm text-gray-700">
+                <input type="checkbox" class="form-checkbox h-4 w-4 text-blue-600 mr-2"> 権限変更履歴
+              </label>
+            </div>
+            <button class="w-full bg-purple-500 text-white py-2 rounded-md hover:bg-purple-600 transition-colors">
+              <i class="fas fa-cogs mr-2"></i>カスタムレポート生成
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // タブ切り替え機能
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabs = document.querySelectorAll('.app-tab');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          // すべてのタブとコンテンツのアクティブ状態を解除
+          tabs.forEach(t => t.classList.remove('active', 'bg-blue-600', 'text-white'));
+          tabContents.forEach(tc => tc.classList.remove('active'));
+
+          // クリックされたタブをアクティブにする
+          tab.classList.add('active', 'bg-blue-600', 'text-white');
+          
+          // 対応するコンテンツを表示する
+          const targetId = tab.dataset.tab;
+          document.getElementById(targetId).classList.add('active');
+        });
+      });
+
+      // チャートの描画
+      const operationTrendCtx = document.getElementById('operationTrendChart').getContext('2d');
+      new Chart(operationTrendCtx, {
+        type: 'line',
+        data: {
+          labels: ['6/1', '6/2', '6/3', '6/4', '6/5', '6/6', '6/7'],
+          datasets: [{
+            label: 'システム操作数',
+            data: [1500, 1550, 1480, 1600, 1750, 1680, 1800],
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.3,
+            fill: true
+          }, {
+            label: '異常検知数',
+            data: [0, 0, 1, 0, 0, 2, 1],
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.3,
+            fill: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            title: {
+              display: false,
+              text: 'システム操作トレンド'
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: '#e2e8f0'
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
