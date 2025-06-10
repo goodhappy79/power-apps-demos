@@ -1,0 +1,1685 @@
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-3 font-medium">2017年04月</td>
+              <td class="p-3 text-right font-bold">¥2,000,000</td>
+              <td class="p-3 text-right text-red-600">¥1,620,000<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>案件分析システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .metric-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 16px;
+      padding: 1.5rem;
+      color: white;
+    }
+    .metric-card.profit {
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    }
+    .metric-card.cost {
+      background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+    }
+    .metric-card.risk {
+      background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+    }
+    .metric-card.future {
+      background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+    }
+    .risk-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+    }
+    .risk-low {
+      background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+      color: #166534;
+    }
+    .risk-medium {
+      background: linear-gradient(135deg, #fef3c7, #fde68a);
+      color: #92400e;
+    }
+    .risk-high {
+      background: linear-gradient(135deg, #fecaca, #fca5a5);
+      color: #991b1b;
+    }
+    .trend-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .trend-up {
+      color: #10b981;
+    }
+    .trend-down {
+      color: #ef4444;
+    }
+    .trend-flat {
+      color: #6b7280;
+    }
+    .chart-container {
+      position: relative;
+      height: 400px;
+      background: white;
+      border-radius: 12px;
+      padding: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .filter-chip {
+      background: #e5e7eb;
+      color: #374151;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .filter-chip.active {
+      background: #3b82f6;
+      color: white;
+    }
+    .filter-chip:hover {
+      background: #d1d5db;
+    }
+    .filter-chip.active:hover {
+      background: #2563eb;
+    }
+    .project-selector {
+      background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .forecast-card {
+      background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+      border-left: 4px solid #0ea5e9;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .action-recommendation {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border-left: 4px solid #f59e0b;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .alert-critical {
+      background: linear-gradient(135deg, #fef2f2, #fecaca);
+      border-left: 4px solid #ef4444;
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .gauge-container {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto;
+    }
+    .scenario-tab {
+      cursor: pointer;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+    .scenario-tab.active {
+      background: #3b82f6;
+      color: white;
+    }
+    .profitability-meter {
+      background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
+      height: 8px;
+      border-radius: 4px;
+      position: relative;
+    }
+    .meter-indicator {
+      position: absolute;
+      top: -4px;
+      width: 4px;
+      height: 16px;
+      background: #1f2937;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-indigo-800 to-purple-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-chart-pie text-2xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">案件分析システム</h1>
+              <p class="text-indigo-200 text-sm">Project Analysis & Risk Management</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-indigo-700 px-3 py-1 rounded-full text-sm font-medium">収益性分析</span>
+            <div class="text-center">
+              <div class="text-xs text-indigo-200">データ更新</div>
+              <div class="text-lg font-bold text-white">1分前</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-indigo-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">2</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">中村 部長</div>
+              <div class="text-sm text-indigo-200">経営企画部</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-indigo-800 rounded-full flex items-center justify-center font-bold text-lg">
+              NK
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-indigo-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-indigo-600 transition-colors">経営管理HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-indigo-600 font-semibold">案件分析</span>
+    </nav>
+
+    <!-- 案件選択セクション -->
+    <div class="project-selector card-hover">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center">
+            <i class="fas fa-project-diagram text-xl"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-800">案件選択・分析対象</h2>
+            <p class="text-gray-600 text-sm">分析対象案件を選択してください（契約中案件のみ表示）</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-3">
+          <select id="projectSelector" class="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="2017-ME0123">2017-ME0123: ABC工場省エネ設備導入 (¥3.6億・15年契約・8年目)</option>
+            <option value="2016-EL0124">2016-EL0124: DEF産業電力システム (¥2.4億・15年契約・9年目)</option>
+            <option value="2018-ER0135">2018-ER0135: GHI商事電力販売契約 (¥1.8億・15年契約・7年目)</option>
+            <option value="2019-RN0126">2019-RN0126: JKL工場太陽光PPA (¥4.2億・15年契約・6年目)</option>
+          </select>
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors">
+            <i class="fas fa-sync mr-1"></i>分析更新
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI概要 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+      <!-- 総契約額 -->
+      <div class="metric-card card-hover">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-yen-sign text-white text-xl"></i>
+          </div>
+          <div class="trend-indicator trend-flat">
+            <i class="fas fa-minus"></i>
+            <span>固定</span>
+          </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">¥3.6億</div>
+        <div class="text-white text-opacity-80 text-sm">15年総契約額</div>
+        <div class="text-white text-opacity-60 text-xs mt-1">月額: ¥200万 × 180ヶ月</div>
+      </div>
+
+      <!-- 累積利益（実績＋予測） -->
+      <div class="metric-card profit card-hover">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-chart-line text-white text-xl"></i>
+          </div>
+          <div class="trend-indicator trend-down">
+            <i class="fas fa-arrow-down"></i>
+            <span>-12.8%</span>
+          </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">¥7,800万</div>
+        <div class="text-white text-opacity-80 text-sm">15年累積利益（予測）</div>
+        <div class="text-white text-opacity-60 text-xs mt-1">当初予算: ¥8,940万（-12.8%）</div>
+      </div>
+
+      <!-- 原価上昇率 -->
+      <div class="metric-card cost card-hover">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-trending-up text-white text-xl"></i>
+          </div>
+          <div class="trend-indicator trend-up">
+            <i class="fas fa-arrow-up"></i>
+            <span>+18.5%</span>
+          </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">+18.5%</div>
+        <div class="text-white text-opacity-80 text-sm">原価上昇率（8年間）</div>
+        <div class="text-white text-opacity-60 text-xs mt-1">当初¥162万→現在¥192万/月</div>
+      </div>
+
+      <!-- 残存期間収益リスク -->
+      <div class="metric-card risk card-hover">
+        <div class="flex items-center justify-between mb-3">
+          <div class="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center">
+            <i class="fas fa-exclamation-triangle text-white text-xl"></i>
+          </div>
+          <div class="trend-indicator trend-up">
+            <i class="fas fa-arrow-up"></i>
+            <span>悪化</span>
+          </div>
+        </div>
+        <div class="text-3xl font-bold mb-1">78点</div>
+        <div class="text-white text-opacity-80 text-sm">収益悪化リスク</div>
+        <div class="text-white text-opacity-60 text-xs mt-1">高リスク（要対策）</div>
+      </div>
+    </div>
+
+    <!-- 分析フィルターとアクション -->
+    <div class="bg-white rounded-2xl shadow-lg p-4 mb-6 card-hover">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="text-sm font-medium text-gray-700">分析期間:</span>
+          <div class="flex flex-wrap gap-2">
+            <span class="filter-chip active" data-filter="full">全期間</span>
+            <span class="filter-chip" data-filter="ytd">年度累計</span>
+            <span class="filter-chip" data-filter="quarter">四半期</span>
+            <span class="filter-chip" data-filter="monthly">月次</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <button class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors">
+            <i class="fas fa-download mr-1"></i>分析レポート
+          </button>
+          <button class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors">
+            <i class="fas fa-lightbulb mr-1"></i>改善提案
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+      <!-- メインチャートエリア -->
+      <div class="xl:col-span-2 space-y-6">
+        
+        <!-- 売上・利益・原価推移グラフ -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-chart-area text-indigo-600 mr-2"></i>
+              売上・利益・原価推移分析
+            </h3>
+            <div class="flex items-center space-x-2">
+              <select id="chartPeriod" class="text-sm border border-gray-300 rounded px-3 py-1">
+                <option value="monthly">月次</option>
+                <option value="quarterly">四半期</option>
+                <option value="cumulative">累積</option>
+              </select>
+              <button class="p-2 text-gray-500 hover:text-indigo-600" title="詳細分析">
+                <i class="fas fa-search-plus"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="chart-container">
+            <canvas id="projectTrendChart"></canvas>
+          </div>
+          
+          <!-- チャート補足情報 -->
+          <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <div class="font-bold text-blue-600">¥3.6億</div>
+              <div class="text-gray-600">15年総契約額</div>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <div class="font-bold text-green-600">¥1,536万</div>
+              <div class="text-gray-600">8年累積利益</div>
+            </div>
+            <div class="text-center p-3 bg-red-50 rounded-lg">
+              <div class="font-bold text-red-600">+18.5%</div>
+              <div class="text-gray-600">原価上昇率</div>
+            </div>
+            <div class="text-center p-3 bg-orange-50 rounded-lg">
+              <div class="font-bold text-orange-600">-12.8%</div>
+              <div class="text-gray-600">利益予算差異</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 収益性分析とリスク評価 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-balance-scale text-green-600 mr-2"></i>
+              収益性・リスク分析
+            </h3>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 収益性メーター -->
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-3">収益性スコア（8年目現在）</h4>
+              <div class="gauge-container">
+                <canvas id="profitabilityGauge" width="160" height="160"></canvas>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                  <div class="text-2xl font-bold text-orange-600">58点</div>
+                  <div class="text-xs text-gray-500">要改善</div>
+                </div>
+              </div>
+              <div class="mt-4 space-y-2 text-sm">
+                <div class="flex justify-between">
+                  <span>当初予定粗利率</span>
+                  <span class="font-bold text-gray-400">35.0% (予定)</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>現在粗利率</span>
+                  <span class="font-bold text-orange-600">19.0% (悪化)</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>原価上昇率</span>
+                  <span class="font-bold text-red-600">+18.5% (深刻)</span>
+                </div>
+                <div class="flex justify-between">
+                  <span>残期間予測利益</span>
+                  <span class="font-bold text-red-600">¥6,264万 (減)</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- リスク分析 -->
+            <div>
+              <h4 class="font-semibold text-gray-800 mb-3">リスク評価（8年経過）</h4>
+              <div class="space-y-3">
+                <!-- 設備老朽化リスク -->
+                <div class="p-3 border border-gray-200 rounded-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium">設備老朽化リスク</span>
+                    <span class="risk-indicator risk-high">
+                      <i class="fas fa-exclamation-triangle"></i>
+                      高
+                    </span>
+                  </div>
+                  <div class="profitability-meter">
+                    <div class="meter-indicator" style="left: 85%;"></div>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">8年経過・メンテナンス費急増</div>
+                </div>
+
+                <!-- 燃料費変動リスク -->
+                <div class="p-3 border border-gray-200 rounded-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium">燃料費変動リスク</span>
+                    <span class="risk-indicator risk-high">
+                      <i class="fas fa-trending-up"></i>
+                      高
+                    </span>
+                  </div>
+                  <div class="profitability-meter">
+                    <div class="meter-indicator" style="left: 80%;"></div>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">電力価格18%上昇・調整額増</div>
+                </div>
+
+                <!-- 人件費上昇リスク -->
+                <div class="p-3 border border-gray-200 rounded-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium">人件費上昇リスク</span>
+                    <span class="risk-indicator risk-medium">
+                      <i class="fas fa-users"></i>
+                      中
+                    </span>
+                  </div>
+                  <div class="profitability-meter">
+                    <div class="meter-indicator" style="left: 65%;"></div>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">技術者人件費年3%上昇継続</div>
+                </div>
+
+                <!-- 部品調達リスク -->
+                <div class="p-3 border border-gray-200 rounded-lg">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-medium">部品調達リスク</span>
+                    <span class="risk-indicator risk-medium">
+                      <i class="fas fa-truck"></i>
+                      中
+                    </span>
+                  </div>
+                  <div class="profitability-meter">
+                    <div class="meter-indicator" style="left: 60%;"></div>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">交換部品価格上昇・調達期間延長</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 将来予測・シナリオ分析 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-crystal-ball text-purple-600 mr-2"></i>
+              将来予測・シナリオ分析
+            </h3>
+            <div class="flex items-center space-x-2">
+              <span class="scenario-tab active" data-scenario="standard">標準</span>
+              <span class="scenario-tab" data-scenario="optimistic">楽観</span>
+              <span class="scenario-tab" data-scenario="pessimistic">悲観</span>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- 予測チャート -->
+            <div class="chart-container" style="height: 300px;">
+              <canvas id="forecastChart"></canvas>
+            </div>
+            
+            <!-- シナリオ詳細 -->
+            <div class="space-y-4">
+              <!-- 標準シナリオ -->
+              <div id="scenarioDetails">
+                <!-- 標準シナリオ -->
+                <div class="scenario-content" data-scenario="standard">
+                  <h4 class="font-semibold text-gray-800 mb-3">現状推移シナリオ</h4>
+                  
+                  <div class="forecast-card mb-3">
+                    <div class="flex items-center justify-between mb-2">
+                      <span class="font-medium text-blue-800">残り7年間予測</span>
+                      <span class="text-xs text-blue-600">信頼度: 65%</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                      <div>
+                        <div class="font-bold text-blue-600">¥6,264万</div>
+                        <div class="text-blue-600">残期間利益</div>
+                      </div>
+                      <div>
+                        <div class="font-bold text-red-600">-12.8%</div>
+                        <div class="text-blue-600">予算対比</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                      <span>年平均原価上昇率</span>
+                      <span class="font-medium text-red-600">+2.8%</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>最終累積利益</span>
+                      <span class="font-medium text-orange-600">¥7,800万</span>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>当初予算差異</span>
+                      <span class="font-medium text-red-600">-¥1,140万</span>
+                    </div>
+                  </div>
+
+                  <div class="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                    <div class="text-xs text-yellow-800">
+                      <strong>警告:</strong> 現状推移では予算を大幅に下回る見込み
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右サイドバー -->
+      <div class="xl:col-span-1 space-y-6">
+        
+        <!-- 案件ステータス -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-info-circle text-indigo-600 mr-2"></i>
+            案件ステータス
+          </h3>
+          
+          <div class="space-y-4">
+            <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+              <div>
+                <div class="font-medium text-green-800">契約状態</div>
+                <div class="text-sm text-green-600">稼働中</div>
+              </div>
+              <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+            </div>
+
+            <div class="space-y-3 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">契約開始</span>
+                <span class="font-medium">2017/04/01</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">契約期間</span>
+                <span class="font-medium">15年間</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">経過期間</span>
+                <span class="font-medium">8年0ヶ月</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">残存期間</span>
+                <span class="font-medium">7年0ヶ月</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">進捗率</span>
+                <span class="font-medium text-blue-600">53.3%</span>
+              </div>
+            </div>
+            
+            <!-- 進捗バー -->
+            <div class="mt-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">契約進捗</span>
+                <span class="text-sm font-bold text-blue-600">53.3%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: 53.3%"></div>
+              </div>
+              <div class="mt-2 text-xs text-gray-500">
+                中間地点通過・後半戦に突入
+              </div>
+            </div>-gray-600">契約期間</span>
+                <span class="font-medium">5年間</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">経過期間</span>
+                <span class="font-medium">9ヶ月</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">残存期間</span>
+                <span class="font-medium">51ヶ月</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">進捗率</span>
+                <span class="font-medium text-blue-600">15.0%</span>
+              </div>
+            </div>
+            
+            <!-- 進捗バー -->
+            <div class="mt-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">契約進捗</span>
+                <span class="text-sm font-bold text-blue-600">15.0%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: 15%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 財務指標 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-line text-green-600 mr-2"></i>
+            財務指標（8年目現在）
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 当初予算vs実績 -->
+            <div class="p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-red-800">予算差異</span>
+                <span class="text-xs text-red-600">悪化</span>
+              </div>
+              <div class="text-xl font-bold text-red-600">-¥1,140万</div>
+              <div class="text-xs text-red-600">当初予算: ¥8,940万 → 予測: ¥7,800万</div>
+            </div>
+
+            <!-- 原価上昇率 -->
+            <div class="p-3 bg-orange-50 rounded-lg">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-orange-800">累積原価上昇率</span>
+                <span class="text-xs text-orange-600">継続上昇</span>
+              </div>
+              <div class="text-xl font-bold text-orange-600">+18.5%</div>
+              <div class="text-xs text-orange-600">年平均: +2.3% （当初¥162万→現在¥192万/月）</div>
+            </div>
+
+            <!-- 残期間ROI -->
+            <div class="p-3 bg-yellow-50 rounded-lg">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-yellow-800">残期間ROI</span>
+                <span class="text-xs text-yellow-600">要改善</span>
+              </div>
+              <div class="text-xl font-bold text-yellow-600">8.2%</div>
+              <div class="text-xs text-yellow-600">当初予定: 12.5% → 現状: 8.2%</div>
+            </div>
+
+            <!-- 設備償却状況 -->
+            <div class="p-3 bg-blue-50 rounded-lg">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm font-medium text-blue-800">設備償却進捗</span>
+                <span class="text-xs text-blue-600">順調</span>
+              </div>
+              <div class="text-xl font-bold text-blue-600">53.3%</div>
+              <div class="text-xs text-blue-600">残存価値: ¥1.68億（帳簿価額）</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- リスク要因と対策 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-shield-alt text-orange-600 mr-2"></i>
+            主要リスク要因（8年目）
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 高リスク要因1 -->
+            <div class="alert-critical">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+                <span class="font-medium text-red-800">緊急対応必要</span>
+              </div>
+              <div class="text-sm text-red-700">
+                <p class="font-medium">設備老朽化による原価急増</p>
+                <p class="text-xs mt-1">主要機器の更新時期到来・メンテナンス費年20%増</p>
+              </div>
+            </div>
+
+            <!-- 高リスク要因2 -->
+            <div class="alert-critical">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-trending-up text-red-600 mr-2"></i>
+                <span class="font-medium text-red-800">継続監視必要</span>
+              </div>
+              <div class="text-sm text-red-700">
+                <p class="font-medium">電力・燃料費の継続上昇</p>
+                <p class="text-xs mt-1">8年間で燃料費調整額+18.5%・今後も上昇傾向</p>
+              </div>
+            </div>
+
+            <!-- 中リスク要因 -->
+            <div class="action-recommendation">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-users text-yellow-600 mr-2"></i>
+                <span class="font-medium text-yellow-800">対策検討中</span>
+              </div>
+              <div class="text-sm text-yellow-700">
+                <p class="font-medium">技術者人件費の継続上昇</p>
+                <p class="text-xs mt-1">専門技術者の確保困難・年3%の人件費上昇</p>
+              </div>
+            </div>
+
+            <!-- 対策提案 -->
+            <div class="space-y-2">
+              <h4 class="font-medium text-gray-800 text-sm">緊急対策（残り7年間）</h4>
+              <div class="space-y-2 text-sm">
+                <div class="flex items-start space-x-2">
+                  <div class="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span class="text-gray-700">主要機器の計画的更新（予防保全）</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                  <div class="w-2 h-2 bg-red-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span class="text-gray-700">エネルギー価格ヘッジ契約の締結</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                  <div class="w-2 h-2 bg-orange-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span class="text-gray-700">運用効率化による原価削減</span>
+                </div>
+                <div class="flex items-start space-x-2">
+                  <div class="w-2 h-2 bg-yellow-500 rounded-full mt-1.5 flex-shrink-0"></div>
+                  <span class="text-gray-700">顧客との契約条件見直し交渉</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 改善提案 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-lightbulb text-yellow-600 mr-2"></i>
+            具体的改善提案（残り7年間）
+          </h3>
+          
+          <div class="space-y-4">
+            <!-- 設備更新提案 -->
+            <div class="forecast-card">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-wrench text-blue-600 mr-2"></i>
+                <span class="font-medium text-blue-800">設備更新・効率化提案</span>
+              </div>
+              <div class="text-sm text-blue-700">
+                <p class="font-medium">主要機器の計画的更新</p>
+                <p class="text-xs mt-1">投資額: ¥2,800万 → 年間原価削減: ¥480万</p>
+                <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                  <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded">ROI改善: +5.8%</span>
+                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded">回収期間: 5.8年</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 運用効率化提案 -->
+            <div class="action-recommendation">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-chart-line text-yellow-600 mr-2"></i>
+                <span class="font-medium text-yellow-800">運用効率化提案</span>
+              </div>
+              <div class="text-sm text-yellow-700">
+                <p class="font-medium">AI予測保全システム導入</p>
+                <p class="text-xs mt-1">投資額: ¥800万 → 年間保全費削減: ¥280万</p>
+                <div class="mt-2 text-xs">
+                  <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">予防保全効率: +35%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 契約条件見直し提案 -->
+            <div class="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-lg border-l-4 border-purple-400">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-handshake text-purple-600 mr-2"></i>
+                <span class="font-medium text-purple-800">契約条件見直し提案</span>
+              </div>
+              <div class="text-sm text-purple-700">
+                <p class="font-medium">燃料費調整条項の追加</p>
+                <p class="text-xs mt-1">顧客との協議により燃料費上昇分の一部転嫁</p>
+                <div class="mt-2 text-xs">
+                  <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded">年間影響: +¥320万</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 追加事業提案 -->
+            <div class="p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-l-4 border-green-400">
+              <div class="flex items-center mb-2">
+                <i class="fas fa-solar-panel text-green-600 mr-2"></i>
+                <span class="font-medium text-green-800">追加事業提案</span>
+              </div>
+              <div class="text-sm text-green-700">
+                <p class="font-medium">太陽光発電設備の追加導入</p>
+                <p class="text-xs mt-1">既存設備との統合により電力コスト削減</p>
+                <div class="mt-2 text-xs">
+                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded">追加利益: +¥560万/年</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 改善効果試算 -->
+            <div class="p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <h4 class="font-medium text-gray-800 mb-2">改善施策実施後の効果予測</h4>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <div class="font-bold text-green-600">改善後累積利益</div>
+                  <div class="text-gray-700">¥9,680万</div>
+                </div>
+                <div>
+                  <div class="font-bold text-blue-600">予算対比</div>
+                  <div class="text-gray-700">+8.3%（目標達成）</div>
+                </div>
+                <div>
+                  <div class="font-bold text-purple-600">追加投資</div>
+                  <div class="text-gray-700">¥3,600万</div>
+                </div>
+                <div>
+                  <div class="font-bold text-orange-600">投資回収期間</div>
+                  <div class="text-gray-700">3.1年</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- アクションアイテム -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-tasks text-red-600 mr-2"></i>
+            優先アクション（8年目）
+          </h3>
+          
+          <div class="space-y-3">
+            <div class="flex items-start space-x-3 p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+              <div class="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-red-800 text-sm">最優先（1ヶ月以内）</div>
+                <div class="text-sm text-red-700">主要機器更新計画の策定・予算確保</div>
+                <div class="text-xs text-red-600 mt-1">影響: 年間¥480万の原価削減</div>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3 p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+              <div class="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-orange-800 text-sm">緊急（2ヶ月以内）</div>
+                <div class="text-sm text-orange-700">燃料費ヘッジ契約の検討・交渉</div>
+                <div class="text-xs text-orange-600 mt-1">影響: 年間¥320万のリスク軽減</div>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+              <div class="w-2 h-2 bg-yellow-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-yellow-800 text-sm">重要（3ヶ月以内）</div>
+                <div class="text-sm text-yellow-700">顧客との契約条件見直し協議</div>
+                <div class="text-xs text-yellow-600 mt-1">影響: 燃料費転嫁条項の追加</div>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+              <div class="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-blue-800 text-sm">計画（6ヶ月以内）</div>
+                <div class="text-sm text-blue-700">AI予測保全システム導入準備</div>
+                <div class="text-xs text-blue-600 mt-1">影響: 年間¥280万の保全費削減</div>
+              </div>
+            </div>
+
+            <div class="flex items-start space-x-3 p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+              <div class="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+              <div>
+                <div class="font-medium text-green-800 text-sm">検討（1年以内）</div>
+                <div class="text-sm text-green-700">太陽光発電設備追加の事業性評価</div>
+                <div class="text-xs text-green-600 mt-1">影響: 年間¥560万の追加収益</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 詳細分析テーブル -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mt-6 card-hover">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-xl font-bold text-gray-800 flex items-center">
+          <i class="fas fa-table text-indigo-600 mr-2"></i>
+          月次収益分析詳細
+        </h3>
+        <div class="flex items-center space-x-2">
+          <button class="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200">
+            <i class="fas fa-filter mr-1"></i>フィルター
+          </button>
+          <button class="px-3 py-1 bg-green-100 text-green-600 rounded text-sm hover:bg-green-200">
+            <i class="fas fa-download mr-1"></i>Excel出力
+          </button>
+        </div>
+      </div>
+      
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-gray-50 border-b">
+              <th class="text-left p-3 font-medium text-gray-700">月度</th>
+              <th class="text-right p-3 font-medium text-gray-700">売上</th>
+              <th class="text-right p-3 font-medium text-gray-700">原価</th>
+              <th class="text-right p-3 font-medium text-gray-700">粗利益</th>
+              <th class="text-right p-3 font-medium text-gray-700">粗利率</th>
+              <th class="text-right p-3 font-medium text-gray-700">累積利益</th>
+              <th class="text-center p-3 font-medium text-gray-700">ステータス</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-3 font-medium">2017年04月</td>
+              <td class="p-3 text-right font-bold">¥2,000,000</td>
+              <td class="p-3 text-right text-red-600">¥1,620,000</td>
+              <td class="p-3 text-right font-bold text-green-600">¥380,000</td>
+              <td class="p-3 text-right font-bold">19.0%</td>
+              <td class="p-3 text-right font-bold text-blue-600">¥380,000</td>
+              <td class="p-3 text-center">
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">当初目標</span>
+              </td>
+            </tr>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-3 font-medium">2018年04月</td>
+              <td class="p-3 text-right font-bold">¥2,000,000</td>
+              <td class="p-3 text-right text-red-600">¥1,650,000</td>
+              <td class="p-3 text-right font-bold text-green-600">¥350,000</td>
+              <td class="p-3 text-right font-bold">17.5%</td>
+              <td class="p-3 text-right font-bold text-blue-600">¥4,730,000</td>
+              <td class="p-3 text-center">
+                <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">軽微悪化</span>
+              </td>
+            </tr>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-3 font-medium">2020年04月</td>
+              <td class="p-3 text-right font-bold">¥2,000,000</td>
+              <td class="p-3 text-right text-red-600">¥1,720,000</td>
+              <td class="p-3 text-right font-bold text-green-600">¥280,000</td>
+              <td class="p-3 text-right font-bold">14.0%</td>
+              <td class="p-3 text-right font-bold text-blue-600">¥8,460,000</td>
+              <td class="p-3 text-center">
+                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">悪化傾向</span>
+              </td>
+            </tr>
+            <tr class="border-b hover:bg-gray-50">
+              <td class="p-3 font-medium">2022年04月</td>
+              <td class="p-3 text-right font-bold">¥2,000,000</td>
+              <td class="p-3 text-right text-red-600">¥1,850,000</td>
+              <td class="p-3 text-right font-bold text-green-600">¥150,000</td>
+              <td class="p-3 text-right font-bold">7.5%</td>
+              <td class="p-3 text-right font-bold text-blue-600">¥11,660,000</td>
+              <td class="p-3 text-center">
+                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">大幅悪化</span>
+              </td>
+            </tr>
+            <tr class="border-b hover:bg-gray-50 bg-blue-50">
+              <td class="p-3 font-medium">2025年04月</td>
+              <td class="p-3 text-right font-bold">¥2,000,000</td>
+              <td class="p-3 text-right text-red-600">¥1,920,000</td>
+              <td class="p-3 text-right font-bold text-green-600">¥80,000</td>
+              <td class="p-3 text-right font-bold">4.0%</td>
+              <td class="p-3 text-right font-bold text-blue-600">¥15,360,000</td>
+              <td class="p-3 text-center">
+                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">危険水準</span>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="bg-gray-100 font-bold">
+              <td class="p-3">8年累計</td>
+              <td class="p-3 text-right text-blue-600">¥192,000,000</td>
+              <td class="p-3 text-right text-red-600">¥176,640,000</td>
+              <td class="p-3 text-right text-green-600">¥15,360,000</td>
+              <td class="p-3 text-right">8.0%</td>
+              <td class="p-3 text-right text-blue-600">¥15,360,000</td>
+              <td class="p-3 text-center">
+                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">要対策</span>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      initializeCharts();
+      addEventHandlers();
+      animatePageLoad();
+      
+      // ウェルカムメッセージ
+      setTimeout(() => {
+        showNotification('案件分析システムが更新されました。最新データを表示中です。', 'success');
+      }, 1000);
+    });
+
+    function initializeCharts() {
+      // 売上・利益・原価推移チャート
+      const trendCtx = document.getElementById('projectTrendChart').getContext('2d');
+      new Chart(trendCtx, {
+        type: 'line',
+        data: {
+          labels: ['2017年', '2018年', '2019年', '2020年', '2021年', '2022年', '2023年', '2024年', '2025年'],
+          datasets: [{
+            label: '売上 (万円/月)',
+            data: [200, 200, 200, 200, 200, 200, 200, 200, 200],
+            borderColor: 'rgb(59, 130, 246)',
+            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+            tension: 0.1,
+            fill: false,
+            borderDash: [0]
+          }, {
+            label: '原価 (万円/月)',
+            data: [162, 165, 168, 172, 175, 185, 188, 190, 192],
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.3,
+            fill: false,
+            borderWidth: 3
+          }, {
+            label: '粗利益 (万円/月)',
+            data: [38, 35, 32, 28, 25, 15, 12, 10, 8],
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.2)',
+            tension: 0.3,
+            fill: true,
+            borderWidth: 2
+          }, {
+            label: '当初予定利益',
+            data: [38, 38, 38, 38, 38, 38, 38, 38, 38],
+            borderColor: 'rgb(156, 163, 175)',
+            backgroundColor: 'transparent',
+            tension: 0,
+            fill: false,
+            borderDash: [5, 5],
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': ¥' + context.parsed.y + '万円';
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: '年度（契約8年目）'
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true,
+                text: '金額 (万円/月)'
+              },
+              beginAtZero: true,
+              max: 220
+            }
+          }
+        }
+      });
+
+      // 収益性ゲージ
+      const profitabilityCtx = document.getElementById('profitabilityGauge').getContext('2d');
+      const profitabilityScore = 58; // 悪化したスコア
+      const angle = (profitabilityScore / 100) * Math.PI * 1.5; // 270度を最大とする
+
+      profitabilityCtx.lineWidth = 12;
+      profitabilityCtx.lineCap = 'round';
+
+      // 背景円
+      profitabilityCtx.beginPath();
+      profitabilityCtx.arc(80, 80, 60, 0.75 * Math.PI, 0.25 * Math.PI, false);
+      profitabilityCtx.strokeStyle = '#e5e7eb';
+      profitabilityCtx.stroke();
+
+      // スコア円（色を悪化に応じて変更）
+      profitabilityCtx.beginPath();
+      profitabilityCtx.arc(80, 80, 60, 0.75 * Math.PI, 0.75 * Math.PI + angle, false);
+      profitabilityCtx.strokeStyle = profitabilityScore >= 80 ? '#10b981' : profitabilityScore >= 60 ? '#f59e0b' : '#ef4444';
+      profitabilityCtx.stroke();
+
+      // 将来予測チャート（8年目以降の予測）
+      const forecastCtx = document.getElementById('forecastChart').getContext('2d');
+      new Chart(forecastCtx, {
+        type: 'line',
+        data: {
+          labels: ['8年目\n(現在)', '9年目', '10年目', '11年目', '12年目', '13年目', '14年目', '15年目\n(最終)'],
+          datasets: [{
+            label: '現状推移シナリオ (万円)',
+            data: [1536, 1632, 1716, 1788, 1848, 1896, 1932, 1956],
+            borderColor: 'rgb(239, 68, 68)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.3,
+            fill: true
+          }, {
+            label: '改善後シナリオ (万円)',
+            data: [1536, 1700, 1880, 2080, 2300, 2540, 2800, 3080],
+            borderColor: 'rgb(34, 197, 94)',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.3,
+            fill: false,
+            borderDash: [5, 5]
+          }, {
+            label: '当初予算 (万円)',
+            data: [1536, 1784, 2032, 2280, 2528, 2776, 3024, 3272],
+            borderColor: 'rgb(156, 163, 175)',
+            backgroundColor: 'transparent',
+            tension: 0,
+            fill: false,
+            borderDash: [2, 8],
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top'
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': ¥' + context.parsed.y + '万円';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: false,
+              min: 1400,
+              title: {
+                display: true,
+                text: '累積利益 (万円)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: '契約年度（残り7年間）'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function addEventHandlers() {
+      // 案件選択
+      const projectSelector = document.getElementById('projectSelector');
+      projectSelector.addEventListener('change', function() {
+        showNotification(`分析対象を「${this.options[this.selectedIndex].text}」に変更しています...`, 'info');
+        
+        // データ更新をシミュレート
+        setTimeout(() => {
+          showNotification('案件データの更新が完了しました', 'success');
+          updateProjectData(this.value);
+        }, 2000);
+      });
+
+      // フィルターチップ
+      const filterChips = document.querySelectorAll('.filter-chip');
+      filterChips.forEach(chip => {
+        chip.addEventListener('click', function() {
+          filterChips.forEach(c => c.classList.remove('active'));
+          this.classList.add('active');
+          
+          const filter = this.dataset.filter;
+          showNotification(`分析期間を「${this.textContent}」に変更中...`, 'info');
+        });
+      });
+
+      // シナリオタブ
+      const scenarioTabs = document.querySelectorAll('.scenario-tab');
+      scenarioTabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          scenarioTabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          const scenario = this.dataset.scenario;
+          updateScenarioContent(scenario);
+          showNotification(`${this.textContent}シナリオを表示中...`, 'info');
+        });
+      });
+
+      // チャート期間選択
+      const chartPeriod = document.getElementById('chartPeriod');
+      chartPeriod.addEventListener('change', function() {
+        showNotification(`チャート表示を${this.options[this.selectedIndex].text}に変更中...`, 'info');
+      });
+
+      // アクションボタン
+      const actionButtons = document.querySelectorAll('button[class*="bg-indigo"], button[class*="bg-green"]');
+      actionButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const action = this.textContent.trim();
+          showNotification(`${action}を実行しています...`, 'info');
+          
+          setTimeout(() => {
+            showNotification(`${action}が完了しました`, 'success');
+          }, 2000);
+        });
+      });
+    }
+
+    function updateScenarioContent(scenario) {
+      const scenarios = {
+        standard: {
+          title: '現状推移シナリオ',
+          profit: '¥6,264万',
+          margin: '19.0%',
+          confidence: '65%',
+          roi: '8.2%',
+          payback: '継続中',
+          cashflow: '+¥420万/年',
+          warning: '現状推移では予算を大幅に下回る'
+        },
+        optimistic: {
+          title: '改善実施シナリオ',
+          profit: '¥9,680万',
+          margin: '26.9%',
+          confidence: '75%',
+          roi: '12.8%',
+          payback: '3.1年（追加投資）',
+          cashflow: '+¥780万/年',
+          warning: '改善施策実施により目標達成可能'
+        },
+        pessimistic: {
+          title: '悪化継続シナリオ',
+          profit: '¥4,200万',
+          margin: '11.7%',
+          confidence: '80%',
+          roi: '4.2%',
+          payback: '契約期間内回収困難',
+          cashflow: '+¥280万/年',
+          warning: '原価上昇が継続した場合の最悪シナリオ'
+        }
+      };
+
+      const data = scenarios[scenario];
+      if (data) {
+        const contentDiv = document.querySelector('.scenario-content[data-scenario="standard"]');
+        contentDiv.innerHTML = `
+          <h4 class="font-semibold text-gray-800 mb-3">${data.title}</h4>
+          
+          <div class="forecast-card mb-3">
+            <div class="flex items-center justify-between mb-2">
+              <span class="font-medium text-blue-800">残り7年間予測</span>
+              <span class="text-xs text-blue-600">信頼度: ${data.confidence}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div>
+                <div class="font-bold text-blue-600">${data.profit}</div>
+                <div class="text-blue-600">残期間利益</div>
+              </div>
+              <div>
+                <div class="font-bold text-blue-600">${data.margin}</div>
+                <div class="text-blue-600">平均利益率</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span>残期間ROI</span>
+              <span class="font-medium">${data.roi}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>年間キャッシュフロー</span>
+              <span class="font-medium text-green-600">${data.cashflow}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>投資回収</span>
+              <span class="font-medium">${data.payback}</span>
+            </div>
+          </div>
+
+          <div class="mt-3 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+            <div class="text-xs text-yellow-800">
+              <strong>注意:</strong> ${data.warning}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    function updateProjectData(projectId) {
+      // プロジェクトデータの更新をシミュレート
+      const projectData = {
+        '2025-ME0123': {
+          revenue: '¥8,000万',
+          profit: '¥2,240万',
+          cost: '¥5,760万',
+          margin: '28.0%'
+        },
+        '2025-EL0124': {
+          revenue: '¥5,000万',
+          profit: '¥1,400万',
+          cost: '¥3,600万',
+          margin: '28.0%'
+        },
+        '2025-ER0135': {
+          revenue: '¥3,200万',
+          profit: '¥480万',
+          cost: '¥2,720万',
+          margin: '15.0%'
+        },
+        '2025-RN0126': {
+          revenue: '¥6,500万',
+          profit: '¥1,950万',
+          cost: '¥4,550万',
+          margin: '30.0%'
+        }
+      };
+
+      const data = projectData[projectId];
+      if (data) {
+        // KPIカードの更新
+        document.querySelectorAll('.metric-card .text-3xl')[0].textContent = data.revenue;
+        document.querySelectorAll('.metric-card .text-3xl')[1].textContent = data.profit;
+        document.querySelectorAll('.metric-card .text-3xl')[2].textContent = data.cost;
+        document.querySelectorAll('.metric-card .text-3xl')[3].textContent = data.margin;
+      }
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.3s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+
+      // メトリックカードのカウントアップアニメーション
+      const metricValues = document.querySelectorAll('.metric-card .text-3xl');
+      metricValues.forEach(element => {
+        const text = element.textContent;
+        if (text.includes('¥')) {
+          const value = parseFloat(text.replace(/[¥万円]/g, ''));
+          animateValue(element, 0, value, 1500, '¥', '万');
+        } else if (text.includes('%')) {
+          animateValue(element, 0, parseFloat(text.replace('%', '')), 1500, '', '%');
+        } else if (text.includes('点')) {
+          animateValue(element, 0, parseFloat(text.replace('点', '')), 1500, '', '点');
+        }
+      });
+    }
+
+    function animateValue(element, start, end, duration, prefix = '', suffix = '') {
+      const startTime = performance.now();
+      
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const current = start + (end - start) * easeOutQuart(progress);
+        
+        if (suffix === '万' || suffix === '点') {
+          element.textContent = prefix + Math.round(current).toLocaleString() + suffix;
+        } else {
+          element.textContent = prefix + current.toFixed(1) + suffix;
+        }
+        
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+      
+      requestAnimationFrame(update);
+    }
+
+    function easeOutQuart(t) {
+      return 1 - (--t) * t * t * t;
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // リアルタイム更新シミュレーション
+    function simulateRealTimeUpdate() {
+      setInterval(() => {
+        // ランダムにリスクスコアを微調整
+        const riskScore = document.querySelector('.metric-card.risk .text-3xl');
+        if (Math.random() > 0.98) { // 2%の確率で更新
+          const currentScore = parseInt(riskScore.textContent);
+          const change = Math.floor((Math.random() - 0.5) * 6); // ±3の変動
+          const newScore = Math.max(0, Math.min(100, currentScore + change));
+          riskScore.textContent = newScore + '点';
+          
+          // リスクレベルの更新
+          const riskLevel = newScore >= 80 ? '低リスク' : newScore >= 60 ? '中リスク' : '高リスク';
+          const riskText = riskScore.parentElement.querySelector('.text-xs');
+          riskText.textContent = riskLevel + ' (要注意)';
+          
+          // 変更をハイライト
+          riskScore.parentElement.style.animation = 'pulse 0.5s';
+          setTimeout(() => {
+            riskScore.parentElement.style.animation = '';
+          }, 500);
+          
+          showNotification(`リスクスコアが更新されました: ${newScore}点`, 'info');
+        }
+      }, 30000); // 30秒ごとに更新チェック
+    }
+
+    // データ更新機能
+    function refreshAnalysisData() {
+      showNotification('分析データを更新しています...', 'info');
+      
+      // プログレスバーのシミュレーション
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += 10;
+        if (progress >= 100) {
+          clearInterval(progressInterval);
+          showNotification('分析データの更新が完了しました', 'success');
+          
+          // チャートの再描画
+          setTimeout(() => {
+            initializeCharts();
+          }, 500);
+        }
+      }, 200);
+    }
+
+    // 詳細分析機能
+    function showDetailedAnalysis(analysisType) {
+      const analysisTypes = {
+        'profitability': '収益性詳細分析',
+        'risk': 'リスク詳細分析',
+        'forecast': '予測詳細分析',
+        'cost': 'コスト詳細分析'
+      };
+      
+      const analysisName = analysisTypes[analysisType] || '詳細分析';
+      showNotification(`${analysisName}画面を準備しています...`, 'info');
+      
+      setTimeout(() => {
+        showNotification(`${analysisName}が表示されました`, 'success');
+      }, 1500);
+    }
+
+    // キーボードショートカット
+    document.addEventListener('keydown', function(e) {
+      if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+          case 'r':
+            e.preventDefault();
+            refreshAnalysisData();
+            break;
+          case 'e':
+            e.preventDefault();
+            showNotification('Excel形式で分析データをエクスポートしています...', 'info');
+            break;
+          case '1':
+            e.preventDefault();
+            document.querySelector('.filter-chip[data-filter="full"]').click();
+            break;
+          case '2':
+            e.preventDefault();
+            document.querySelector('.filter-chip[data-filter="ytd"]').click();
+            break;
+        }
+      }
+    });
+
+    // ページ読み込み完了後にリアルタイム更新開始
+    setTimeout(simulateRealTimeUpdate, 5000);
+
+    // エラーハンドリング
+    window.addEventListener('error', function(e) {
+      console.error('JavaScript Error:', e.error);
+      showNotification('システムエラーが発生しました。ページを再読み込みしてください。', 'error');
+    });
+
+    // パフォーマンス監視
+    window.addEventListener('load', function() {
+      const loadTime = performance.now();
+      if (loadTime > 3000) {
+        showNotification('ページの読み込みに時間がかかっています。ネットワーク接続をご確認ください。', 'warning');
+      }
+    });
+
+    // ツールチップ機能
+    function addTooltips() {
+      const elements = document.querySelectorAll('[title]');
+      elements.forEach(element => {
+        element.addEventListener('mouseenter', function(e) {
+          const tooltip = document.createElement('div');
+          tooltip.className = 'absolute bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg z-50';
+          tooltip.textContent = this.title;
+          tooltip.style.left = e.pageX + 'px';
+          tooltip.style.top = (e.pageY - 30) + 'px';
+          document.body.appendChild(tooltip);
+          
+          this.tooltipElement = tooltip;
+          this.title = ''; // 元のtitleを削除
+        });
+        
+        element.addEventListener('mouseleave', function() {
+          if (this.tooltipElement) {
+            this.tooltipElement.remove();
+            this.tooltipElement = null;
+          }
+        });
+      });
+    }
+
+    // ツールチップ初期化
+    setTimeout(addTooltips, 1000);
+
+    // 印刷機能
+    function printAnalysisReport() {
+      showNotification('分析レポートを印刷用に準備しています...', 'info');
+      
+      setTimeout(() => {
+        window.print();
+        showNotification('印刷ダイアログを開きました', 'success');
+      }, 1000);
+    }
+
+    // PDF出力機能
+    function exportToPDF() {
+      showNotification('PDF形式で分析レポートを生成しています...', 'info');
+      
+      setTimeout(() => {
+        // PDF生成のシミュレーション
+        const link = document.createElement('a');
+        link.href = '#';
+        link.download = '案件分析レポート_' + new Date().toISOString().slice(0, 10) + '.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showNotification('PDF分析レポートのダウンロードが完了しました', 'success');
+      }, 3000);
+    }
+
+    // データ同期機能
+    function syncWithERP() {
+      showNotification('ERPシステムと同期しています...', 'info');
+      
+      let syncProgress = 0;
+      const syncInterval = setInterval(() => {
+        syncProgress += 20;
+        showNotification(`同期進行中... ${syncProgress}%`, 'info');
+        
+        if (syncProgress >= 100) {
+          clearInterval(syncInterval);
+          showNotification('ERPシステムとの同期が完了しました', 'success');
+          
+          // データ更新の表示
+          setTimeout(() => {
+            refreshAnalysisData();
+          }, 1000);
+        }
+      }, 500);
+    }
+
+    // アラート機能
+    function checkBusinessAlerts() {
+      const alerts = [
+        {
+          type: 'warning',
+          message: '電力価格が前月比5%上昇しています',
+          action: '対策検討が必要です'
+        },
+        {
+          type: 'info',
+          message: 'Q2収益性レビューの期限が近づいています',
+          action: '来月末までに実施してください'
+        }
+      ];
+
+      alerts.forEach((alert, index) => {
+        setTimeout(() => {
+          showNotification(`${alert.message} - ${alert.action}`, alert.type);
+        }, (index + 1) * 5000);
+      });
+    }
+
+    // ビジネスアラートの定期チェック
+    setTimeout(checkBusinessAlerts, 10000);
+  </script>
+</body>
+</html>

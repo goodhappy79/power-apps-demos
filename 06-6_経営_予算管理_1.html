@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Power Apps デモ - 予算管理ダッシュボード</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* Custom styles for gradients and shadows based on previous sample */
+    .header-gradient-bg {
+      background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%); /* Maintain current header gradient for consistency */
+    }
+    .metric-card {
+      border-radius: 16px; /* Larger border-radius from sample */
+      padding: 1.5rem; /* Padding from sample */
+      color: white;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15); /* Match sample shadow */
+    }
+    .metric-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      transform: rotate(45deg);
+    }
+    .card-hover:hover {
+      transform: translateY(-2px); /* Match sample hover translation */
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15); /* Match sample shadow */
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .chart-container {
+      position: relative;
+      height: 280px; /* Adjust height for better mobile view */
+      width: 100%;
+    }
+
+    /* Filter tab styles from sample */
+    .filter-tab {
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+      border-radius: 8px 8px 0 0; /* Rounded top corners, flat bottom */
+    }
+    .filter-tab.active {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Specific active gradient from sample */
+      color: white;
+      border-bottom-color: #3b82f6; /* Matching border color */
+    }
+    .filter-tab:not(.active):hover {
+      background-color: #f3f4f6; /* Light gray hover for inactive tabs */
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .header-actions {
+        margin-top: 1rem;
+        width: 100%;
+        justify-content: space-between;
+      }
+      .kpi-grid {
+        grid-template-columns: 1fr;
+      }
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+      .chart-container {
+        height: 200px;
+      }
+      .filter-tabs-container {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 0.5rem;
+      }
+      .filter-tab {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.25rem;
+        border-radius: 8px; /* Full rounded for mobile */
+      }
+      .filter-tab.active {
+        border-bottom-color: transparent; /* No bottom border for mobile active */
+      }
+    }
+    /* Accessibility focus styles */
+    .btn-focus:focus,
+    .filter-tab:focus {
+      outline: 2px solid #3b82f6; /* Focus color from sample */
+      outline-offset: 2px;
+    }
+    /* High Contrast Mode */
+    @media (prefers-contrast: high) {
+      .metric-card {
+        border: 2px solid #000000;
+      }
+      .text-gray-600,
+      .text-gray-500 {
+        color: #000000 !important;
+      }
+    }
+    /* Reduced Motion */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+    /* Print Styles */
+    @media print {
+      body.printing {
+        background: white !important;
+      }
+      body.printing .header-gradient-bg,
+      body.printing .metric-card {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: none !important;
+      }
+      body.printing .text-white {
+        color: black !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+  <!-- Header -->
+  <header class="header-gradient-bg text-white shadow-xl p-4 md:p-6">
+    <div class="container mx-auto flex flex-col md:flex-row justify-between items-center header-content">
+      <div class="flex items-center space-x-4">
+        <i class="fas fa-wallet text-4xl"></i>
+        <div>
+          <h1 class="text-3xl font-bold">予算管理ダッシュボード</h1>
+          <p class="text-indigo-200">部門別予算配分と資金繰り予測</p>
+        </div>
+        <!-- Added from sample: Prediction Accuracy -->
+        <div class="hidden md:block text-center ml-6">
+          <div class="text-xs text-indigo-200">予測精度</div>
+          <div class="text-lg font-bold text-white">96.5%</div>
+        </div>
+      </div>
+      <div class="flex items-center space-x-4 mt-4 md:mt-0 header-actions">
+        <span class="bg-indigo-700 px-3 py-1 rounded-full text-sm font-medium">2025年度</span>
+        <!-- Added from sample: Last Updated -->
+        <div class="text-right text-sm hidden md:block">
+          <div class="text-indigo-200">最終更新</div>
+          <div class="font-medium">2025/06/10 10:00</div>
+        </div>
+        <div class="relative">
+          <button class="p-2 hover:bg-indigo-700 rounded-full transition-colors btn-focus" title="通知">
+            <i class="fas fa-bell text-xl"></i>
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
+          </button>
+        </div>
+        <div class="flex items-center space-x-3">
+          <!-- User Info from sample -->
+          <div class="text-right hidden md:block">
+            <div class="font-semibold">経理部</div>
+            <div class="text-sm text-indigo-200">予算責任者</div>
+          </div>
+          <div class="w-10 h-10 bg-gradient-to-br from-white to-gray-200 text-indigo-800 rounded-full flex items-center justify-center font-bold text-lg">
+            経
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-4 md:p-6">
+    <!-- Breadcrumb Navigation (from sample) -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">財務管理HUB</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">予算管理</span>
+    </nav>
+
+    <!-- Filter Tabs -->
+    <div class="bg-white rounded-xl shadow-lg p-2 mb-6">
+      <div class="flex flex-wrap space-x-1 filter-tabs-container">
+        <button class="filter-tab active px-4 py-2 text-sm font-medium btn-focus" data-filter="overview">
+          <i class="fas fa-chart-line mr-2"></i>全体概要
+        </button>
+        <button class="filter-tab px-4 py-2 text-sm font-medium btn-focus" data-filter="department">
+          <i class="fas fa-building mr-2"></i>部門別配分
+        </button>
+        <button class="filter-tab px-4 py-2 text-sm font-medium btn-focus" data-filter="status">
+          <i class="fas fa-tasks mr-2"></i>予算消化状況
+        </button>
+        <button class="filter-tab px-4 py-2 text-sm font-medium btn-focus" data-filter="forecast">
+          <i class="fas fa-chart-area mr-2"></i>資金繰り予測
+        </button>
+        <button class="filter-tab px-4 py-2 text-sm font-medium btn-focus" data-filter="simulation">
+          <i class="fas fa-calculator mr-2"></i>予算シミュレーション
+        </button>
+        <div class="ml-auto flex items-center space-x-2 mt-2 md:mt-0">
+          <select class="px-3 py-1 border border-gray-300 rounded-md text-sm btn-focus">
+            <option>今月</option>
+            <option>今四半期</option>
+            <option>今年度</option>
+          </select>
+          <button class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700 transition-colors btn-focus">
+            <i class="fas fa-download mr-1"></i>レポート出力
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 kpi-grid">
+      <!-- Card 1 -->
+      <div class="metric-card bg-gradient-to-br from-blue-500 to-blue-600">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-hand-holding-usd text-2xl opacity-80"></i>
+            <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">+3.5%</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">¥50.0億円</div>
+          <div class="text-sm opacity-90">総予算額</div>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="metric-card bg-gradient-to-br from-green-500 to-green-600">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-receipt text-2xl opacity-80"></i>
+            <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">+1.2%</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">65.2%</div>
+          <div class="text-sm opacity-90">予算消化率</div>
+        </div>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="metric-card bg-gradient-to-br from-orange-500 to-orange-600">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-piggy-bank text-2xl opacity-80"></i>
+            <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">-0.8%</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">¥17.4億円</div>
+          <div class="text-sm opacity-90">残予算</div>
+        </div>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="metric-card bg-gradient-to-br from-purple-500 to-purple-600">
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-2">
+            <i class="fas fa-chart-pie text-2xl opacity-80"></i>
+            <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">+2.0%</span>
+          </div>
+          <div class="text-3xl font-bold mb-1">¥4.5億円</div>
+          <div class="text-sm opacity-90">月次支出予測</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts and Tables -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 main-grid">
+      <!-- 部門別予算配分 (Bar Chart) -->
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-sitemap text-blue-600 mr-2"></i>部門別予算配分
+        </h2>
+        <div class="chart-container">
+          <canvas id="departmentBudgetChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 予算消化状況 (Doughnut Chart) -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-circle-notch text-green-600 mr-2"></i>予算消化状況
+        </h2>
+        <div class="chart-container">
+          <canvas id="budgetConsumptionChart"></canvas>
+        </div>
+        <div class="mt-4 text-sm text-gray-700 space-y-2">
+          <p class="flex justify-between items-center">
+            <span class="flex items-center"><div class="w-3 h-3 bg-green-600 rounded-full mr-2"></div>消化済み:</span>
+            <span class="font-bold text-gray-800">¥32.6億円</span>
+          </p>
+          <p class="flex justify-between items-center">
+            <span class="flex items-center"><div class="w-3 h-3 bg-gray-200 rounded-full mr-2"></div>残高:</span>
+            <span class="font-bold text-gray-800">¥17.4億円</span>
+          </p>
+          <p class="flex justify-between items-center">
+            <span>計画比:</span>
+            <span class="font-bold text-green-600 flex items-center"><i class="fas fa-arrow-up text-xs mr-1"></i>+1.2%</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- 資金繰り予測 (Line Chart) -->
+      <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-chart-line text-purple-600 mr-2"></i>資金繰り予測
+        </h2>
+        <div class="chart-container">
+          <canvas id="cashFlowForecastChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 予算調整機能 & 次期予算計画 (Action Cards) -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover flex flex-col justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-cogs text-yellow-600 mr-2"></i>予算調整 & 計画
+          </h2>
+          <div class="space-y-4">
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-md">
+              <h3 class="font-semibold text-gray-800 mb-1">予算調整機能</h3>
+              <p class="text-sm text-gray-700">部門間の予算振替や緊急予算申請を承認・却下</p>
+              <button class="mt-3 bg-yellow-500 text-white px-4 py-2 rounded-md text-sm hover:bg-yellow-600 transition-colors btn-focus">
+                <i class="fas fa-arrows-alt-h mr-2"></i>調整リクエストを確認
+              </button>
+            </div>
+            <div class="bg-indigo-50 border-l-4 border-indigo-400 p-4 rounded-md">
+              <h3 class="font-semibold text-gray-800 mb-1">次期予算計画</h3>
+              <p class="text-sm text-gray-700">来年度の予算編成プロセスを開始し、部門からの提出を管理</p>
+              <button class="mt-3 bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700 transition-colors btn-focus">
+                <i class="fas fa-calendar-alt mr-2"></i>計画フェーズを開始
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 予算シミュレーションエリア -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 mt-6 card-hover">
+        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+          <i class="fas fa-robot text-red-600 mr-2"></i>予算シミュレーション
+        </h2>
+        <p class="text-gray-700 mb-4">異なるシナリオで予算への影響を分析します。</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label for="scenarioInput" class="block text-sm font-medium text-gray-700 mb-2">シナリオ名:</label>
+                <input type="text" id="scenarioInput" placeholder="例: 経済成長シナリオ" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 btn-focus">
+            </div>
+            <div>
+                <label for="impactFactor" class="block text-sm font-medium text-gray-700 mb-2">影響度 (%):</label>
+                <input type="number" id="impactFactor" value="5" class="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 btn-focus">
+            </div>
+        </div>
+        <button id="runSimulationBtn" class="mt-5 bg-red-600 text-white px-5 py-2 rounded-md hover:bg-red-700 transition-colors btn-focus">
+            <i class="fas fa-play mr-2"></i>シミュレーションを実行
+        </button>
+        <div id="simulationResult" class="mt-5 p-4 bg-gray-50 border border-gray-200 rounded-md hidden">
+            <h3 class="font-semibold text-lg text-gray-800 mb-2">シミュレーション結果:</h3>
+            <p id="simulatedBudget" class="text-xl font-bold text-blue-700"></p>
+            <p id="simulatedImpact" class="text-sm text-gray-600"></p>
+        </div>
+    </div>
+
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize charts
+      initializeCharts();
+      // Activate the default filter tab
+      // Ensure the correct filter tab is active initially
+      const overviewTab = document.querySelector('.filter-tab[data-filter="overview"]');
+      if (overviewTab) {
+        overviewTab.classList.add('active', 'bg-blue-600', 'text-white');
+      }
+      // Add event listeners for filter tabs
+      initializeFilterTabs();
+      // Add event listener for simulation button
+      initializeSimulation();
+      // Add event listeners for print functionality
+      initializePrintHandlers();
+    });
+
+    // Function to initialize all Chart.js charts
+    function initializeCharts() {
+      // Department Budget Allocation Chart (Bar Chart)
+      const deptBudgetCtx = document.getElementById('departmentBudgetChart').getContext('2d');
+      new Chart(deptBudgetCtx, {
+        type: 'bar',
+        data: {
+          labels: ['営業部', '開発部', 'マーケティング部', '管理部', '人事部'],
+          datasets: [{
+            label: '予算額 (億円)',
+            data: [15, 12, 10, 8, 5],
+            backgroundColor: [
+              '#60A5FA', // blue-400
+              '#34D399', // green-400
+              '#FACC15', // yellow-400
+              '#A78BFA', // purple-400
+              '#FB7185'  // rose-400
+            ],
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            title: {
+              display: false,
+              text: '部門別予算配分'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: '予算額 (億円)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value + '億円';
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: '部門'
+              }
+            }
+          }
+        }
+      });
+
+      // Budget Consumption Status Chart (Doughnut Chart)
+      const budgetConsumptionCtx = document.getElementById('budgetConsumptionChart').getContext('2d');
+      new Chart(budgetConsumptionCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['消化済み', '残高'],
+          datasets: [{
+            data: [65.2, 34.8], // 消化率と残り
+            backgroundColor: [
+              '#10B981', // green-600
+              '#E5E7EB'  // gray-200
+            ],
+            hoverOffset: 4,
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(tooltipItem) {
+                  return tooltipItem.label + ': ' + tooltipItem.raw.toFixed(1) + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Cash Flow Forecast Chart (Line Chart)
+      const cashFlowCtx = document.getElementById('cashFlowForecastChart').getContext('2d');
+      new Chart(cashFlowCtx, {
+        type: 'line',
+        data: {
+          labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+          datasets: [{
+            label: '予測収入 (億円)',
+            data: [5, 4.8, 5.5, 6, 5.2, 5.8, 6.5, 6.2, 5.9, 6.1, 6.8, 7.0],
+            borderColor: '#8B5CF6', // purple-500
+            backgroundColor: 'rgba(139, 92, 246, 0.2)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#8B5CF6',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }, {
+            label: '予測支出 (億円)',
+            data: [3, 3.2, 3.5, 3.8, 4.0, 4.2, 4.5, 4.3, 4.1, 4.4, 4.6, 4.8],
+            borderColor: '#EF4444', // red-500
+            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#EF4444',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            },
+            title: {
+              display: false,
+              text: '資金繰り予測'
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: '金額 (億円)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value + '億円';
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: '月'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Function to handle filter tab clicks
+    function initializeFilterTabs() {
+      const tabs = document.querySelectorAll('.filter-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          tabs.forEach(t => t.classList.remove('active', 'bg-blue-600', 'text-white'));
+          this.classList.add('active', 'bg-blue-600', 'text-white');
+          
+          // Simulate data update or view change based on filter
+          const filter = this.dataset.filter;
+          showNotification(`「${this.textContent.trim()}」ビューに切り替えました。`, 'info');
+          // In a real Power Apps scenario, this would trigger data filtering or screen navigation.
+        });
+      });
+    }
+
+    // Function to handle budget simulation
+    function initializeSimulation() {
+        const runSimulationBtn = document.getElementById('runSimulationBtn');
+        const scenarioInput = document.getElementById('scenarioInput');
+        const impactFactor = document.getElementById('impactFactor');
+        const simulationResult = document.getElementById('simulationResult');
+        const simulatedBudget = document.getElementById('simulatedBudget');
+        const simulatedImpact = document.getElementById('simulatedImpact');
+
+        runSimulationBtn.addEventListener('click', function() {
+            const currentTotalBudget = 50.0; // Assume total budget is 50億円
+            const factor = parseFloat(impactFactor.value) / 100;
+            const scenarioName = scenarioInput.value.trim();
+
+            if (isNaN(factor) || scenarioName === "") {
+                showNotification('シナリオ名と影響度を正しく入力してください。', 'error');
+                return;
+            }
+
+            const newBudget = currentTotalBudget * (1 + factor);
+            const impactText = factor > 0 ? `予算が${(factor * 100).toFixed(1)}%増加` : `予算が${Math.abs(factor * 100).toFixed(1)}%減少`;
+
+            simulatedBudget.textContent = `総予算額: ¥${newBudget.toFixed(1)}億円`;
+            simulatedImpact.textContent = `シナリオ: ${scenarioName} - ${impactText}`;
+            simulationResult.classList.remove('hidden');
+
+            showNotification(`シミュレーション「${scenarioName}」を実行しました。`, 'success');
+        });
+    }
+
+    // Utility function to show notifications (like a Power Apps Notify function)
+    function showNotification(message, type = 'info') {
+      const notificationArea = document.createElement('div');
+      const baseClasses = 'fixed bottom-4 right-4 p-4 rounded-lg shadow-xl text-white flex items-center space-x-2 z-50 transform transition-all duration-300';
+      
+      let bgColor = 'bg-blue-500';
+      let iconClass = 'fas fa-info-circle';
+
+      switch (type) {
+        case 'success':
+          bgColor = 'bg-green-500';
+          iconClass = 'fas fa-check-circle';
+          break;
+        case 'error':
+          bgColor = 'bg-red-500';
+          iconClass = 'fas fa-times-circle';
+          break;
+        case 'warning':
+          bgColor = 'bg-yellow-500';
+          iconClass = 'fas fa-exclamation-triangle';
+          break;
+      }
+
+      notificationArea.className = `${baseClasses} ${bgColor}`;
+      notificationArea.innerHTML = `<i class="${iconClass}"></i><span>${message}</span>`;
+      notificationArea.style.transform = 'translateX(100%)'; // Start off-screen
+
+      document.body.appendChild(notificationArea);
+
+      // Animate in
+      setTimeout(() => {
+        notificationArea.style.transform = 'translateX(0)';
+      }, 100);
+
+      // Animate out and remove after a few seconds
+      setTimeout(() => {
+        notificationArea.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          notificationArea.remove();
+        }, 300);
+      }, 4000);
+    }
+
+    // Initialize print handlers
+    function initializePrintHandlers() {
+      window.addEventListener('beforeprint', function() {
+        document.body.classList.add('printing');
+      });
+
+      window.addEventListener('afterprint', function() {
+        document.body.classList.remove('printing');
+      });
+    }
+  </script>
+</body>
+</html>

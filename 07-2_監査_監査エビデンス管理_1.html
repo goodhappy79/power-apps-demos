@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>監査エビデンス管理システム - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+    }
+    .status-indicator {
+      position: relative;
+      overflow: hidden;
+    }
+    .status-indicator::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.6s;
+    }
+    .status-indicator:hover::before {
+      left: 100%;
+    }
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .file-drop-zone {
+      border: 2px dashed #cbd5e1;
+      transition: all 0.3s ease;
+    }
+    .file-drop-zone.dragover {
+      border-color: #3b82f6;
+      background-color: #eff6ff;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring-circle {
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 251.2;
+      transition: stroke-dashoffset 0.8s ease;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .evidence-tab {
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .evidence-tab.active {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      border-radius: 8px 8px 0 0;
+      border-bottom-color: #3b82f6;
+    }
+    .file-preview {
+      transition: all 0.3s ease;
+    }
+    .file-preview:hover {
+      transform: scale(1.02);
+    }
+    .priority-high { border-left: 4px solid #ef4444; }
+    .priority-medium { border-left: 4px solid #f59e0b; }
+    .priority-low { border-left: 4px solid #10b981; }
+    .checklist-item {
+      transition: all 0.2s ease;
+    }
+    .checklist-item:hover {
+      background-color: #f8fafc;
+    }
+    .tree-view {
+      padding-left: 0;
+    }
+    .tree-item {
+      padding-left: 20px;
+      position: relative;
+    }
+    .tree-item::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 20px;
+      height: calc(100% - 20px);
+      width: 1px;
+      background: #e5e7eb;
+    }
+    .tree-item::after {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 20px;
+      width: 12px;
+      height: 1px;
+      background: #e5e7eb;
+    }
+    .tree-item:last-child::before {
+      display: none;
+    }
+    .file-icon {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      color: white;
+      font-size: 14px;
+    }
+    .file-pdf { background: #ef4444; }
+    .file-doc { background: #2563eb; }
+    .file-xls { background: #059669; }
+    .file-img { background: #7c3aed; }
+    .file-dwg { background: #ea580c; }
+    .file-default { background: #6b7280; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-blue-900 to-purple-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-folder-open text-3xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">監査エビデンス管理システム</h1>
+              <p class="text-blue-200 text-sm">Audit Evidence Management System</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">エビデンス収集</span>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">準備進捗</div>
+              <div class="text-lg font-bold text-white">87.3%</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 監査アラート -->
+          <div class="text-right text-sm">
+            <div class="text-blue-200">次回監査まで</div>
+            <div class="font-bold text-yellow-300">12日</div>
+          </div>
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">3</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">監査責任者</div>
+              <div class="text-sm text-blue-200">品質管理部</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-blue-800 rounded-full flex items-center justify-center font-bold text-lg">
+              監
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">監査対応</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">エビデンス管理</span>
+    </nav>
+
+    <!-- エビデンス概要サマリー -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-clipboard-list text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">総数</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">156項目</div>
+        <div class="text-sm opacity-90">エビデンス項目</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-check-circle text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">87.3%</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">136項目</div>
+        <div class="text-sm opacity-90">準備完了</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-clock text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">準備中</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">14項目</div>
+        <div class="text-sm opacity-90">作業中</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-exclamation-triangle text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">要対応</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">6項目</div>
+        <div class="text-sm opacity-90">未着手</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-upload text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">最新</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">1.2GB</div>
+        <div class="text-sm opacity-90">アップロード済</div>
+      </div>
+    </div>
+
+    <!-- タブナビゲーション -->
+    <div class="bg-white rounded-xl shadow-lg p-2 mb-6">
+      <div class="flex space-x-1">
+        <button class="evidence-tab active px-4 py-2 text-sm font-medium" data-tab="categories">
+          <i class="fas fa-folder-tree mr-1"></i>分類別エビデンス
+        </button>
+        <button class="evidence-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="checklist">
+          <i class="fas fa-tasks mr-1"></i>チェックリスト
+        </button>
+        <button class="evidence-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="tracking">
+          <i class="fas fa-chart-line mr-1"></i>準備状況追跡
+        </button>
+        <button class="evidence-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="assignment">
+          <i class="fas fa-user-check mr-1"></i>責任者割当
+        </button>
+        <button class="evidence-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="submission">
+          <i class="fas fa-file-export mr-1"></i>提出履歴
+        </button>
+        <div class="ml-auto flex items-center space-x-2">
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+            <i class="fas fa-upload mr-1"></i>一括アップロード
+          </button>
+          <button class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+            <i class="fas fa-download mr-1"></i>進捗レポート
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分類別エビデンスタブ -->
+    <div id="categories" class="tab-content active">
+      <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <!-- エビデンス分類グリッド -->
+        <div class="xl:col-span-3">
+          <div class="evidence-grid">
+            <!-- 電気設備エビデンス -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-t-4 border-blue-500">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-bolt text-blue-600 mr-2"></i>
+                  電気設備関連
+                </h3>
+                <div class="flex items-center space-x-2">
+                  <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                    22/25項目
+                  </span>
+                  <div class="w-12 h-12 relative">
+                    <svg class="progress-ring" width="48" height="48">
+                      <circle cx="24" cy="24" r="20" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                      <circle cx="24" cy="24" r="20" stroke="#3b82f6" stroke-width="4" fill="none" 
+                              stroke-dasharray="125.6" stroke-dashoffset="25.1" class="progress-ring-circle"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-blue-600">88%</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-pdf mr-3">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">受電設備点検記録</div>
+                      <div class="text-sm text-gray-500">高圧受電設備月次点検</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/31</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">保安規程</div>
+                      <div class="text-sm text-gray-500">電気事業法第42条対応</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/28</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">絶縁測定記録</div>
+                      <div class="text-sm text-gray-500">年次絶縁抵抗測定</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-times text-red-600"></i>
+                    <span class="text-xs text-red-500">期限: 6/10</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">主任技術者選任届</div>
+                      <div class="text-sm text-gray-500">電気主任技術者</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/04/01</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                  <i class="fas fa-eye mr-1"></i>詳細を表示
+                </button>
+              </div>
+            </div>
+
+            <!-- 機械設備エビデンス -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-t-4 border-orange-500">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-cogs text-orange-600 mr-2"></i>
+                  機械設備関連
+                </h3>
+                <div class="flex items-center space-x-2">
+                  <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                    18/22項目
+                  </span>
+                  <div class="w-12 h-12 relative">
+                    <svg class="progress-ring" width="48" height="48">
+                      <circle cx="24" cy="24" r="20" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                      <circle cx="24" cy="24" r="20" stroke="#f59e0b" stroke-width="4" fill="none" 
+                              stroke-dasharray="125.6" stroke-dashoffset="20.1" class="progress-ring-circle"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-orange-600">82%</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-pdf mr-3">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">空調設備点検記録</div>
+                      <div class="text-sm text-gray-500">HVAC定期点検</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/30</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-dwg mr-3">
+                      <i class="fas fa-drafting-compass"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">配管系統図</div>
+                      <div class="text-sm text-gray-500">給排水・空調配管</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    <span class="text-xs text-yellow-500">修正中</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-pdf mr-3">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">圧力容器検査記録</div>
+                      <div class="text-sm text-gray-500">年次法定検査</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/25</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">省エネ効果測定結果</div>
+                      <div class="text-sm text-gray-500">エネルギー使用量分析</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-times text-red-600"></i>
+                    <span class="text-xs text-red-500">期限: 6/15</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <button class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">
+                  <i class="fas fa-eye mr-1"></i>詳細を表示
+                </button>
+              </div>
+            </div>
+
+            <!-- 建設業法エビデンス -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-t-4 border-purple-500">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-hard-hat text-purple-600 mr-2"></i>
+                  建設業法関連
+                </h3>
+                <div class="flex items-center space-x-2">
+                  <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                    15/18項目
+                  </span>
+                  <div class="w-12 h-12 relative">
+                    <svg class="progress-ring" width="48" height="48">
+                      <circle cx="24" cy="24" r="20" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                      <circle cx="24" cy="24" r="20" stroke="#8b5cf6" stroke-width="4" fill="none" 
+                              stroke-dasharray="125.6" stroke-dashoffset="28.6" class="progress-ring-circle"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-purple-600">83%</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-pdf mr-3">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">建設業許可証</div>
+                      <div class="text-sm text-gray-500">管工事業・電気工事業</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">有効期限: 2028/3/31</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">技術者配置表</div>
+                      <div class="text-sm text-gray-500">主任技術者・監理技術者</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/20</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">施工体制台帳</div>
+                      <div class="text-sm text-gray-500">下請業者一覧</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-times text-red-600"></i>
+                    <span class="text-xs text-red-500">期限: 6/8</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-pdf mr-3">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">安全管理計画書</div>
+                      <div class="text-sm text-gray-500">工事安全計画</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    <span class="text-xs text-yellow-500">確認中</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+                  <i class="fas fa-eye mr-1"></i>詳細を表示
+                </button>
+              </div>
+            </div>
+
+            <!-- 環境管理エビデンス -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-t-4 border-green-500">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-leaf text-green-600 mr-2"></i>
+                  環境管理関連
+                </h3>
+                <div class="flex items-center space-x-2">
+                  <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                    20/21項目
+                  </span>
+                  <div class="w-12 h-12 relative">
+                    <svg class="progress-ring" width="48" height="48">
+                      <circle cx="24" cy="24" r="20" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                      <circle cx="24" cy="24" r="20" stroke="#10b981" stroke-width="4" fill="none" 
+                              stroke-dasharray="125.6" stroke-dashoffset="12.6" class="progress-ring-circle"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-green-600">95%</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">環境方針</div>
+                      <div class="text-sm text-gray-500">ISO14001対応</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/04/01</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">廃棄物管理記録</div>
+                      <div class="text-sm text-gray-500">産業廃棄物処理実績</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/31</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">エネルギー使用量実績</div>
+                      <div class="text-sm text-gray-500">月別エネルギー消費</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    <span class="text-xs text-yellow-500">期限: 6/10</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-pdf mr-3">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">環境影響評価書</div>
+                      <div class="text-sm text-gray-500">年次環境影響評価</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/15</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+                  <i class="fas fa-eye mr-1"></i>詳細を表示
+                </button>
+              </div>
+            </div>
+
+            <!-- 安全衛生エビデンス -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-t-4 border-red-500">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-shield-alt text-red-600 mr-2"></i>
+                  安全衛生関連
+                </h3>
+                <div class="flex items-center space-x-2">
+                  <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                    16/19項目
+                  </span>
+                  <div class="w-12 h-12 relative">
+                    <svg class="progress-ring" width="48" height="48">
+                      <circle cx="24" cy="24" r="20" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                      <circle cx="24" cy="24" r="20" stroke="#ef4444" stroke-width="4" fill="none" 
+                              stroke-dasharray="125.6" stroke-dashoffset="25.1" class="progress-ring-circle"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-red-600">84%</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-pdf mr-3">
+                      <i class="fas fa-file-pdf"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">安全教育記録</div>
+                      <div class="text-sm text-gray-500">新規採用者安全教育</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/20</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">健康診断結果</div>
+                      <div class="text-sm text-gray-500">年次健康診断実施状況</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    <span class="text-xs text-yellow-500">集計中</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">事故報告書</div>
+                      <div class="text-sm text-gray-500">労働災害・ヒヤリハット</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/28</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">労働安全衛生計画</div>
+                      <div class="text-sm text-gray-500">年度安全計画書</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-times text-red-600"></i>
+                    <span class="text-xs text-red-500">期限: 6/5</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <button class="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+                  <i class="fas fa-eye mr-1"></i>詳細を表示
+                </button>
+              </div>
+            </div>
+
+            <!-- 品質管理エビデンス -->
+            <div class="bg-white rounded-2xl shadow-lg p-6 card-hover border-t-4 border-indigo-500">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-award text-indigo-600 mr-2"></i>
+                  品質管理関連
+                </h3>
+                <div class="flex items-center space-x-2">
+                  <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
+                    14/16項目
+                  </span>
+                  <div class="w-12 h-12 relative">
+                    <svg class="progress-ring" width="48" height="48">
+                      <circle cx="24" cy="24" r="20" stroke="#e5e7eb" stroke-width="4" fill="none"/>
+                      <circle cx="24" cy="24" r="20" stroke="#6366f1" stroke-width="4" fill="none" 
+                              stroke-dasharray="125.6" stroke-dashoffset="15.7" class="progress-ring-circle"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center text-xs font-bold text-indigo-600">87%</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="space-y-3">
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">品質マニュアル</div>
+                      <div class="text-sm text-gray-500">品質管理体制</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/04/01</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">検査記録</div>
+                      <div class="text-sm text-gray-500">受入・工程・完成検査</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-check text-green-600"></i>
+                    <span class="text-xs text-gray-500">2025/05/31</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-doc mr-3">
+                      <i class="fas fa-file-word"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">是正措置記録</div>
+                      <div class="text-sm text-gray-500">不適合対応記録</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-times text-red-600"></i>
+                    <span class="text-xs text-red-500">期限: 6/12</span>
+                  </div>
+                </div>
+                
+                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
+                  <div class="flex items-center">
+                    <div class="file-icon file-xls mr-3">
+                      <i class="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-800">顧客満足度調査</div>
+                      <div class="text-sm text-gray-500">年次顧客満足度</div>
+                    </div>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    <span class="text-xs text-yellow-500">分析中</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mt-4 pt-4 border-t">
+                <button class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700">
+                  <i class="fas fa-eye mr-1"></i>詳細を表示
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- エビデンス管理サイドバー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-upload text-blue-600 mr-2"></i>
+            ファイルアップロード
+          </h3>
+          
+          <!-- ドラッグ&ドロップエリア -->
+          <div class="file-drop-zone rounded-lg p-6 text-center mb-6" id="dropZone">
+            <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+            <p class="text-gray-600 mb-2">ファイルをドラッグ&ドロップ</p>
+            <p class="text-sm text-gray-500 mb-4">または</p>
+            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+              <i class="fas fa-folder-open mr-1"></i>ファイルを選択
+            </button>
+            <p class="text-xs text-gray-500 mt-2">PDF, DOC, XLS, DWG, JPG対応</p>
+          </div>
+          
+          <!-- 緊急対応項目 -->
+          <div class="mb-6">
+            <h4 class="font-medium text-gray-800 mb-3 text-red-600">緊急対応必要</h4>
+            <div class="space-y-2">
+              <div class="priority-high bg-red-50 rounded p-2">
+                <div class="text-sm font-medium text-red-800">絶縁測定記録</div>
+                <div class="text-xs text-red-600">期限: 6/10（残り4日）</div>
+              </div>
+              
+              <div class="priority-high bg-red-50 rounded p-2">
+                <div class="text-sm font-medium text-red-800">労働安全衛生計画</div>
+                <div class="text-xs text-red-600">期限: 6/5（明日）</div>
+              </div>
+              
+              <div class="priority-medium bg-yellow-50 rounded p-2">
+                <div class="text-sm font-medium text-yellow-800">エネルギー使用量</div>
+                <div class="text-xs text-yellow-600">期限: 6/10（残り4日）</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 統計情報 -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3">統計情報</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">総容量</span>
+                <span class="font-bold">1.2GB / 5GB</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">今日のアップロード</span>
+                <span class="font-bold text-green-600">23ファイル</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">承認待ち</span>
+                <span class="font-bold text-orange-600">7ファイル</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">リジェクト</span>
+                <span class="font-bold text-red-600">2ファイル</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- クイックアクション -->
+          <div class="mt-6 space-y-2">
+            <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+              <i class="fas fa-download mr-1"></i>全体進捗レポート
+            </button>
+            <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+              <i class="fas fa-share-alt mr-1"></i>監査官共有
+            </button>
+            <button class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">
+              <i class="fas fa-bell mr-1"></i>リマインダー設定
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- チェックリストタブ -->
+    <div id="checklist" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- チェックリスト本体 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-tasks text-green-600 mr-2"></i>
+              必要文書チェックリスト
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>全分野</option>
+                <option>電気設備</option>
+                <option>機械設備</option>
+                <option>建設業法</option>
+                <option>環境管理</option>
+              </select>
+              <button class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                <i class="fas fa-check-double mr-1"></i>一括確認
+              </button>
+            </div>
+          </div>
+          
+          <!-- 監査別チェックリスト -->
+          <div class="space-y-6">
+            <!-- ISO14001更新審査 -->
+            <div class="border border-green-200 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-green-800 flex items-center">
+                  <i class="fas fa-leaf text-green-600 mr-2"></i>
+                  ISO14001更新審査（6/15実施）
+                </h4>
+                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                  18/20項目完了
+                </span>
+              </div>
+              
+              <div class="space-y-2">
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">環境方針文書</div>
+                    <div class="text-sm text-gray-500">2025年度版 - 経営層承認済</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">環境目標設定書</div>
+                    <div class="text-sm text-gray-500">定量目標・責任者明記</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg bg-yellow-50">
+                  <input type="checkbox" class="mr-3 w-4 h-4 text-yellow-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">エネルギー使用量実績</div>
+                    <div class="text-sm text-gray-500">月別データ・前年比較要</div>
+                  </div>
+                  <div class="text-sm text-yellow-600">期限: 6/10</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">廃棄物管理記録</div>
+                    <div class="text-sm text-gray-500">マニフェスト・処理実績</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg bg-red-50">
+                  <input type="checkbox" class="mr-3 w-4 h-4 text-red-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">環境影響評価更新</div>
+                    <div class="text-sm text-gray-500">新規事業・設備変更対応</div>
+                  </div>
+                  <div class="text-sm text-red-600">期限: 6/8</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">内部監査記録</div>
+                    <div class="text-sm text-gray-500">監査計画・実施記録・是正措置</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 電気事業法定期検査 -->
+            <div class="border border-blue-200 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-blue-800 flex items-center">
+                  <i class="fas fa-bolt text-blue-600 mr-2"></i>
+                  電気事業法定期検査（6/10実施）
+                </h4>
+                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  22/25項目完了
+                </span>
+              </div>
+              
+              <div class="space-y-2">
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">高圧受電設備点検記録</div>
+                    <div class="text-sm text-gray-500">月次点検・年次点検</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">保安規程</div>
+                    <div class="text-sm text-gray-500">第42条対応・最新版</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg bg-red-50">
+                  <input type="checkbox" class="mr-3 w-4 h-4 text-red-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">絶縁抵抗測定記録</div>
+                    <div class="text-sm text-gray-500">年次測定・基準値確認</div>
+                  </div>
+                  <div class="text-sm text-red-600">緊急: 6/10</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">主任技術者選任届</div>
+                    <div class="text-sm text-gray-500">電気主任技術者資格確認</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">工事計画届</div>
+                    <div class="text-sm text-gray-500">設備変更工事の事前届出</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg bg-yellow-50">
+                  <input type="checkbox" class="mr-3 w-4 h-4 text-yellow-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">設備台帳更新</div>
+                    <div class="text-sm text-gray-500">新設・更新設備の台帳記載</div>
+                  </div>
+                  <div class="text-sm text-yellow-600">確認中</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 建設業法監査 -->
+            <div class="border border-purple-200 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-purple-800 flex items-center">
+                  <i class="fas fa-hard-hat text-purple-600 mr-2"></i>
+                  建設業法監査（7/10予定）
+                </h4>
+                <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                  15/18項目完了
+                </span>
+              </div>
+              
+              <div class="space-y-2">
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">建設業許可証</div>
+                    <div class="text-sm text-gray-500">管工事業・電気工事業許可</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg">
+                  <input type="checkbox" checked class="mr-3 w-4 h-4 text-green-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">技術者配置表</div>
+                    <div class="text-sm text-gray-500">監理技術者・主任技術者</div>
+                  </div>
+                  <div class="text-sm text-green-600">✓ 完了</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg bg-red-50">
+                  <input type="checkbox" class="mr-3 w-4 h-4 text-red-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">施工体制台帳</div>
+                    <div class="text-sm text-gray-500">下請業者・労務者名簿</div>
+                  </div>
+                  <div class="text-sm text-red-600">期限: 6/8</div>
+                </div>
+                
+                <div class="checklist-item flex items-center p-3 rounded-lg bg-yellow-50">
+                  <input type="checkbox" class="mr-3 w-4 h-4 text-yellow-600">
+                  <div class="flex-1">
+                    <div class="font-medium text-gray-800">経営事項審査結果</div>
+                    <div class="text-sm text-gray-500">最新の審査結果通知書</div>
+                  </div>
+                  <div class="text-sm text-yellow-600">期限: 6/15</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- チェックリスト進捗サイドバー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-pie text-indigo-600 mr-2"></i>
+            チェックリスト進捗
+          </h3>
+          
+          <!-- 進捗チャート -->
+          <div class="mb-6">
+            <canvas id="checklistChart" width="200" height="200"></canvas>
+          </div>
+          
+          <!-- 分野別進捗 -->
+          <div class="space-y-3 mb-6">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">ISO14001</span>
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 90%"></div>
+                </div>
+                <span class="text-sm font-bold text-green-600">18/20</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">電気事業法</span>
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 88%"></div>
+                </div>
+                <span class="text-sm font-bold text-blue-600">22/25</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">建設業法</span>
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 83%"></div>
+                </div>
+                <span class="text-sm font-bold text-purple-600">15/18</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">安全衛生</span>
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-red-500 h-2 rounded-full" style="width: 84%"></div>
+                </div>
+                <span class="text-sm font-bold text-red-600">16/19</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 期限間近項目 -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3 text-red-600">期限間近項目</h4>
+            <div class="space-y-2">
+              <div class="p-2 bg-red-50 rounded border-l-4 border-red-400">
+                <div class="text-xs font-medium text-red-800">絶縁抵抗測定記録</div>
+                <div class="text-xs text-red-600">明日期限</div>
+              </div>
+              
+              <div class="p-2 bg-red-50 rounded border-l-4 border-red-400">
+                <div class="text-xs font-medium text-red-800">施工体制台帳</div>
+                <div class="text-xs text-red-600">明後日期限</div>
+              </div>
+              
+              <div class="p-2 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                <div class="text-xs font-medium text-yellow-800">エネルギー使用量</div>
+                <div class="text-xs text-yellow-600">4日後期限</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- アクションボタン -->
+          <div class="mt-6 space-y-2">
+            <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+              <i class="fas fa-check-circle mr-1"></i>完了項目確認
+            </button>
+            <button class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg text-sm hover:bg-orange-700">
+              <i class="fas fa-bell mr-1"></i>期限アラート設定
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 準備状況追跡タブ -->
+    <div id="tracking" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 準備状況詳細 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+              準備状況トラッキング
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>過去7日間</option>
+                <option>過去30日間</option>
+                <option>監査別</option>
+              </select>
+              <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+                <i class="fas fa-sync mr-1"></i>更新
+              </button>
+            </div>
+          </div>
+          
+          <!-- 進捗グラフエリア -->
+          <div class="mb-6">
+            <canvas id="progressChart" width="600" height="300"></canvas>
+          </div>
+          
+          <!-- 最近の活動 -->
+          <div class="border-t pt-6">
+            <h4 class="font-bold text-gray-800 mb-4">最近の活動</h4>
+            <div class="space-y-4">
+              <div class="flex items-start space-x-3">
+                <div class="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <div class="font-medium text-gray-800">受電設備点検記録アップロード完了</div>
+                    <span class="text-sm text-gray-500">2時間前</span>
+                  </div>
+                  <div class="text-sm text-gray-600">電気設備関連 - 佐藤主任電気技術者</div>
+                </div>
+              </div>
+              
+              <div class="flex items-start space-x-3">
+                <div class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <div class="font-medium text-gray-800">環境影響評価書レビュー開始</div>
+                    <span class="text-sm text-gray-500">4時間前</span>
+                  </div>
+                  <div class="text-sm text-gray-600">環境管理関連 - 田中品質管理課長</div>
+                </div>
+              </div>
+              
+              <div class="flex items-start space-x-3">
+                <div class="w-2 h-2 bg-orange-500 rounded-full mt-2"></div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <div class="font-medium text-gray-800">施工体制台帳作成中</div>
+                    <span class="text-sm text-gray-500">6時間前</span>
+                  </div>
+                  <div class="text-sm text-gray-600">建設業法関連 - 山田工事部長</div>
+                </div>
+              </div>
+              
+              <div class="flex items-start space-x-3">
+                <div class="w-2 h-2 bg-red-500 rounded-full mt-2"></div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <div class="font-medium text-gray-800">絶縁測定記録期限アラート</div>
+                    <span class="text-sm text-gray-500">8時間前</span>
+                  </div>
+                  <div class="text-sm text-gray-600">電気設備関連 - システム自動通知</div>
+                </div>
+              </div>
+              
+              <div class="flex items-start space-x-3">
+                <div class="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
+                <div class="flex-1">
+                  <div class="flex items-center justify-between">
+                    <div class="font-medium text-gray-800">品質マニュアル更新承認</div>
+                    <span class="text-sm text-gray-500">昨日</span>
+                  </div>
+                  <div class="text-sm text-gray-600">品質管理関連 - 鈴木品質管理部長</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 進捗サマリー -->
+        <div class="space-y-6">
+          <!-- 全体進捗 -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-tachometer-alt text-green-600 mr-2"></i>
+              全体進捗サマリー
+            </h3>
+            
+            <div class="text-center mb-4">
+              <div class="text-4xl font-bold text-green-600 mb-2">87.3%</div>
+              <div class="text-sm text-gray-600">総合準備完了率</div>
+            </div>
+            
+            <div class="space-y-3">
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">今日の進捗</span>
+                <span class="font-bold text-green-600">+2.3%</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">今週の進捗</span>
+                <span class="font-bold text-blue-600">+8.7%</span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">残り作業</span>
+                <span class="font-bold text-orange-600">20項目</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 部門別進捗 -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-users text-blue-600 mr-2"></i>
+              部門別進捗
+            </h3>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">技術部</span>
+                  <span class="text-sm font-bold text-blue-600">92%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 92%"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">品質管理部</span>
+                  <span class="text-sm font-bold text-green-600">89%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 89%"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">工事部</span>
+                  <span class="text-sm font-bold text-purple-600">83%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 83%"></div>
+                </div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">安全衛生部</span>
+                  <span class="text-sm font-bold text-red-600">80%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-red-500 h-2 rounded-full" style="width: 80%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 期限管理 -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-clock text-orange-600 mr-2"></i>
+              期限管理
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-2 bg-red-50 rounded">
+                <div>
+                  <div class="text-sm font-medium text-red-800">緊急</div>
+                  <div class="text-xs text-red-600">2項目</div>
+                </div>
+                <div class="text-lg font-bold text-red-600">!</div>
+              </div>
+              
+              <div class="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                <div>
+                  <div class="text-sm font-medium text-yellow-800">今週期限</div>
+                  <div class="text-xs text-yellow-600">5項目</div>
+                </div>
+                <div class="text-lg font-bold text-yellow-600">⚠</div>
+              </div>
+              
+              <div class="flex items-center justify-between p-2 bg-blue-50 rounded">
+                <div>
+                  <div class="text-sm font-medium text-blue-800">来週期限</div>
+                  <div class="text-xs text-blue-600">8項目</div>
+                </div>
+                <div class="text-lg font-bold text-blue-600">📅</div>
+              </div>
+              
+              <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                <div>
+                  <div class="text-sm font-medium text-green-800">余裕あり</div>
+                  <div class="text-xs text-green-600">141項目</div>
+                </div>
+                <div class="text-lg font-bold text-green-600">✓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 責任者割当タブ -->
+    <div id="assignment" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 責任者割当一覧 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-user-check text-purple-600 mr-2"></i>
+              責任者割当管理
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>全部門</option>
+                <option>技術部</option>
+                <option>品質管理部</option>
+                <option>工事部</option>
+                <option>安全衛生部</option>
+              </select>
+              <button class="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
+                <i class="fas fa-user-plus mr-1"></i>新規割当
+              </button>
+            </div>
+          </div>
+          
+          <!-- 責任者別エビデンス管理テーブル -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 border-b">
+                  <th class="text-left p-3 font-medium text-gray-700">責任者</th>
+                  <th class="text-center p-3 font-medium text-gray-700">部門</th>
+                  <th class="text-center p-3 font-medium text-gray-700">担当エビデンス</th>
+                  <th class="text-center p-3 font-medium text-gray-700">進捗</th>
+                  <th class="text-center p-3 font-medium text-gray-700">期限間近</th>
+                  <th class="text-center p-3 font-medium text-gray-700">アクション</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                        佐
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-800">佐藤 健太郎</div>
+                        <div class="text-xs text-gray-500">主任電気技術者</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">技術部</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">25項目</div>
+                    <div class="text-xs text-gray-500">電気設備関連</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto mb-1">
+                      <div class="bg-orange-500 h-2 rounded-full" style="width: 88%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500">22/25完了</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold">1件</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200 mr-1">
+                      詳細
+                    </button>
+                    <button class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs hover:bg-orange-200">
+                      催促
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                        田
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-800">田中 美香</div>
+                        <div class="text-xs text-gray-500">品質管理課長</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">品質管理部</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">37項目</div>
+                    <div class="text-xs text-gray-500">環境・品質管理</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto mb-1">
+                      <div class="bg-green-500 h-2 rounded-full" style="width: 92%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500">34/37完了</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">2件</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs hover:bg-green-200 mr-1">
+                      詳細
+                    </button>
+                    <button class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs hover:bg-gray-200">
+                      確認
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                        山
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-800">山田 太郎</div>
+                        <div class="text-xs text-gray-500">工事部長</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">工事部</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">18項目</div>
+                    <div class="text-xs text-gray-500">建設業法関連</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto mb-1">
+                      <div class="bg-red-500 h-2 rounded-full" style="width: 83%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500">15/18完了</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-bold">1件</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs hover:bg-purple-200 mr-1">
+                      詳細
+                    </button>
+                    <button class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs hover:bg-red-200">
+                      緊急
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                        鈴
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-800">鈴木 一郎</div>
+                        <div class="text-xs text-gray-500">安全衛生責任者</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">安全衛生部</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">19項目</div>
+                    <div class="text-xs text-gray-500">安全衛生関連</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto mb-1">
+                      <div class="bg-orange-500 h-2 rounded-full" style="width: 84%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500">16/19完了</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">1件</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs hover:bg-orange-200 mr-1">
+                      詳細
+                    </button>
+                    <button class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs hover:bg-yellow-200">
+                      確認
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="flex items-center">
+                      <div class="w-8 h-8 bg-indigo-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3">
+                        高
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-800">高橋 真理子</div>
+                        <div class="text-xs text-gray-500">機械設備技術者</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs">技術部</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">22項目</div>
+                    <div class="text-xs text-gray-500">機械設備関連</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto mb-1">
+                      <div class="bg-indigo-500 h-2 rounded-full" style="width: 82%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500">18/22完了</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-bold">2件</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs hover:bg-indigo-200 mr-1">
+                      詳細
+                    </button>
+                    <button class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs hover:bg-gray-200">
+                      確認
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 責任者管理サイドバー -->
+        <div class="space-y-6">
+          <!-- 負荷分散状況 -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-balance-scale text-blue-600 mr-2"></i>
+              負荷分散状況
+            </h3>
+            
+            <div class="space-y-4">
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">田中課長</span>
+                  <span class="text-sm font-bold text-green-600">37項目</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 90%"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">高負荷</div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">佐藤主任</span>
+                  <span class="text-sm font-bold text-blue-600">25項目</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 70%"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">適正</div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">高橋技術者</span>
+                  <span class="text-sm font-bold text-indigo-600">22項目</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-indigo-500 h-2 rounded-full" style="width: 65%"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">適正</div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">鈴木責任者</span>
+                  <span class="text-sm font-bold text-orange-600">19項目</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-orange-500 h-2 rounded-full" style="width: 55%"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">余裕あり</div>
+              </div>
+              
+              <div>
+                <div class="flex justify-between mb-1">
+                  <span class="text-sm text-gray-600">山田部長</span>
+                  <span class="text-sm font-bold text-purple-600">18項目</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 50%"></div>
+                </div>
+                <div class="text-xs text-gray-500 mt-1">余裕あり</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 責任者パフォーマンス -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-star text-yellow-600 mr-2"></i>
+              パフォーマンス
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-green-500 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                    田
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-800">田中課長</div>
+                    <div class="text-xs text-gray-500">期限内完了率100%</div>
+                  </div>
+                </div>
+                <i class="fas fa-trophy text-yellow-500"></i>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                    佐
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-800">佐藤主任</div>
+                    <div class="text-xs text-gray-500">平均完了日数3.2日</div>
+                  </div>
+                </div>
+                <i class="fas fa-medal text-gray-400"></i>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-6 h-6 bg-orange-500 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                    高
+                  </div>
+                  <div>
+                    <div class="text-sm font-medium text-gray-800">高橋技術者</div>
+                    <div class="text-xs text-gray-500">品質評価4.8/5.0</div>
+                  </div>
+                </div>
+                <i class="fas fa-award text-orange-500"></i>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 通知設定 -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-bell text-red-600 mr-2"></i>
+              通知設定
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">期限3日前アラート</span>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider round bg-green-500"></span>
+                </label>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">期限当日アラート</span>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider round bg-green-500"></span>
+                </label>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">進捗更新通知</span>
+                <label class="switch">
+                  <input type="checkbox">
+                  <span class="slider round bg-gray-300"></span>
+                </label>
+              </div>
+              
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">完了通知</span>
+                <label class="switch">
+                  <input type="checkbox" checked>
+                  <span class="slider round bg-green-500"></span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t">
+              <button class="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+                <i class="fas fa-exclamation-triangle mr-1"></i>緊急通知送信
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 提出履歴タブ -->
+    <div id="submission" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 提出履歴一覧 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-file-export text-green-600 mr-2"></i>
+              監査官提出履歴
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>全監査</option>
+                <option>ISO14001</option>
+                <option>電気事業法</option>
+                <option>建設業法</option>
+              </select>
+              <button class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                <i class="fas fa-paper-plane mr-1"></i>新規提出
+              </button>
+            </div>
+          </div>
+          
+          <!-- 提出履歴テーブル -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 border-b">
+                  <th class="text-left p-3 font-medium text-gray-700">提出日時</th>
+                  <th class="text-left p-3 font-medium text-gray-700">監査種別</th>
+                  <th class="text-left p-3 font-medium text-gray-700">文書名</th>
+                  <th class="text-center p-3 font-medium text-gray-700">監査官コメント</th>
+                  <th class="text-center p-3 font-medium text-gray-700">ステータス</th>
+                  <th class="text-center p-3 font-medium text-gray-700">アクション</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium">2025/06/05 14:30</div>
+                    <div class="text-xs text-gray-500">3日前</div>
+                  </td>
+                  <td class="p-3">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">ISO14001</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">環境方針文書一式</div>
+                    <div class="text-xs text-gray-500">PDF 15ファイル, 2.3MB</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                      <i class="fas fa-comment mr-1"></i>承認済
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">承認</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs hover:bg-gray-200">
+                      詳細
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium">2025/06/04 09:15</div>
+                    <div class="text-xs text-gray-500">4日前</div>
+                  </td>
+                  <td class="p-3">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">電気事業法</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">受電設備点検記録</div>
+                    <div class="text-xs text-gray-500">Excel 8ファイル, 1.8MB</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs hover:bg-yellow-200">
+                      <i class="fas fa-comment mr-1"></i>要修正
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">修正要求</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs hover:bg-yellow-200">
+                      修正
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium">2025/06/03 16:45</div>
+                    <div class="text-xs text-gray-500">5日前</div>
+                  </td>
+                  <td class="p-3">
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">建設業法</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">建設業許可証・技術者配置</div>
+                    <div class="text-xs text-gray-500">PDF 5ファイル, 3.1MB</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs hover:bg-gray-200">
+                      <i class="fas fa-clock mr-1"></i>審査中
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-medium">審査中</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs hover:bg-gray-200">
+                      確認
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium">2025/06/02 11:20</div>
+                    <div class="text-xs text-gray-500">6日前</div>
+                  </td>
+                  <td class="p-3">
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">安全衛生</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">安全教育記録・健康診断</div>
+                    <div class="text-xs text-gray-500">PDF 12ファイル, 4.5MB</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs hover:bg-red-200">
+                      <i class="fas fa-times mr-1"></i>要差戻
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">差戻</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs hover:bg-red-200">
+                      再提出
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium">2025/06/01 13:50</div>
+                    <div class="text-xs text-gray-500">1週間前</div>
+                  </td>
+                  <td class="p-3">
+                    <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs">品質管理</span>
+                  </td>
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">品質マニュアル・検査記録</div>
+                    <div class="text-xs text-gray-500">PDF 20ファイル, 6.2MB</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                      <i class="fas fa-check mr-1"></i>良好
+                    </button>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">承認</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs hover:bg-gray-200">
+                      詳細
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- 監査官コメント詳細 -->
+          <div class="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400">
+            <h4 class="font-medium text-yellow-800 mb-2">最新監査官コメント</h4>
+            <div class="text-sm text-yellow-700">
+              <strong>電気事業法監査官より（6/4）：</strong><br>
+              受電設備点検記録について、絶縁抵抗測定値の一部に記録漏れが確認されました。
+              該当箇所の測定を実施の上、完全な記録の再提出をお願いします。
+              特に4月分の#3変圧器の絶縁抵抗値が未記入となっています。
+            </div>
+          </div>
+        </div>
+
+        <!-- 提出管理サイドバー -->
+        <div class="space-y-6">
+          <!-- 提出状況サマリー -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-chart-donut text-purple-600 mr-2"></i>
+              提出状況サマリー
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">承認済</span>
+                <div class="flex items-center">
+                  <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-green-500 h-2 rounded-full" style="width: 60%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-green-600">12件</span>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">審査中</span>
+                <div class="flex items-center">
+                  <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-blue-500 h-2 rounded-full" style="width: 25%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-blue-600">5件</span>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">修正要求</span>
+                <div class="flex items-center">
+                  <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-yellow-500 h-2 rounded-full" style="width: 10%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-yellow-600">2件</span>
+                </div>
+              </div>
+              
+              <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-600">差戻</span>
+                <div class="flex items-center">
+                  <div class="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                    <div class="bg-red-500 h-2 rounded-full" style="width: 5%"></div>
+                  </div>
+                  <span class="text-sm font-bold text-red-600">1件</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="mt-4 pt-4 border-t">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-gray-800">20件</div>
+                <div class="text-sm text-gray-600">総提出件数</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 次回提出予定 -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-calendar-plus text-blue-600 mr-2"></i>
+              次回提出予定
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+                <div class="text-sm font-medium text-red-800">絶縁測定記録（修正版）</div>
+                <div class="text-xs text-red-600">期限: 明日 17:00</div>
+              </div>
+              
+              <div class="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                <div class="text-sm font-medium text-yellow-800">エネルギー使用量実績</div>
+                <div class="text-xs text-yellow-600">期限: 6/10 12:00</div>
+              </div>
+              
+              <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                <div class="text-sm font-medium text-blue-800">環境影響評価更新版</div>
+                <div class="text-xs text-blue-600">期限: 6/12 15:00</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 監査官連絡先 -->
+          <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+              <i class="fas fa-address-book text-green-600 mr-2"></i>
+              監査官連絡先
+            </h3>
+            
+            <div class="space-y-3">
+              <div class="p-3 border rounded-lg">
+                <div class="font-medium text-gray-800">田中 監査官</div>
+                <div class="text-sm text-gray-600">電気事業法担当</div>
+                <div class="text-xs text-blue-600">tanaka@audit-org.jp</div>
+                <div class="text-xs text-gray-500">092-xxx-xxxx</div>
+              </div>
+              
+              <div class="p-3 border rounded-lg">
+                <div class="font-medium text-gray-800">山田 審査員</div>
+                
+                      

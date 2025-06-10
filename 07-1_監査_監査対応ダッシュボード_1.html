@@ -1,0 +1,2200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>監査対応ダッシュボード - エネルギーサービス企業</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.15);
+    }
+    .card-hover {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .gradient-bg {
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+    }
+    .status-badge {
+      position: relative;
+      overflow: hidden;
+    }
+    .status-badge::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.6s;
+    }
+    .status-badge:hover::before {
+      left: 100%;
+    }
+    .progress-ring {
+      transform: rotate(-90deg);
+    }
+    .progress-ring-circle {
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 251.2;
+      transition: stroke-dashoffset 0.8s ease;
+    }
+    .audit-timeline {
+      position: relative;
+    }
+    .audit-timeline::before {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #3b82f6, #10b981);
+    }
+    .timeline-item {
+      position: relative;
+      padding-left: 60px;
+      margin-bottom: 20px;
+    }
+    .timeline-icon {
+      position: absolute;
+      left: 8px;
+      top: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+    }
+    .risk-indicator {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .evidence-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+    .compliance-meter {
+      background: conic-gradient(from 0deg, #ef4444 0deg 72deg, #f59e0b 72deg 144deg, #10b981 144deg 360deg);
+      border-radius: 50%;
+      width: 120px;
+      height: 120px;
+      position: relative;
+    }
+    .compliance-meter::before {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      background: white;
+      border-radius: 50%;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .audit-tab {
+      transition: all 0.3s ease;
+      border-bottom: 3px solid transparent;
+    }
+    .audit-tab.active {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      border-radius: 8px 8px 0 0;
+      border-bottom-color: #3b82f6;
+    }
+    .finding-severity-high { border-left: 4px solid #ef4444; }
+    .finding-severity-medium { border-left: 4px solid #f59e0b; }
+    .finding-severity-low { border-left: 4px solid #10b981; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-gray-100 to-blue-50 min-h-screen">
+  <!-- ヘッダーセクション -->
+  <header class="bg-gradient-to-r from-blue-900 to-purple-900 text-white shadow-xl">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="flex items-center mr-6">
+            <i class="fas fa-shield-alt text-3xl mr-3"></i>
+            <div>
+              <h1 class="text-2xl font-bold">監査対応ダッシュボード</h1>
+              <p class="text-blue-200 text-sm">Audit Management & Compliance Control</p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-4">
+            <span class="bg-blue-700 px-3 py-1 rounded-full text-sm font-medium">コンプライアンス管理</span>
+            <div class="text-center">
+              <div class="text-xs text-blue-200">準備進捗</div>
+              <div class="text-lg font-bold text-white">87.3%</div>
+            </div>
+            <div class="risk-indicator">
+              <div class="bg-red-500 px-2 py-1 rounded-full text-xs font-bold">
+                <i class="fas fa-exclamation-triangle mr-1"></i>緊急
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <!-- 監査アラート -->
+          <div class="text-right text-sm">
+            <div class="text-blue-200">次回監査まで</div>
+            <div class="font-bold text-yellow-300">12日</div>
+          </div>
+          <!-- 通知 -->
+          <div class="relative">
+            <button class="p-2 hover:bg-blue-700 rounded-full transition-colors">
+              <i class="fas fa-bell text-xl"></i>
+              <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">5</span>
+            </button>
+          </div>
+          <!-- ユーザー情報 -->
+          <div class="flex items-center space-x-3">
+            <div class="text-right">
+              <div class="font-semibold">監査管理責任者</div>
+              <div class="text-sm text-blue-200">品質管理部</div>
+            </div>
+            <div class="w-12 h-12 bg-gradient-to-br from-white to-gray-200 text-blue-800 rounded-full flex items-center justify-center font-bold text-lg">
+              監
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto px-4 py-6">
+    <!-- パンくずナビゲーション -->
+    <nav class="flex items-center space-x-2 text-sm text-gray-600 mb-6">
+      <a href="#" class="hover:text-blue-600 transition-colors flex items-center">
+        <i class="fas fa-home mr-1"></i>
+        ホーム
+      </a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <a href="#" class="hover:text-blue-600 transition-colors">コンプライアンス管理</a>
+      <i class="fas fa-chevron-right text-gray-400 text-xs"></i>
+      <span class="text-gray-800 font-semibold">監査対応ダッシュボード</span>
+    </nav>
+
+    <!-- 監査概要サマリー -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-calendar-check text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">進行中</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">3件</div>
+        <div class="text-sm opacity-90">進行中監査</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-clipboard-check text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">87.3%</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">156項目</div>
+        <div class="text-sm opacity-90">エビデンス準備</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-exclamation-circle text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">要対応</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">8件</div>
+        <div class="text-sm opacity-90">指摘事項</div>
+      </div>
+      
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl p-6 card-hover">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-tasks text-2xl opacity-80"></i>
+          <span class="text-xs bg-white bg-opacity-20 px-2 py-1 rounded-full">5件</span>
+        </div>
+        <div class="text-3xl font-bold mb-1">92%</div>
+        <div class="text-sm opacity-90">改善完了率</div>
+      </div>
+    </div>
+
+    <!-- タブナビゲーション -->
+    <div class="bg-white rounded-xl shadow-lg p-2 mb-6">
+      <div class="flex space-x-1">
+        <button class="audit-tab active px-4 py-2 text-sm font-medium" data-tab="overview">
+          <i class="fas fa-tachometer-alt mr-1"></i>概要
+        </button>
+        <button class="audit-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="schedule">
+          <i class="fas fa-calendar mr-1"></i>監査スケジュール
+        </button>
+        <button class="audit-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="evidence">
+          <i class="fas fa-folder-open mr-1"></i>エビデンス管理
+        </button>
+        <button class="audit-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="findings">
+          <i class="fas fa-search mr-1"></i>指摘事項
+        </button>
+        <button class="audit-tab px-4 py-2 text-sm font-medium hover:bg-gray-100" data-tab="compliance">
+          <i class="fas fa-balance-scale mr-1"></i>法令遵守
+        </button>
+        <div class="ml-auto flex items-center space-x-2">
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">
+            <i class="fas fa-download mr-1"></i>監査レポート
+          </button>
+          <button class="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+            <i class="fas fa-plus mr-1"></i>新規監査
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 概要タブコンテンツ -->
+    <div id="overview" class="tab-content active">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
+        <!-- 監査進捗状況 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-chart-pie text-blue-600 mr-2"></i>
+              監査進捗状況
+            </h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">
+                全監査
+              </button>
+              <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                内部監査
+              </button>
+              <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                外部監査
+              </button>
+            </div>
+          </div>
+          
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 進捗チャート -->
+            <div class="relative">
+              <canvas id="auditProgressChart" width="300" height="300"></canvas>
+            </div>
+            
+            <!-- 監査詳細 -->
+            <div class="space-y-4">
+              <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 bg-blue-500 rounded-full mr-3"></div>
+                  <div>
+                    <div class="font-medium text-gray-800">ISO14001更新審査</div>
+                    <div class="text-sm text-gray-500">外部監査</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-blue-600">85%</div>
+                  <div class="text-xs text-gray-500">6/15実施</div>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 bg-green-500 rounded-full mr-3"></div>
+                  <div>
+                    <div class="font-medium text-gray-800">電気事業法定期検査</div>
+                    <div class="text-sm text-gray-500">法定監査</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-green-600">95%</div>
+                  <div class="text-xs text-gray-500">6/10実施</div>
+                </div>
+              </div>
+              
+              <div class="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 bg-orange-500 rounded-full mr-3"></div>
+                  <div>
+                    <div class="font-medium text-gray-800">内部品質監査</div>
+                    <div class="text-sm text-gray-500">内部監査</div>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="font-bold text-orange-600">65%</div>
+                  <div class="text-xs text-gray-500">6/20予定</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- コンプライアンススコア -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-award text-gold-600 mr-2"></i>
+            コンプライアンススコア
+          </h3>
+          
+          <!-- 総合スコア -->
+          <div class="text-center mb-6">
+            <div class="compliance-meter mx-auto mb-4">
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <div class="text-3xl font-bold text-green-600">94.2</div>
+                <div class="text-xs text-gray-500">総合スコア</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 分野別スコア -->
+          <div class="space-y-3">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">環境管理</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 96%"></div>
+                </div>
+                <span class="text-sm font-bold text-green-600">96%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">安全管理</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 92%"></div>
+                </div>
+                <span class="text-sm font-bold text-blue-600">92%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">電気事業法</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-orange-500 h-2 rounded-full" style="width: 88%"></div>
+                </div>
+                <span class="text-sm font-bold text-orange-600">88%</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">建設業法</span>
+              <div class="flex items-center">
+                <div class="w-20 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-purple-500 h-2 rounded-full" style="width: 94%"></div>
+                </div>
+                <span class="text-sm font-bold text-purple-600">94%</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 改善提案 -->
+          <div class="mt-4 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+            <div class="flex items-center">
+              <i class="fas fa-lightbulb text-blue-600 mr-2"></i>
+              <div class="text-sm">
+                <div class="font-medium text-blue-800">改善提案</div>
+                <div class="text-blue-700">電気設備点検記録の電子化で+5%向上</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 緊急対応事項・監査タイムライン -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        <!-- 緊急対応事項 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-exclamation-triangle text-red-600 mr-2"></i>
+              緊急対応事項
+            </h3>
+            <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+              8件
+            </span>
+          </div>
+          
+          <div class="space-y-4">
+            <div class="finding-severity-high bg-red-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">電気設備保安規程違反</h4>
+                <span class="text-sm font-bold text-red-600">重要</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                高圧受電設備の月次点検記録に不備。法定要件を満たしていない。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">期限: 2025/06/12</div>
+                <div class="text-sm text-red-600 font-medium">残り6日</div>
+              </div>
+            </div>
+            
+            <div class="finding-severity-medium bg-yellow-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">ISO14001文書管理</h4>
+                <span class="text-sm font-bold text-yellow-600">中</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                環境マネジメント文書の最新版への更新が未完了。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">期限: 2025/06/15</div>
+                <div class="text-sm text-yellow-600 font-medium">残り9日</div>
+              </div>
+            </div>
+            
+            <div class="finding-severity-high bg-red-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">建設業許可証更新</h4>
+                <span class="text-sm font-bold text-red-600">重要</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                管工事業許可証の更新手続きが必要。失効リスクあり。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">期限: 2025/06/10</div>
+                <div class="text-sm text-red-600 font-medium">残り4日</div>
+              </div>
+            </div>
+            
+            <div class="finding-severity-low bg-green-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="font-medium text-gray-800">安全教育記録整備</h4>
+                <span class="text-sm font-bold text-green-600">低</span>
+              </div>
+              <div class="text-sm text-gray-600 mb-2">
+                新入社員の安全教育受講記録の電子化が未完了。
+              </div>
+              <div class="flex justify-between items-center">
+                <div class="text-sm text-gray-500">期限: 2025/06/20</div>
+                <div class="text-sm text-green-600 font-medium">残り14日</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4 text-center">
+            <button class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+              <i class="fas fa-tasks mr-1"></i>全ての対応事項を表示
+            </button>
+          </div>
+        </div>
+
+        <!-- 監査タイムライン -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-history text-indigo-600 mr-2"></i>
+              監査タイムライン
+            </h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded text-sm font-medium">
+                今月
+              </button>
+              <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                四半期
+              </button>
+            </div>
+          </div>
+          
+          <div class="audit-timeline">
+            <div class="timeline-item">
+              <div class="timeline-icon bg-green-500">
+                <i class="fas fa-check"></i>
+              </div>
+              <div class="bg-green-50 rounded-lg p-3">
+                <div class="font-medium text-gray-800">電気事業法定期検査</div>
+                <div class="text-sm text-gray-600">完了 - 指摘事項なし</div>
+                <div class="text-xs text-gray-500">2025/06/01 - 外部監査</div>
+              </div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="timeline-icon bg-blue-500">
+                <i class="fas fa-play"></i>
+              </div>
+              <div class="bg-blue-50 rounded-lg p-3">
+                <div class="font-medium text-gray-800">ISO14001更新審査</div>
+                <div class="text-sm text-gray-600">進行中 - 文書審査完了</div>
+                <div class="text-xs text-gray-500">2025/06/05 - 外部監査</div>
+              </div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="timeline-icon bg-orange-500">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div class="bg-orange-50 rounded-lg p-3">
+                <div class="font-medium text-gray-800">内部品質監査</div>
+                <div class="text-sm text-gray-600">準備中 - エビデンス収集</div>
+                <div class="text-xs text-gray-500">2025/06/15 - 内部監査</div>
+              </div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="timeline-icon bg-purple-500">
+                <i class="fas fa-calendar-plus"></i>
+              </div>
+              <div class="bg-purple-50 rounded-lg p-3">
+                <div class="font-medium text-gray-800">安全衛生監査</div>
+                <div class="text-sm text-gray-600">予定 - 計画策定中</div>
+                <div class="text-xs text-gray-500">2025/06/25 - 内部監査</div>
+              </div>
+            </div>
+            
+            <div class="timeline-item">
+              <div class="timeline-icon bg-gray-500">
+                <i class="fas fa-calendar"></i>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-3">
+                <div class="font-medium text-gray-800">建設業法監査</div>
+                <div class="text-sm text-gray-600">予定 - 7月実施</div>
+                <div class="text-xs text-gray-500">2025/07/10 - 外部監査</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 監査実績サマリー -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800 flex items-center">
+            <i class="fas fa-chart-bar text-purple-600 mr-2"></i>
+            監査実績サマリー
+          </h3>
+          <div class="flex space-x-2">
+            <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+              <option>2025年度</option>
+              <option>2024年度</option>
+              <option>2023年度</option>
+            </select>
+            <button class="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
+              <i class="fas fa-chart-line mr-1"></i>詳細分析
+            </button>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <!-- 実施回数 -->
+          <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl">
+            <div class="text-3xl font-bold text-blue-600 mb-2">24回</div>
+            <div class="text-sm text-gray-600">年間監査実施</div>
+            <div class="text-xs text-green-600 mt-1">
+              <i class="fas fa-arrow-up mr-1"></i>前年比+15%
+            </div>
+          </div>
+          
+          <!-- 平均準備期間 -->
+          <div class="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-100 rounded-xl">
+            <div class="text-3xl font-bold text-green-600 mb-2">8.5日</div>
+            <div class="text-sm text-gray-600">平均準備期間</div>
+            <div class="text-xs text-green-600 mt-1">
+              <i class="fas fa-arrow-down mr-1"></i>前年比-2.3日
+            </div>
+          </div>
+          
+          <!-- 指摘事項解決率 -->
+          <div class="text-center p-4 bg-gradient-to-br from-orange-50 to-yellow-100 rounded-xl">
+            <div class="text-3xl font-bold text-orange-600 mb-2">94.7%</div>
+            <div class="text-sm text-gray-600">指摘解決率</div>
+            <div class="text-xs text-green-600 mt-1">
+              <i class="fas fa-arrow-up mr-1"></i>前年比+3.2%
+            </div>
+          </div>
+          
+          <!-- コスト効率 -->
+          <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-100 rounded-xl">
+            <div class="text-3xl font-bold text-purple-600 mb-2">¥2.8M</div>
+            <div class="text-sm text-gray-600">年間監査コスト</div>
+            <div class="text-xs text-red-600 mt-1">
+              <i class="fas fa-arrow-up mr-1"></i>前年比+8%
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 監査スケジュールタブコンテンツ -->
+    <div id="schedule" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 年間監査計画 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+              年間監査計画
+            </h3>
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium">
+                2025年度
+              </button>
+              <button class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                2026年度
+              </button>
+              <button class="px-3 py-1 bg-green-600 text-white rounded text-sm">
+                <i class="fas fa-plus mr-1"></i>新規追加
+              </button>
+            </div>
+          </div>
+          
+          <!-- 監査スケジュール表 -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="bg-gray-50 border-b">
+                  <th class="text-left p-3 font-medium text-gray-700">監査名称</th>
+                  <th class="text-center p-3 font-medium text-gray-700">種別</th>
+                  <th class="text-center p-3 font-medium text-gray-700">実施予定</th>
+                  <th class="text-center p-3 font-medium text-gray-700">担当者</th>
+                  <th class="text-center p-3 font-medium text-gray-700">進捗</th>
+                  <th class="text-center p-3 font-medium text-gray-700">アクション</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">ISO14001更新審査</div>
+                    <div class="text-xs text-gray-500">環境マネジメントシステム</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">外部</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">2025/06/15</div>
+                    <div class="text-xs text-gray-500">2日間</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">品質管理部</div>
+                    <div class="text-xs text-gray-500">田中課長</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto">
+                      <div class="bg-blue-500 h-2 rounded-full" style="width: 85%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">85%</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs hover:bg-blue-200">
+                      詳細
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">電気事業法定期検査</div>
+                    <div class="text-xs text-gray-500">高圧受電設備保安</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">法定</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">2025/06/10</div>
+                    <div class="text-xs text-gray-500">1日</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">技術部</div>
+                    <div class="text-xs text-gray-500">佐藤主任電気</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto">
+                      <div class="bg-green-500 h-2 rounded-full" style="width: 100%"></div>
+                    </div>
+                    <div class="text-xs text-green-600 mt-1">完了</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs hover:bg-green-200">
+                      報告書
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">建設業法監査</div>
+                    <div class="text-xs text-gray-500">建設業許可・施工管理</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">行政</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">2025/07/10</div>
+                    <div class="text-xs text-gray-500">半日</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">工事部</div>
+                    <div class="text-xs text-gray-500">山田部長</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto">
+                      <div class="bg-orange-500 h-2 rounded-full" style="width: 45%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">45%</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs hover:bg-orange-200">
+                      準備
+                    </button>
+                  </td>
+                </tr>
+                
+                <tr class="border-b hover:bg-gray-50">
+                  <td class="p-3">
+                    <div class="font-medium text-gray-800">内部品質監査</div>
+                    <div class="text-xs text-gray-500">品質マネジメント</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">内部</span>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="font-medium">2025/06/20</div>
+                    <div class="text-xs text-gray-500">3日間</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="text-sm">品質管理部</div>
+                    <div class="text-xs text-gray-500">鈴木係長</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <div class="w-16 bg-gray-200 rounded-full h-2 mx-auto">
+                      <div class="bg-yellow-500 h-2 rounded-full" style="width: 65%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">65%</div>
+                  </td>
+                  <td class="p-3 text-center">
+                    <button class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs hover:bg-yellow-200">
+                      進行中
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 監査カレンダー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-calendar-week text-purple-600 mr-2"></i>
+            今月の監査予定
+          </h3>
+          
+          <!-- 簡易カレンダー -->
+          <div class="grid grid-cols-7 gap-1 mb-4">
+            <div class="text-center text-xs text-gray-500 py-2">日</div>
+            <div class="text-center text-xs text-gray-500 py-2">月</div>
+            <div class="text-center text-xs text-gray-500 py-2">火</div>
+            <div class="text-center text-xs text-gray-500 py-2">水</div>
+            <div class="text-center text-xs text-gray-500 py-2">木</div>
+            <div class="text-center text-xs text-gray-500 py-2">金</div>
+            <div class="text-center text-xs text-gray-500 py-2">土</div>
+            
+            <!-- 1週目 -->
+            <div class="text-center text-sm py-2"></div>
+            <div class="text-center text-sm py-2"></div>
+            <div class="text-center text-sm py-2"></div>
+            <div class="text-center text-sm py-2"></div>
+            <div class="text-center text-sm py-2"></div>
+            <div class="text-center text-sm py-2 text-gray-800">1</div>
+            <div class="text-center text-sm py-2 text-gray-800">2</div>
+            
+            <!-- 2週目 -->
+            <div class="text-center text-sm py-2 text-gray-800">3</div>
+            <div class="text-center text-sm py-2 text-gray-800">4</div>
+            <div class="text-center text-sm py-2 text-gray-800">5</div>
+            <div class="text-center text-sm py-2 text-blue-600 font-bold bg-blue-100 rounded">6</div>
+            <div class="text-center text-sm py-2 text-gray-800">7</div>
+            <div class="text-center text-sm py-2 text-gray-800">8</div>
+            <div class="text-center text-sm py-2 text-gray-800">9</div>
+            
+            <!-- 3週目 -->
+            <div class="text-center text-sm py-2 text-green-600 font-bold bg-green-100 rounded">10</div>
+            <div class="text-center text-sm py-2 text-gray-800">11</div>
+            <div class="text-center text-sm py-2 text-gray-800">12</div>
+            <div class="text-center text-sm py-2 text-gray-800">13</div>
+            <div class="text-center text-sm py-2 text-gray-800">14</div>
+            <div class="text-center text-sm py-2 text-orange-600 font-bold bg-orange-100 rounded">15</div>
+            <div class="text-center text-sm py-2 text-gray-800">16</div>
+            
+            <!-- 4週目 -->
+            <div class="text-center text-sm py-2 text-gray-800">17</div>
+            <div class="text-center text-sm py-2 text-gray-800">18</div>
+            <div class="text-center text-sm py-2 text-gray-800">19</div>
+            <div class="text-center text-sm py-2 text-purple-600 font-bold bg-purple-100 rounded">20</div>
+            <div class="text-center text-sm py-2 text-gray-800">21</div>
+            <div class="text-center text-sm py-2 text-gray-800">22</div>
+            <div class="text-center text-sm py-2 text-gray-800">23</div>
+            
+            <!-- 5週目 -->
+            <div class="text-center text-sm py-2 text-gray-800">24</div>
+            <div class="text-center text-sm py-2 text-gray-800">25</div>
+            <div class="text-center text-sm py-2 text-gray-800">26</div>
+            <div class="text-center text-sm py-2 text-gray-800">27</div>
+            <div class="text-center text-sm py-2 text-gray-800">28</div>
+            <div class="text-center text-sm py-2 text-gray-800">29</div>
+            <div class="text-center text-sm py-2 text-gray-800">30</div>
+          </div>
+          
+          <!-- 予定詳細 -->
+          <div class="space-y-3">
+            <div class="flex items-center p-2 bg-blue-50 rounded">
+              <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-800">6/6 今日</div>
+                <div class="text-xs text-gray-600">ISO14001文書審査</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center p-2 bg-green-50 rounded">
+              <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-800">6/10</div>
+                <div class="text-xs text-gray-600">電気事業法定期検査</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center p-2 bg-orange-50 rounded">
+              <div class="w-3 h-3 bg-orange-500 rounded-full mr-2"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-800">6/15</div>
+                <div class="text-xs text-gray-600">ISO14001現地審査</div>
+              </div>
+            </div>
+            
+            <div class="flex items-center p-2 bg-purple-50 rounded">
+              <div class="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+              <div>
+                <div class="text-sm font-medium text-gray-800">6/20</div>
+                <div class="text-xs text-gray-600">内部品質監査</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- エビデンス管理タブコンテンツ -->
+    <div id="evidence" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+        <!-- エビデンス分類別進捗 -->
+        <div class="xl:col-span-3 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-folder-open text-blue-600 mr-2"></i>
+              エビデンス準備状況
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>全監査</option>
+                <option>ISO14001</option>
+                <option>電気事業法</option>
+                <option>建設業法</option>
+              </select>
+              <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm">
+                <i class="fas fa-upload mr-1"></i>アップロード
+              </button>
+            </div>
+          </div>
+          
+          <div class="evidence-grid">
+            <!-- 環境管理エビデンス -->
+            <div class="bg-green-50 rounded-xl p-4 border border-green-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-leaf text-green-600 mr-2"></i>
+                  環境管理
+                </h4>
+                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                  完了: 18/20
+                </span>
+              </div>
+              <div class="w-full bg-green-200 rounded-full h-2 mb-3">
+                <div class="bg-green-500 h-2 rounded-full" style="width: 90%"></div>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">環境方針</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">廃棄物管理記録</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">エネルギー使用量</span>
+                  <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">環境影響評価</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 電気設備エビデンス -->
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-bolt text-blue-600 mr-2"></i>
+                  電気設備
+                </h4>
+                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                  完了: 22/25
+                </span>
+              </div>
+              <div class="w-full bg-blue-200 rounded-full h-2 mb-3">
+                <div class="bg-blue-500 h-2 rounded-full" style="width: 88%"></div>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">受電設備点検記録</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">保安規程</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">絶縁測定記録</span>
+                  <i class="fas fa-times text-red-500"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">主任技術者選任届</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 機械設備エビデンス -->
+            <div class="bg-orange-50 rounded-xl p-4 border border-orange-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-cogs text-orange-600 mr-2"></i>
+                  機械設備
+                </h4>
+                <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium">
+                  完了: 15/18
+                </span>
+              </div>
+              <div class="w-full bg-orange-200 rounded-full h-2 mb-3">
+                <div class="bg-orange-500 h-2 rounded-full" style="width: 83%"></div>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">空調設備点検</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">給排水設備</span>
+                  <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">圧力容器検査</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">配管設備図面</span>
+                  <i class="fas fa-times text-red-500"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 建設業法エビデンス -->
+            <div class="bg-purple-50 rounded-xl p-4 border border-purple-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-hard-hat text-purple-600 mr-2"></i>
+                  建設業法
+                </h4>
+                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">
+                  完了: 12/15
+                </span>
+              </div>
+              <div class="w-full bg-purple-200 rounded-full h-2 mb-3">
+                <div class="bg-purple-500 h-2 rounded-full" style="width: 80%"></div>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">建設業許可証</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">技術者配置</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">施工体制台帳</span>
+                  <i class="fas fa-times text-red-500"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">安全管理計画</span>
+                  <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 安全衛生エビデンス -->
+            <div class="bg-red-50 rounded-xl p-4 border border-red-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-shield-alt text-red-600 mr-2"></i>
+                  安全衛生
+                </h4>
+                <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium">
+                  完了: 16/20
+                </span>
+              </div>
+              <div class="w-full bg-red-200 rounded-full h-2 mb-3">
+                <div class="bg-red-500 h-2 rounded-full" style="width: 80%"></div>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">安全教育記録</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">健康診断結果</span>
+                  <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">事故報告書</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">労働安全衛生計画</span>
+                  <i class="fas fa-times text-red-500"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 品質管理エビデンス -->
+            <div class="bg-indigo-50 rounded-xl p-4 border border-indigo-200">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="font-bold text-gray-800 flex items-center">
+                  <i class="fas fa-award text-indigo-600 mr-2"></i>
+                  品質管理
+                </h4>
+                <span class="bg-indigo-100 text-indigo-800 px-2 py-1 rounded-full text-xs font-medium">
+                  完了: 14/16
+                </span>
+              </div>
+              <div class="w-full bg-indigo-200 rounded-full h-2 mb-3">
+                <div class="bg-indigo-500 h-2 rounded-full" style="width: 87.5%"></div>
+              </div>
+              <div class="space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">品質マニュアル</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">検査記録</span>
+                  <i class="fas fa-check text-green-600"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">是正措置記録</span>
+                  <i class="fas fa-times text-red-500"></i>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-gray-600">顧客満足度調査</span>
+                  <i class="fas fa-exclamation-triangle text-orange-500"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- エビデンス管理サイドバー -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-tasks text-green-600 mr-2"></i>
+            アクション必要項目
+          </h3>
+          
+          <div class="space-y-3 mb-6">
+            <div class="p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+              <div class="text-sm font-medium text-red-800">緊急</div>
+              <div class="text-xs text-red-600">絶縁測定記録（期限: 6/10）</div>
+            </div>
+            
+            <div class="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+              <div class="text-sm font-medium text-orange-800">重要</div>
+              <div class="text-xs text-orange-600">配管設備図面（期限: 6/15）</div>
+            </div>
+            
+            <div class="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+              <div class="text-sm font-medium text-yellow-800">通常</div>
+              <div class="text-xs text-yellow-600">エネルギー使用量（期限: 6/20）</div>
+            </div>
+          </div>
+          
+          <!-- エビデンス統計 -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3">統計情報</h4>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">総エビデンス数</span>
+                <span class="font-bold">114項目</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">準備完了</span>
+                <span class="font-bold text-green-600">97項目</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">準備中</span>
+                <span class="font-bold text-orange-600">11項目</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">未着手</span>
+                <span class="font-bold text-red-600">6項目</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- クイックアクション -->
+          <div class="mt-6 space-y-2">
+            <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+              <i class="fas fa-upload mr-1"></i>一括アップロード
+            </button>
+            <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">
+              <i class="fas fa-download mr-1"></i>チェックリスト出力
+            </button>
+            <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700">
+              <i class="fas fa-share-alt mr-1"></i>進捗共有
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 指摘事項タブコンテンツ -->
+    <div id="findings" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 指摘事項一覧 -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-search text-red-600 mr-2"></i>
+              監査指摘事項一覧
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>全て</option>
+                <option>重要</option>
+                <option>中程度</option>
+                <option>軽微</option>
+              </select>
+              <button class="px-3 py-1 bg-red-600 text-white rounded text-sm">
+                <i class="fas fa-plus mr-1"></i>新規登録
+              </button>
+            </div>
+          </div>
+          
+          <div class="space-y-4">
+            <!-- 重要指摘事項 -->
+            <div class="finding-severity-high bg-red-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                  <span class="bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold mr-3">重要</span>
+                  <h4 class="font-bold text-gray-800">電気設備保安規程の不備</h4>
+                </div>
+                <span class="text-xs text-gray-500">2025/06/01</span>
+              </div>
+              <div class="mb-3">
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>指摘内容:</strong> 高圧受電設備の月次点検において、絶縁抵抗測定値の記録が3ヶ月分欠落している。電気事業法第42条の保安規程に違反。
+                </div>
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>監査機関:</strong> 九州産業保安監督部
+                </div>
+                <div class="text-sm text-gray-700">
+                  <strong>対応期限:</strong> 2025/06/12（残り6日）
+                </div>
+              </div>
+              <div class="border-t pt-3">
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>改善措置:</strong>
+                </div>
+                <div class="bg-white rounded p-3 text-sm">
+                  1. 欠落期間の測定実施と記録作成<br>
+                  2. 点検チェックリストの見直し<br>
+                  3. 担当者への再教育実施<br>
+                  4. 電子記録システムの導入検討
+                </div>
+                <div class="flex items-center justify-between mt-3">
+                  <div class="text-sm">
+                    <span class="text-gray-600">担当:</span> 
+                    <span class="font-medium">佐藤主任電気技術者</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                      <div class="bg-orange-500 h-2 rounded-full" style="width: 65%"></div>
+                    </div>
+                    <span class="text-xs text-gray-600">65%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 中程度指摘事項 -->
+            <div class="finding-severity-medium bg-yellow-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                  <span class="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-bold mr-3">中</span>
+                  <h4 class="font-bold text-gray-800">環境マネジメント文書の改訂遅れ</h4>
+                </div>
+                <span class="text-xs text-gray-500">2025/05/28</span>
+              </div>
+              <div class="mb-3">
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>指摘内容:</strong> 環境方針及び環境目標の文書が2024年版のまま。年度更新が未実施でISO14001要求事項に不適合。
+                </div>
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>監査機関:</strong> JQA（日本品質保証機構）
+                </div>
+                <div class="text-sm text-gray-700">
+                  <strong>対応期限:</strong> 2025/06/15（残り9日）
+                </div>
+              </div>
+              <div class="border-t pt-3">
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>改善措置:</strong>
+                </div>
+                <div class="bg-white rounded p-3 text-sm">
+                  1. 2025年度環境方針の策定<br>
+                  2. 環境目標の見直しと設定<br>
+                  3. 社内周知と教育実施<br>
+                  4. 年次改訂スケジュールの確立
+                </div>
+                <div class="flex items-center justify-between mt-3">
+                  <div class="text-sm">
+                    <span class="text-gray-600">担当:</span> 
+                    <span class="font-medium">田中品質管理課長</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                      <div class="bg-blue-500 h-2 rounded-full" style="width: 80%"></div>
+                    </div>
+                    <span class="text-xs text-gray-600">80%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 軽微指摘事項 -->
+            <div class="finding-severity-low bg-green-50 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center">
+                  <span class="bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold mr-3">軽微</span>
+                  <h4 class="font-bold text-gray-800">安全教育記録の電子化遅れ</h4>
+                </div>
+                <span class="text-xs text-gray-500">2025/05/25</span>
+              </div>
+              <div class="mb-3">
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>指摘内容:</strong> 新入社員の安全教育受講記録が紙ベースのまま。電子化による管理効率向上が必要。
+                </div>
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>監査機関:</strong> 内部監査チーム
+                </div>
+                <div class="text-sm text-gray-700">
+                  <strong>対応期限:</strong> 2025/06/30（残り24日）
+                </div>
+              </div>
+              <div class="border-t pt-3">
+                <div class="text-sm text-gray-700 mb-2">
+                  <strong>改善措置:</strong>
+                </div>
+                <div class="bg-white rounded p-3 text-sm">
+                  1. 既存記録のスキャン・電子化<br>
+                  2. 教育管理システムの導入<br>
+                  3. 運用マニュアルの作成<br>
+                  4. 担当者への操作研修
+                </div>
+                <div class="flex items-center justify-between mt-3">
+                  <div class="text-sm">
+                    <span class="text-gray-600">担当:</span> 
+                    <span class="font-medium">山田人事部係長</span>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <div class="w-20 bg-gray-200 rounded-full h-2">
+                      <div class="bg-green-500 h-2 rounded-full" style="width: 40%"></div>
+                    </div>
+                    <span class="text-xs text-gray-600">40%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 指摘事項統計 -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-pie text-orange-600 mr-2"></i>
+            指摘事項統計
+          </h3>
+          
+          <!-- 重要度別統計 -->
+          <div class="mb-6">
+            <canvas id="findingsChart" width="200" height="200"></canvas>
+          </div>
+          
+          <!-- 対応状況統計 -->
+          <div class="space-y-3 mb-6">
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">完了</span>
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-green-500 h-2 rounded-full" style="width: 70%"></div>
+                </div>
+                <span class="text-sm font-bold text-green-600">12件</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">対応中</span>
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-blue-500 h-2 rounded-full" style="width: 25%"></div>
+                </div>
+                <span class="text-sm font-bold text-blue-600">8件</span>
+              </div>
+            </div>
+            
+            <div class="flex justify-between items-center">
+              <span class="text-sm text-gray-600">未対応</span>
+              <div class="flex items-center">
+                <div class="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                  <div class="bg-red-500 h-2 rounded-full" style="width: 5%"></div>
+                </div>
+                <span class="text-sm font-bold text-red-600">3件</span>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 期限間近項目 -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3 text-red-600">期限間近項目</h4>
+            <div class="space-y-2">
+              <div class="p-2 bg-red-50 rounded border-l-4 border-red-400">
+                <div class="text-xs font-medium text-red-800">電気設備保安規程</div>
+                <div class="text-xs text-red-600">残り6日</div>
+              </div>
+              
+              <div class="p-2 bg-orange-50 rounded border-l-4 border-orange-400">
+                <div class="text-xs font-medium text-orange-800">環境文書改訂</div>
+                <div class="text-xs text-orange-600">残り9日</div>
+              </div>
+              
+              <div class="p-2 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                <div class="text-xs font-medium text-yellow-800">建設業許可更新</div>
+                <div class="text-xs text-yellow-600">残り15日</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- アクションボタン -->
+          <div class="mt-6 space-y-2">
+            <button class="w-full px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">
+              <i class="fas fa-exclamation-triangle mr-1"></i>緊急対応
+            </button>
+            <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+              <i class="fas fa-file-alt mr-1"></i>改善計画書
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 法令遵守タブコンテンツ -->
+    <div id="compliance" class="tab-content">
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- 法令チェックリスト -->
+        <div class="xl:col-span-2 bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-xl font-bold text-gray-800 flex items-center">
+              <i class="fas fa-balance-scale text-purple-600 mr-2"></i>
+              法令遵守チェックリスト
+            </h3>
+            <div class="flex space-x-2">
+              <select class="px-3 py-1 border border-gray-300 rounded text-sm">
+                <option>全法令</option>
+                <option>電気事業法</option>
+                <option>建設業法</option>
+                <option>労働安全衛生法</option>
+              </select>
+              <button class="px-3 py-1 bg-purple-600 text-white rounded text-sm">
+                <i class="fas fa-sync mr-1"></i>更新確認
+              </button>
+            </div>
+          </div>
+          
+          <!-- 法令別チェック項目 -->
+          <div class="space-y-6">
+            <!-- 電気事業法 -->
+            <div class="border border-blue-200 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-blue-800 flex items-center">
+                  <i class="fas fa-bolt text-blue-600 mr-2"></i>
+                  電気事業法
+                </h4>
+                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                  適合率: 92%
+                </span>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">主任技術者の選任</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">保安規程の届出</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-red-50 rounded">
+                    <span class="text-sm text-gray-700">定期点検の実施</span>
+                    <i class="fas fa-times text-red-600"></i>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">工事計画の届出</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                    <span class="text-sm text-gray-700">記録の保存</span>
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">報告書の提出</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 建設業法 -->
+            <div class="border border-orange-200 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-orange-800 flex items-center">
+                  <i class="fas fa-hard-hat text-orange-600 mr-2"></i>
+                  建設業法
+                </h4>
+                <span class="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
+                  適合率: 88%
+                </span>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">建設業許可の取得</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">技術者の配置</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-red-50 rounded">
+                    <span class="text-sm text-gray-700">施工体制台帳</span>
+                    <i class="fas fa-times text-red-600"></i>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                    <span class="text-sm text-gray-700">経営事項審査</span>
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">工事完成検査</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">適正な下請契約</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 労働安全衛生法 -->
+            <div class="border border-red-200 rounded-lg p-4">
+              <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-red-800 flex items-center">
+                  <i class="fas fa-shield-alt text-red-600 mr-2"></i>
+                  労働安全衛生法
+                </h4>
+                <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                  適合率: 95%
+                </span>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">安全管理者の選任</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">安全教育の実施</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">健康診断の実施</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">作業環境測定</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-yellow-50 rounded">
+                    <span class="text-sm text-gray-700">安全委員会の設置</span>
+                    <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                  </div>
+                  <div class="flex items-center justify-between p-2 bg-green-50 rounded">
+                    <span class="text-sm text-gray-700">事故報告書の提出</span>
+                    <i class="fas fa-check text-green-600"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 法令遵守レーダーチャート -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-radar text-indigo-600 mr-2"></i>
+            法令遵守レーダー
+          </h3>
+          
+          <div class="mb-6">
+            <canvas id="complianceRadar" width="250" height="250"></canvas>
+          </div>
+          
+          <!-- 法令更新情報 -->
+          <div class="border-t pt-4">
+            <h4 class="font-medium text-gray-800 mb-3">最新法令情報</h4>
+            <div class="space-y-3">
+              <div class="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                <div class="text-sm font-medium text-blue-800">電気事業法改正</div>
+                <div class="text-xs text-blue-600">2025/4/1施行 - DX推進対応</div>
+              </div>
+              
+              <div class="p-3 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+                <div class="text-sm font-medium text-orange-800">建設業法改正</div>
+                <div class="text-xs text-orange-600">2025/10/1予定 - 働き方改革</div>
+              </div>
+              
+              <div class="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                <div class="text-sm font-medium text-green-800">環境省令改正</div>
+                <div class="text-xs text-green-600">2025/7/1施行 - 脱炭素強化</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 更新必要項目 -->
+          <div class="mt-4 p-3 bg-red-50 rounded-lg border-l-4 border-red-400">
+            <div class="text-sm font-medium text-red-800 mb-2">更新必要項目</div>
+            <div class="space-y-1 text-xs">
+              <div class="text-red-600">• 管工事業許可証（6/30期限）</div>
+              <div class="text-red-600">• 主任技術者資格更新（8/15期限）</div>
+              <div class="text-red-600">• 安全衛生推進者講習（9/30期限）</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フッターアクション -->
+  <div class="container mx-auto px-4 py-6">
+    <div class="bg-white rounded-2xl shadow-lg p-6 card-hover">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-xl font-bold text-gray-800 mb-2">監査対応アクション</h3>
+          <p class="text-gray-600 text-sm">緊急対応事項の処理や詳細レポートの生成</p>
+        </div>
+        <div class="flex space-x-3">
+          <button class="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            緊急対応開始
+          </button>
+          <button class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+            <i class="fas fa-file-alt mr-2"></i>
+            監査レポート生成
+          </button>
+          <button class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+            <i class="fas fa-calendar-plus mr-2"></i>
+            新規監査登録
+          </button>
+          <button class="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+            <i class="fas fa-share-alt mr-2"></i>
+            進捗共有
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // チャートの初期化
+      initializeCharts();
+      
+      // タブ機能の初期化
+      initializeTabs();
+      
+      // カードホバー効果
+      initializeCardEffects();
+      
+      // ページロードアニメーション
+      animatePageLoad();
+      
+      // 定期的なデータ更新シミュレーション
+      setInterval(updateDashboardData, 30000);
+      
+      // イベントハンドラーの追加
+      addEventHandlers();
+      
+      // 初期通知
+      setTimeout(() => {
+        showNotification('監査対応システムが更新されました。緊急対応事項を確認してください。', 'warning');
+      }, 1500);
+    });
+
+    function initializeCharts() {
+      // 監査進捗チャート
+      const progressCtx = document.getElementById('auditProgressChart');
+      if (progressCtx) {
+        new Chart(progressCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['完了', '進行中', '準備中', '予定'],
+            datasets: [{
+              data: [30, 35, 25, 10],
+              backgroundColor: [
+                '#10b981',
+                '#3b82f6',
+                '#f59e0b',
+                '#6b7280'
+              ],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            }
+          }
+        });
+      }
+
+      // 指摘事項統計チャート
+      const findingsCtx = document.getElementById('findingsChart');
+      if (findingsCtx) {
+        new Chart(findingsCtx, {
+          type: 'pie',
+          data: {
+            labels: ['重要', '中程度', '軽微'],
+            datasets: [{
+              data: [3, 8, 12],
+              backgroundColor: [
+                '#ef4444',
+                '#f59e0b',
+                '#10b981'
+              ],
+              borderWidth: 2,
+              borderColor: '#ffffff'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom'
+              }
+            }
+          }
+        });
+      }
+
+      // 法令遵守レーダーチャート
+      const complianceCtx = document.getElementById('complianceRadar');
+      if (complianceCtx) {
+        new Chart(complianceCtx, {
+          type: 'radar',
+          data: {
+            labels: ['電気事業法', '建設業法', '労働安全衛生法', '環境法', '消防法', 'ISO規格'],
+            datasets: [{
+              label: '遵守率',
+              data: [92, 88, 95, 94, 90, 96],
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.2)',
+              pointBackgroundColor: '#8b5cf6',
+              pointBorderColor: '#ffffff',
+              pointBorderWidth: 2,
+              pointRadius: 6
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              r: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                  stepSize: 20
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function initializeTabs() {
+      const tabs = document.querySelectorAll('.audit-tab');
+      const contents = document.querySelectorAll('.tab-content');
+      
+      tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+          const targetTab = this.dataset.tab;
+          
+          // アクティブタブの切り替え
+          tabs.forEach(t => t.classList.remove('active'));
+          this.classList.add('active');
+          
+          // コンテンツの切り替え
+          contents.forEach(content => {
+            content.classList.remove('active');
+            if (content.id === targetTab) {
+              content.classList.add('active');
+            }
+          });
+          
+          // タブ切り替え通知
+          showNotification(`${this.textContent.trim()}タブに切り替えました`, 'info');
+        });
+      });
+    }
+
+    function initializeCardEffects() {
+      const cards = document.querySelectorAll('.card-hover');
+      cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateY(-4px)';
+          this.style.boxShadow = '0 12px 25px -3px rgba(0, 0, 0, 0.1)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateY(0)';
+          this.style.boxShadow = '';
+        });
+      });
+    }
+
+    function animatePageLoad() {
+      const elements = document.querySelectorAll('.card-hover, .bg-gradient-to-br');
+      elements.forEach((element, index) => {
+        element.style.opacity = '0';
+        element.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+          element.style.transition = 'all 0.6s ease';
+          element.style.opacity = '1';
+          element.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    }
+
+    function updateDashboardData() {
+      // KPI値の定期更新シミュレーション
+      const kpiCards = document.querySelectorAll('.bg-gradient-to-br');
+      kpiCards.forEach((card, index) => {
+        const valueElement = card.querySelector('.text-3xl');
+        if (valueElement) {
+          // アニメーション効果
+          valueElement.style.transform = 'scale(1.1)';
+          valueElement.style.color = '#10b981';
+          
+          setTimeout(() => {
+            valueElement.style.transform = 'scale(1)';
+            valueElement.style.color = '';
+          }, 300);
+        }
+      });
+    }
+
+    function addEventHandlers() {
+      // 緊急対応開始ボタン
+      const emergencyButton = document.querySelector('.bg-red-600');
+      if (emergencyButton && emergencyButton.textContent.includes('緊急対応')) {
+        emergencyButton.addEventListener('click', function() {
+          this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>緊急対応開始中...';
+          this.disabled = true;
+          
+          setTimeout(() => {
+            showNotification('緊急対応チームに通知を送信しました。担当者が確認次第対応を開始します。', 'success');
+            this.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i>緊急対応開始';
+            this.disabled = false;
+          }, 3000);
+        });
+      }
+
+      // 監査レポート生成ボタン
+      const reportButton = document.querySelector('.bg-blue-600');
+      if (reportButton && reportButton.textContent.includes('監査レポート')) {
+        reportButton.addEventListener('click', function() {
+          this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>レポート生成中...';
+          this.disabled = true;
+          
+          setTimeout(() => {
+            showNotification('監査レポートが生成されました。PDF形式でダウンロードできます。', 'success');
+            this.innerHTML = '<i class="fas fa-file-alt mr-2"></i>監査レポート生成';
+            this.disabled = false;
+          }, 4000);
+        });
+      }
+
+      // 新規監査登録ボタン
+      const newAuditButton = document.querySelector('.bg-green-600');
+      if (newAuditButton && newAuditButton.textContent.includes('新規監査')) {
+        newAuditButton.addEventListener('click', function() {
+          showNotification('新規監査登録画面を開きます...', 'info');
+        });
+      }
+
+      // 進捗共有ボタン
+      const shareButton = document.querySelector('.bg-purple-600');
+      if (shareButton && shareButton.textContent.includes('進捗共有')) {
+        shareButton.addEventListener('click', function() {
+          showNotification('監査進捗情報を関係者に共有しました。', 'success');
+        });
+      }
+
+      // エビデンスアップロードボタン
+      const uploadButtons = document.querySelectorAll('.bg-blue-600');
+      uploadButtons.forEach(button => {
+        if (button.textContent.includes('アップロード')) {
+          button.addEventListener('click', function() {
+            showNotification('ファイルアップロード画面を開きます...', 'info');
+          });
+        }
+      });
+
+      // 指摘事項詳細ボタン
+      const detailButtons = document.querySelectorAll('.bg-blue-100');
+      detailButtons.forEach(button => {
+        if (button.textContent.includes('詳細')) {
+          button.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const auditName = row.querySelector('.font-medium').textContent;
+            showNotification(`${auditName}の詳細情報を表示します`, 'info');
+          });
+        }
+      });
+
+      // 改善措置進捗バー
+      const progressBars = document.querySelectorAll('.bg-orange-500, .bg-blue-500, .bg-green-500');
+      progressBars.forEach(bar => {
+        bar.addEventListener('click', function() {
+          showNotification('改善措置の詳細進捗を表示します', 'info');
+        });
+      });
+    }
+
+    // 通知表示関数
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      const bgColor = {
+        'success': 'bg-green-500',
+        'warning': 'bg-yellow-500',
+        'error': 'bg-red-500',
+        'info': 'bg-blue-500'
+      }[type] || 'bg-blue-500';
+      
+      const icon = {
+        'success': 'fas fa-check',
+        'warning': 'fas fa-exclamation-triangle',
+        'error': 'fas fa-times',
+        'info': 'fas fa-info-circle'
+      }[type] || 'fas fa-info-circle';
+      
+      notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-xl z-50 transform transition-all duration-300 max-w-md`;
+      notification.innerHTML = `<i class="${icon} mr-2"></i>${message}`;
+      notification.style.transform = 'translateX(100%)';
+      
+      document.body.appendChild(notification);
+      
+      // アニメーション
+      setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+      }, 100);
+      
+      // 自動削除
+      setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 5000);
+    }
+
+    // リアルタイム更新シミュレーション
+    function simulateRealTimeUpdates() {
+      setInterval(() => {
+        // ランダムな進捗更新
+        const progressBars = document.querySelectorAll('.bg-blue-500, .bg-green-500, .bg-orange-500');
+        progressBars.forEach(bar => {
+          const currentWidth = parseInt(bar.style.width) || 50;
+          const newWidth = Math.min(currentWidth + Math.random() * 5, 100);
+          
+          bar.style.transition = 'width 0.5s ease';
+          bar.style.width = newWidth + '%';
+        });
+      }, 60000); // 1分ごとに更新
+    }
+
+    // キーボードショートカット
+    document.addEventListener('keydown', function(e) {
+      // Ctrl+E: 緊急対応
+      if (e.ctrlKey && e.key === 'e') {
+        e.preventDefault();
+        const emergencyButton = document.querySelector('.bg-red-600');
+        if (emergencyButton && emergencyButton.textContent.includes('緊急対応')) {
+          emergencyButton.click();
+        }
+      }
+      
+      // Ctrl+R: レポート生成
+      if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        const reportButton = document.querySelector('.bg-blue-600');
+        if (reportButton && reportButton.textContent.includes('監査レポート')) {
+          reportButton.click();
+        }
+      }
+      
+      // Ctrl+N: 新規監査
+      if (e.ctrlKey && e.key === 'n') {
+        e.preventDefault();
+        const newButton = document.querySelector('.bg-green-600');
+        if (newButton && newButton.textContent.includes('新規監査')) {
+          newButton.click();
+        }
+      }
+    });
+
+    // リアルタイム更新開始
+    setTimeout(simulateRealTimeUpdates, 5000);
+
+    // 定期的な監査アラート
+    setInterval(() => {
+      const alerts = [
+        '電気設備保安規程の対応期限が近づいています',
+        '新しい法令改正情報が更新されました',
+        'ISO14001更新審査の準備を開始してください',
+        '指摘事項の改善措置進捗を確認してください'
+      ];
+      
+      const randomAlert = alerts[Math.floor(Math.random() * alerts.length)];
+      showNotification(randomAlert, 'warning');
+    }, 120000); // 2分ごと
+
+    // 画面サイズ変更時のチャート再描画
+    window.addEventListener('resize', function() {
+      setTimeout(() => {
+        const charts = Chart.instances;
+        Object.values(charts).forEach(chart => {
+          if (chart && chart.resize) {
+            chart.resize();
+          }
+        });
+      }, 300);
+    });
+
+    // ページ離脱時の確認
+    window.addEventListener('beforeunload', function(e) {
+      const message = '監査対応データの変更が保存されていない可能性があります。ページを離れますか？';
+      e.returnValue = message;
+      return message;
+    });
+
+    // 印刷対応
+    window.addEventListener('beforeprint', function() {
+      document.body.classList.add('printing');
+    });
+
+    window.addEventListener('afterprint', function() {
+      document.body.classList.remove('printing');
+    });
+
+    // エビデンス進捗の動的更新
+    function updateEvidenceProgress() {
+      const evidenceCards = document.querySelectorAll('.evidence-grid .rounded-xl');
+      evidenceCards.forEach(card => {
+        const progressBar = card.querySelector('.bg-green-500, .bg-blue-500, .bg-orange-500, .bg-purple-500, .bg-red-500, .bg-indigo-500');
+        if (progressBar) {
+          const currentWidth = parseInt(progressBar.style.width) || 80;
+          const newWidth = Math.min(currentWidth + Math.random() * 3, 100);
+          
+          progressBar.style.transition = 'width 0.8s ease';
+          progressBar.style.width = newWidth + '%';
+          
+          // 完了した場合の処理
+          if (newWidth >= 100) {
+            progressBar.style.width = '100%';
+            progressBar.className = progressBar.className.replace(/bg-\w+-500/, 'bg-green-500');
+            
+            const statusBadge = card.querySelector('.px-2.py-1.rounded-full');
+            if (statusBadge) {
+              statusBadge.textContent = '完了: ' + card.querySelectorAll('.fas.fa-check').length + '/' + card.querySelectorAll('.flex.justify-between').length;
+              statusBadge.className = statusBadge.className.replace(/bg-\w+-100/, 'bg-green-100').replace(/text-\w+-800/, 'text-green-800');
+            }
+          }
+        }
+      });
+    }
+
+    // 監査カレンダーのイベント
+    document.querySelectorAll('.text-center.text-sm.py-2').forEach(cell => {
+      if (cell.textContent && !isNaN(cell.textContent)) {
+        cell.addEventListener('click', function() {
+          const date = this.textContent;
+          showNotification(`6月${date}日の監査予定を確認します`, 'info');
+        });
+      }
+    });
+
+    // エビデンス進捗更新を定期実行
+    setInterval(updateEvidenceProgress, 45000);
+  </script>
+
+  <style>
+    /* 印刷時のスタイル最適化 */
+    @media print {
+      .printing {
+        background: white !important;
+      }
+      .printing .bg-gradient-to-br,
+      .printing .bg-gradient-to-r {
+        background: white !important;
+        border: 1px solid #e5e7eb !important;
+      }
+      .printing .text-white {
+        color: black !important;
+      }
+      .printing .shadow-lg,
+      .printing .shadow-xl {
+        box-shadow: none !important;
+        border: 1px solid #e5e7eb !important;
+      }
+    }
+
+    /* アクセシビリティ向上 */
+    .card-hover:focus,
+    .audit-tab:focus,
+    button:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+
+    /* 高コントラストモード対応 */
+    @media (prefers-contrast: high) {
+      .finding-severity-high,
+      .finding-severity-medium,
+      .finding-severity-low {
+        border-width: 3px;
+      }
+      .text-gray-600,
+      .text-gray-500 {
+        color: #000000 !important;
+      }
+    }
+
+    /* アニメーション無効化対応 */
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+      .risk-indicator {
+        animation: none !important;
+      }
+    }
+
+    /* モバイル対応の追加調整 */
+    @media (max-width: 768px) {
+      .evidence-grid {
+        grid-template-columns: 1fr;
+      }
+      .timeline-item {
+        padding-left: 40px;
+      }
+      .timeline-icon {
+        left: 4px;
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+      }
+      .bg-gradient-to-br {
+        padding: 1rem;
+      }
+    }
+
+    /* カスタムスクロールバー */
+    .overflow-x-auto::-webkit-scrollbar {
+      height: 6px;
+    }
+    .overflow-x-auto::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 3px;
+    }
+    .overflow-x-auto::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* ローディングアニメーション */
+    .fa-spin {
+      animation: fa-spin 1s infinite linear;
+    }
+    @keyframes fa-spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</body>
+</html>
